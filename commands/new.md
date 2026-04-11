@@ -23,11 +23,11 @@ Task folder: .velo/tasks/<task-slug>/
 
 Plan:
 - Product Manager: <what they'll explore/decide>
-- Tech Lead: <reads PRD + codebase, defines contract, gets approval>
-- DB Engineer: <schema changes> (after contract approved, if needed)
+- Tech Lead: <reads PRD + codebase, writes engineering design doc, gets approval>
+- DB Engineer: <schema changes> (after engineering design doc approved, if needed)
 - BE Engineer: <endpoints to implement> (after DB)
 - Infra Engineer: <infrastructure changes> (if needed, parallel with BE)
-- FE Engineer: <UI to build against contract> (parallel with backend)
+- FE Engineer: <UI to build against engineering design doc> (parallel with backend)
 - ...
 
 Execution: PM → Tech Lead (approval gate) → Build (backend stream + FE stream in parallel) → Tests → Review
@@ -64,16 +64,16 @@ All planning artifacts for this task live in `.velo/tasks/<slug>/`. Pass the ful
 
 Use **AskUserQuestion** to present the PRD for approval:
 - **Header**: "PRD Review"
-- **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Ready to proceed to contract design?"
+- **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Ready to proceed to engineering design doc?"
 - **Options**:
-  - "Approved — proceed to contract design"
+  - "Approved — proceed to engineering design doc"
   - "I have changes"
 
 If the user has changes: convey them to the PM for revision, wait for the updated `prd.md`, then re-present.
 
 **Do not proceed until the PRD is explicitly approved.**
 
-## Step 3 — Phase 1: Contract Proposal
+## Step 3 — Phase 1: Engineering Design Doc
 
 ### Spawn the Tech Lead
 
@@ -83,7 +83,7 @@ If the user has changes: convey them to the PM for revision, wait for the update
    - Instruction to read `.velo/tasks/<slug>/prd.md` and the existing codebase
 3. Their output: `.velo/tasks/<slug>/engineering-design-doc.md`
 
-### Contract Review Pass
+### Engineering Design Doc Review
 
 After Tech Lead completes:
 
@@ -92,38 +92,38 @@ After Tech Lead completes:
 3. If verdict is **REVISE**: spawn Tech Lead again with the reviewer's critique, wait for revised `engineering-design-doc.md`, then re-run the Distinguished Engineer
 4. Repeat until verdict is **APPROVE**
 
-### Contract Approval Gate
+### Engineering Design Doc Approval Gate
 
-Use **AskUserQuestion** to present the contract for approval:
-- **Header**: "Contract Review"
-- **Question**: "The contract is at `.velo/tasks/<slug>/engineering-design-doc.md` and passed internal review. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
+Use **AskUserQuestion** to present the engineering design doc for approval:
+- **Header**: "Engineering Design Doc Review"
+- **Question**: "The engineering design doc is at `.velo/tasks/<slug>/engineering-design-doc.md` and passed internal review. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
 - **Options**:
   - "Approved — proceed to build"
   - "I have changes"
 
 If the user has changes: convey them to the Tech Lead for revision, re-run the Distinguished Engineer, then re-present.
 
-**Do not proceed to build until the contract is explicitly approved.**
+**Do not proceed to build until the engineering design doc is explicitly approved.**
 
 ## Step 4 — Phase 2: Build
 
-Identify which domains are needed from the contract, then spawn:
+Identify which domains are needed from the engineering design doc, then spawn:
 
 - **Phase 2 — Build**: Three streams:
   - Backend stream (sequential): DB engineer (if schema changes) → BE engineer
   - Infra stream (if needed, parallel): Infra engineer
-  - Frontend stream (parallel): FE engineer (independent; builds against contract using mocks)
+  - Frontend stream (parallel): FE engineer (independent; builds against engineering design doc using mocks)
 - **Phase 3 — Tests**: Automation engineer (after all builders are done)
 
 ### Backend stream
 
 Spawn sequentially:
-1. DB engineer — schema migrations and data model changes (only if contract requires schema changes)
+1. DB engineer — schema migrations and data model changes (only if engineering design doc requires schema changes)
 2. BE engineer — API implementation against `.velo/tasks/<slug>/engineering-design-doc.md`
 
 ### Infra stream (if needed)
 
-Spawn in parallel with backend stream if the contract or PRD requires infrastructure changes (new services, queues, etc.):
+Spawn in parallel with backend stream if the engineering design doc or PRD requires infrastructure changes (new services, queues, etc.):
 - Infra engineer
 
 ### Frontend stream
@@ -134,14 +134,14 @@ Spawn in parallel with backend stream:
 Each builder receives:
 - The task folder: `.velo/tasks/<slug>/`
 - The PRD: `.velo/tasks/<slug>/prd.md`
-- The approved contract: `.velo/tasks/<slug>/engineering-design-doc.md`
+- The approved engineering design doc: `.velo/tasks/<slug>/engineering-design-doc.md`
 - Context on what the other stream has completed (if relevant)
 
 ## Step 5 — Phase 4: Review
 
 After all builders are done, spawn ALL relevant reviewers **in parallel**:
 - Each reviewer reads only their domain's changes
-- Each reviewer receives the PRD and contract so they can check against acceptance criteria
+- Each reviewer receives the PRD and engineering design doc so they can check against acceptance criteria
 - **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses
 - **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage
 
@@ -167,7 +167,7 @@ Velo — Summary
 |---|---|---|---|---|
 | Product Manager | <summary> | <tokens> | <tool_uses> | <duration> |
 
-## Contract Proposal
+## Engineering Design Doc
 | Agent | Artifact | Tokens | Tools | Time |
 |---|---|---|---|---|
 | Tech Lead | `.velo/tasks/<slug>/engineering-design-doc.md` — <N endpoints, key decisions> | <tokens> | <tool_uses> | <duration> |

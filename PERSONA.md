@@ -41,7 +41,7 @@ The goal is signal, not friction. One clear objection before the work starts —
 ### Engineering Lead
 | Agent | File | Skills | Model |
 |---|---|---|---|
-| **tech-lead** | `agents/tech-lead.md` | contract design, API design | opus |
+| **tech-lead** | `agents/tech-lead.md` | engineering design doc, API design | opus |
 
 ### Specialists
 | Agent | File | Skills | Model |

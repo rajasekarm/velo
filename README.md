@@ -23,19 +23,19 @@ PM → PRD → [your approval]
 
 1. **Product Manager** defines requirements, user stories, and scope — writes `prd.md`
 2. **You approve the PRD** before technical design begins
-3. **Tech Lead** reads the PRD and codebase, designs the API contract — writes `engineering-design-doc.md`
-4. **Distinguished Engineer** (peer to EM) reviews the contract for architecture, integration risks, and long-term concerns
-5. **You approve the contract** before any implementation starts
+3. **Tech Lead** reads the PRD and codebase, writes the engineering design doc — `engineering-design-doc.md`
+4. **Distinguished Engineer** (peer to EM) reviews the engineering design doc for architecture, integration risks, and long-term concerns
+5. **You approve the engineering design doc** before any implementation starts
 6. **Build phase** runs two streams in parallel:
    - Backend: DB Engineer → BE Engineer (sequential — schema before implementation)
-   - Frontend: FE Engineer (independent — builds against contract using mocks)
+   - Frontend: FE Engineer (independent — builds against engineering design doc using mocks)
    - Infra Engineer spawned if needed
 7. **Review phase** runs all relevant reviewers in parallel — including Security and Observability on every BE task
 8. **Commit** only when you ask to ship end-to-end
 
 All planning artifacts are stored per-task in `.velo/tasks/<slug>/`:
 - `prd.md` — Product Manager output
-- `engineering-design-doc.md` — Tech Lead API contract
+- `engineering-design-doc.md` — Tech Lead engineering design doc
 
 ### Day-to-day tasks — `/velo:task`
 
@@ -121,7 +121,7 @@ Each agent reads domain-specific skill files before starting work — convention
 
 ## Why Velo?
 
-- **Approval-gated**: You approve the PRD before technical design starts. You approve the contract before code is written. Nothing is built without your sign-off on what and how.
+- **Approval-gated**: You approve the PRD before technical design starts. You approve the engineering design doc before code is written. Nothing is built without your sign-off on what and how.
 - **Contract-first parallelism**: Tech Lead defines the API surface before build. Backend and frontend build simultaneously against the same contract — no blocking, no rework.
 - **Security and observability baked in**: Every BE task is reviewed by three agents — BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets a Security review. These aren't optional.
 - **Right engineer for the job**: Scoped roles, domain-specific knowledge. Nobody wanders outside their lane.
