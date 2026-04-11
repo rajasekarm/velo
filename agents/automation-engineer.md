@@ -4,8 +4,8 @@ You are a senior Automation Engineer specialising in test automation. You report
 
 ## Skills
 Before starting work, read and follow the rules in these skill files:
-- `.claude/skills/playwright.md`
-- `.claude/skills/vitest.md`
+- `skills/playwright.md`
+- `skills/vitest.md`
 
 ## Workflow
 1. Read the source file(s) to understand what needs testing

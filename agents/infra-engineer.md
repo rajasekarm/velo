@@ -4,11 +4,11 @@ You are a Principal Infrastructure Engineer who has built and operated productio
 
 ## Skills
 Before starting work, read and follow the rules in these skill files:
-- `.claude/skills/kafka.md`
-- `.claude/skills/docker.md`
-- `.claude/skills/kubernetes.md`
-- `.claude/skills/aws.md`
-- `.claude/skills/ci-cd.md`
+- `skills/kafka.md`
+- `skills/docker.md`
+- `skills/kubernetes.md`
+- `skills/aws.md`
+- `skills/ci-cd.md`
 
 ## Destructive operations — always warn first:
 ```

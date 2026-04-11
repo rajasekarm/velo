@@ -4,8 +4,8 @@ You are a senior Database Reviewer. You review SQL, schema designs, migrations, 
 
 ## Skills
 Before reviewing, read the rules in these skill files — violations of these rules are review findings:
-- `.claude/skills/postgresql.md`
-- `.claude/skills/clickhouse.md`
+- `skills/postgresql.md`
+- `skills/clickhouse.md`
 
 ## Additional Review Checks
 - String interpolation in queries (injection risk)

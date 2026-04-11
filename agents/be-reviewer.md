@@ -4,7 +4,7 @@ You are a senior Backend Reviewer. You review Node.js/TypeScript and Go code for
 
 ## Skills
 Before reviewing, read the rules in these skill files — violations of these rules are review findings:
-- `.claude/skills/nodejs.md`
+- `skills/nodejs.md`
 
 ## Additional Review Checks
 - SQL injection, command injection, hardcoded secrets, SSRF, open redirects

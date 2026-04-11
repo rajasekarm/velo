@@ -19,81 +19,133 @@ Print this:
 Velo here. Starting new work...
 
 Feature: <one-line summary of what's being built>
+Task folder: .velo/tasks/<task-slug>/
 
 Plan:
 - Product Manager: <what they'll explore/decide>
-- Spec Writer: <what they'll produce>
-- Tech Lead: <what contract decisions they'll make + user approval gate>
-- DB Engineer: <schema changes> (after contract approved)
+- Tech Lead: <reads PRD + codebase, defines contract, gets approval>
+- DB Engineer: <schema changes> (after contract approved, if needed)
 - BE Engineer: <endpoints to implement> (after DB)
+- Infra Engineer: <infrastructure changes> (if needed, parallel with BE)
 - FE Engineer: <UI to build against contract> (parallel with backend)
 - ...
 
-Execution: PM → Spec Writer → Tech Lead (approval gate) → Build (backend stream + frontend stream in parallel) → Tests → Review
+Execution: PM → Tech Lead (approval gate) → Build (backend stream + FE stream in parallel) → Tests → Review
 ```
 
-## Step 2 — Phase 0: Planning (always required)
+## Step 1b — Create task folder
+
+Derive a slug from the feature name: lowercase, spaces and special characters replaced with hyphens, trimmed.
+
+Example: "User Authentication Flow" → `user-authentication-flow`
+
+Create the folder before spawning any agent:
+```
+mkdir -p .velo/tasks/<slug>
+```
+
+All planning artifacts for this task live in `.velo/tasks/<slug>/`. Pass the full folder path to every agent you spawn.
+
+## Step 2 — Phase 0: PM (always required)
 
 **This phase is mandatory.** Do not skip it.
 
-### Step 2a — Spawn the Product Manager
+### Spawn the Product Manager
 
 1. Read `agents/product-manager.md`
-2. Spawn the agent with the feature description as their task
-3. Their output: user stories, requirements, scope decisions, open questions resolved
-
-### Step 2b — Spawn the Spec Writer (after PM completes)
-
-1. Read `agents/spec-writer.md`
 2. Spawn the agent with:
-   - The original feature description
-   - The Product Manager's full output
-3. Their output: a technical spec covering architecture, API contracts, data models, component breakdown, and acceptance criteria
+   - The feature description
+   - The task folder path: `.velo/tasks/<slug>/`
+3. Their output: user stories, requirements, scope decisions, open questions resolved — written to `.velo/tasks/<slug>/prd.md`
 
-**Do not proceed until the spec is written.**
+**Do not proceed until `prd.md` is written.**
 
-## Step 3 — Phase 1+: Build (based on spec)
+### PRD Approval Gate
 
-Read the spec output. Identify which domains are needed, then execute:
+Use **AskUserQuestion** to present the PRD for approval:
+- **Header**: "PRD Review"
+- **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Ready to proceed to contract design?"
+- **Options**:
+  - "Approved — proceed to contract design"
+  - "I have changes"
 
-- **Phase 1 — Foundation**: DB engineer (if schema changes needed)
-- **Phase 2 — Contract Proposal**: Tech Lead consults BE + FE constraints, writes `CONTRACT.md`, gets **explicit user approval** before proceeding
-- **Phase 3 — Build**: Two parallel streams:
-  - Backend stream: DB engineer → BE engineer (sequential; BE waits on DB schema)
-  - Frontend stream: FE engineer (independent; builds against `CONTRACT.md` using mocks)
-- **Phase 4 — Tests**: Automation engineer (after all builders are done)
+If the user has changes: convey them to the PM for revision, wait for the updated `prd.md`, then re-present.
 
-### Phase 2 — Contract Proposal
+**Do not proceed until the PRD is explicitly approved.**
 
-Spawn the **Tech Lead** (`agents/tech-lead.md`):
-- Task: read the spec, reason about BE and FE constraints, write `CONTRACT.md`, and get explicit approval from the user via AskUserQuestion
-- The Tech Lead explains the reasoning behind every decision when questioned and revises if needed
+## Step 3 — Phase 1: Contract Proposal
 
-**Do not proceed to Phase 3 until the Tech Lead reports the contract is approved.**
+### Spawn the Tech Lead
 
-### Phase 3 — Build
+1. Read `agents/tech-lead.md`
+2. Spawn the agent with:
+   - The task folder path: `.velo/tasks/<slug>/`
+   - Instruction to read `.velo/tasks/<slug>/prd.md` and the existing codebase
+3. Their output: `.velo/tasks/<slug>/contract.md`
 
-Spawn two streams simultaneously:
+### Contract Review Pass
 
-**Backend stream** (sequential within stream):
-1. DB engineer — schema migrations and data model changes
-2. BE engineer — API implementation against `CONTRACT.md` (spawned after DB engineer completes)
+After Tech Lead completes:
 
-**Frontend stream** (runs in parallel with backend stream):
-- FE engineer — builds UI against `CONTRACT.md` using mocks/stubs for all API calls
+1. Read `agents/distinguished-engineer.md`
+2. Spawn the Distinguished Engineer with the task folder path
+3. If verdict is **REVISE**: spawn Tech Lead again with the reviewer's critique, wait for revised `contract.md`, then re-run the Distinguished Engineer
+4. Repeat until verdict is **APPROVE**
+
+### Contract Approval Gate
+
+Use **AskUserQuestion** to present the contract for approval:
+- **Header**: "Contract Review"
+- **Question**: "The contract is at `.velo/tasks/<slug>/contract.md` and passed internal review. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
+- **Options**:
+  - "Approved — proceed to build"
+  - "I have changes"
+
+If the user has changes: convey them to the Tech Lead for revision, re-run the Distinguished Engineer, then re-present.
+
+**Do not proceed to build until the contract is explicitly approved.**
+
+## Step 4 — Phase 2: Build
+
+Identify which domains are needed from the contract, then spawn:
+
+- **Phase 2 — Build**: Three streams:
+  - Backend stream (sequential): DB engineer (if schema changes) → BE engineer
+  - Infra stream (if needed, parallel): Infra engineer
+  - Frontend stream (parallel): FE engineer (independent; builds against contract using mocks)
+- **Phase 3 — Tests**: Automation engineer (after all builders are done)
+
+### Backend stream
+
+Spawn sequentially:
+1. DB engineer — schema migrations and data model changes (only if contract requires schema changes)
+2. BE engineer — API implementation against `.velo/tasks/<slug>/contract.md`
+
+### Infra stream (if needed)
+
+Spawn in parallel with backend stream if the contract or PRD requires infrastructure changes (new services, queues, etc.):
+- Infra engineer
+
+### Frontend stream
+
+Spawn in parallel with backend stream:
+- FE engineer — builds UI against `.velo/tasks/<slug>/contract.md` using mocks/stubs for all API calls
 
 Each builder receives:
-- The technical spec from the Spec Writer
-- The approved `CONTRACT.md` from Phase 2
+- The task folder: `.velo/tasks/<slug>/`
+- The PRD: `.velo/tasks/<slug>/prd.md`
+- The approved contract: `.velo/tasks/<slug>/contract.md`
 - Context on what the other stream has completed (if relevant)
 
-## Step 4 — Phase 5: Review
+## Step 5 — Phase 4: Review
 
 After all builders are done, spawn ALL relevant reviewers **in parallel**:
 - Each reviewer reads only their domain's changes
-- Each reviewer receives the spec so they can check against acceptance criteria
+- Each reviewer receives the PRD and contract so they can check against acceptance criteria
+- **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses
+- **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage
 
-## Step 5 — Phase 6: Commit (only if user asked to ship end-to-end)
+## Step 6 — Phase 5: Commit (only if user asked to ship end-to-end)
 
 Spawn the `commit` agent after builders and reviewers are done.
 
@@ -114,12 +166,11 @@ Velo — Summary
 | Agent | Delivered | Tokens | Tools | Time |
 |---|---|---|---|---|
 | Product Manager | <summary> | <tokens> | <tool_uses> | <duration> |
-| Spec Writer | <summary> | <tokens> | <tool_uses> | <duration> |
 
 ## Contract Proposal
 | Agent | Artifact | Tokens | Tools | Time |
 |---|---|---|---|---|
-| Tech Lead | CONTRACT.md — <N endpoints, key decisions> | <tokens> | <tool_uses> | <duration> |
+| Tech Lead | `.velo/tasks/<slug>/contract.md` — <N endpoints, key decisions> | <tokens> | <tool_uses> | <duration> |
 
 ## What was built
 | Agent | Delivered | Tokens | Tools | Time |

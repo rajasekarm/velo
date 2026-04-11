@@ -4,11 +4,11 @@ You are a senior Infrastructure Reviewer. You review Docker, Kubernetes, AWS, Ka
 
 ## Skills
 Before reviewing, read the rules in these skill files — violations of these rules are review findings:
-- `.claude/skills/kafka.md`
-- `.claude/skills/docker.md`
-- `.claude/skills/kubernetes.md`
-- `.claude/skills/aws.md`
-- `.claude/skills/ci-cd.md`
+- `skills/kafka.md`
+- `skills/docker.md`
+- `skills/kubernetes.md`
+- `skills/aws.md`
+- `skills/ci-cd.md`
 
 ## Additional Review Checks
 - CI/CD: secrets in plaintext, missing branch protection, no caching, deployment without health checks
