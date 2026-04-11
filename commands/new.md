@@ -66,8 +66,8 @@ Use **AskUserQuestion** to present the PRD for approval:
 - **Header**: "PRD Review"
 - **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Ready to proceed to engineering design doc?"
 - **Options**:
-  - "Approved — proceed to engineering design doc"
-  - "I have changes"
+  - "1 — Approved, proceed to engineering design doc"
+  - "2 — I have changes"
 
 If the user has changes: convey them to the PM for revision, wait for the updated `prd.md`, then re-present.
 
@@ -78,30 +78,38 @@ If the user has changes: convey them to the PM for revision, wait for the update
 ### Spawn the Tech Lead
 
 1. Read `agents/tech-lead.md`
-2. Spawn the agent with:
+2. Read `.velo/tasks/<slug>/prd.md` — you will pass the contents inline
+3. Spawn the agent with:
    - The task folder path: `.velo/tasks/<slug>/`
-   - Instruction to read `.velo/tasks/<slug>/prd.md` and the existing codebase
-3. Their output: `.velo/tasks/<slug>/engineering-design-doc.md`
+   - The full contents of `prd.md` embedded directly in the prompt (do not ask the agent to read it — provide it inline)
+   - Instruction to read the existing codebase for conventions and constraints
+4. Their output: `.velo/tasks/<slug>/engineering-design-doc.md`
 
 ### Engineering Design Doc Review
 
 After Tech Lead completes:
 
-1. Read `agents/distinguished-engineer.md`
-2. Spawn the Distinguished Engineer with the task folder path
-3. If verdict is **REVISE**: spawn Tech Lead again with the reviewer's critique, wait for revised `engineering-design-doc.md`, then re-run the Distinguished Engineer
-4. Repeat until verdict is **APPROVE**
+1. Read `.velo/tasks/<slug>/prd.md` — you will pass the contents inline
+2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — you will pass the contents inline
+3. Spawn **both reviewers in parallel**, each receiving both file contents embedded directly in the prompt (do not ask them to read files — provide contents inline):
+   - Read `agents/distinguished-engineer.md` → spawn Distinguished Engineer
+   - Read `agents/gpt-reviewer.md` → spawn External Distinguished Engineer
+
+Wait for both to return. Then:
+
+- If **either** returns **REVISE**: collect all critique from both reviewers, spawn Tech Lead with the combined feedback, wait for revised `engineering-design-doc.md`, then re-run both reviewers in parallel again
+- If **both** return **APPROVE**: proceed to the approval gate
 
 ### Engineering Design Doc Approval Gate
 
 Use **AskUserQuestion** to present the engineering design doc for approval:
 - **Header**: "Engineering Design Doc Review"
-- **Question**: "The engineering design doc is at `.velo/tasks/<slug>/engineering-design-doc.md` and passed internal review. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
+- **Question**: "The engineering design doc is at `.velo/tasks/<slug>/engineering-design-doc.md` and passed review by Distinguished Engineer and External Distinguished Engineer. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
 - **Options**:
-  - "Approved — proceed to build"
-  - "I have changes"
+  - "1 — Approved, proceed to build"
+  - "2 — I have changes"
 
-If the user has changes: convey them to the Tech Lead for revision, re-run the Distinguished Engineer, then re-present.
+If the user has changes: convey them to the Tech Lead for revision, re-run both reviewers in parallel, then re-present.
 
 **Do not proceed to build until the engineering design doc is explicitly approved.**
 
@@ -131,17 +139,25 @@ Spawn in parallel with backend stream if the engineering design doc or PRD requi
 Spawn in parallel with backend stream:
 - FE engineer — builds UI against `.velo/tasks/<slug>/engineering-design-doc.md` using mocks/stubs for all API calls
 
-Each builder receives:
-- The task folder: `.velo/tasks/<slug>/`
-- The PRD: `.velo/tasks/<slug>/prd.md`
-- The approved engineering design doc: `.velo/tasks/<slug>/engineering-design-doc.md`
+Before spawning builders, read both files so you can pass contents inline:
+- Read `.velo/tasks/<slug>/prd.md`
+- Read `.velo/tasks/<slug>/engineering-design-doc.md`
+
+Each builder receives (all embedded directly in the prompt — do not ask them to read files):
+- The task folder path: `.velo/tasks/<slug>/`
+- The full contents of `prd.md` inline
+- The full contents of `engineering-design-doc.md` inline
 - Context on what the other stream has completed (if relevant)
 
 ## Step 5 — Phase 4: Review
 
-After all builders are done, spawn ALL relevant reviewers **in parallel**:
-- Each reviewer reads only their domain's changes
-- Each reviewer receives the PRD and engineering design doc so they can check against acceptance criteria
+Before spawning reviewers, read both planning artifacts so you can pass contents inline:
+- Read `.velo/tasks/<slug>/prd.md`
+- Read `.velo/tasks/<slug>/engineering-design-doc.md`
+
+After all builders are done, spawn ALL relevant reviewers **in parallel**. Each reviewer receives (embedded directly in the prompt — do not ask them to read files):
+- The full contents of `prd.md` and `engineering-design-doc.md` inline
+- Their specific domain scope (what files/changes to review)
 - **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses
 - **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage
 
