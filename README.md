@@ -12,27 +12,54 @@ Velo is an agentic engineering team — a full squad of specialised Claude agent
 
 Structured workflow with mandatory planning and approval gates before any code is written.
 
-```
-PM → PRD → [your approval]
-  → Tech Lead → engineering-design-doc.md
-  → Distinguished Engineer + External DE (parallel) → review
-  → [your approval]
-  → Build: DB→BE | Infra (if needed) | FE (parallel)
-  → Tests
-  → Review → [fail] → Rework → re-review → repeat
-           → [all pass] → Learning extraction (if rework occurred)
-  → [your approval]
-  → Commit
+```mermaid
+flowchart TD
+    A([Start]) --> PM[Product Manager\nwrites prd.md]
+    PM --> A1{Your approval}
+    A1 -->|changes| PM
+    A1 -->|approved| TL[Tech Lead\nwrites engineering-design-doc.md]
+    TL --> REV[Distinguished Engineer\n+ External DE in parallel]
+    REV -->|REVISE| TL
+    REV -->|both APPROVE| A2{Your approval}
+    A2 -->|changes| TL
+    A2 -->|approved| BUILD
+
+    subgraph BUILD [Build — parallel streams]
+        direction LR
+        DB[DB Engineer] --> BE[BE Engineer]
+        INF[Infra Engineer\nif needed]
+        FE[FE Engineer\nbuilds against EDD]
+    end
+
+    BUILD --> TEST[Automation Engineer\nTests]
+    TEST --> REVIEW[All reviewers\nin parallel]
+    REVIEW -->|any fail| REWORK[Rework\nrelevant builders]
+    REWORK --> REVIEW
+    REVIEW -->|all pass| LEARN{Rework occurred?}
+    LEARN -->|yes| LA[Learnings Agent\nproposes additions]
+    LA --> A3{Your approval}
+    LEARN -->|no| A3
+    A3 -->|approved| COMMIT[Commit Agent]
+    A3 -->|hold| REWORK
 ```
 
 ### Day-to-day tasks — `/velo:task`
 
 Lightweight path for bug fixes, refactors, and small changes. No planning phase.
 
-```
-Build → Tests → Review → [fail] → Rework → re-review → repeat
-                        → [all pass] → Learning extraction (if rework occurred)
-→ [your approval] → Commit
+```mermaid
+flowchart TD
+    A([Start]) --> BUILD[Relevant builders]
+    BUILD --> TEST[Automation Engineer\nTests]
+    TEST --> REVIEW[All reviewers\nin parallel]
+    REVIEW -->|any fail| REWORK[Rework\nrelevant builders]
+    REWORK --> REVIEW
+    REVIEW -->|all pass| LEARN{Rework occurred?}
+    LEARN -->|yes| LA[Learnings Agent\nproposes additions]
+    LA --> A1{Your approval}
+    LEARN -->|no| A1
+    A1 -->|approved| COMMIT[Commit Agent]
+    A1 -->|hold| REWORK
 ```
 
 ### Learning loop
