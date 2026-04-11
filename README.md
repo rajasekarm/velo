@@ -14,7 +14,7 @@ Structured workflow with mandatory planning and two approval gates before any co
 
 ```
 PM → PRD → [your approval]
-         → Tech Lead → contract.md
+         → Tech Lead → engineering-design-doc.md
          → Distinguished Engineer → review
          → [your approval]
          → Build: DB→BE | Infra (if needed) | FE (parallel)
@@ -23,7 +23,7 @@ PM → PRD → [your approval]
 
 1. **Product Manager** defines requirements, user stories, and scope — writes `prd.md`
 2. **You approve the PRD** before technical design begins
-3. **Tech Lead** reads the PRD and codebase, designs the API contract — writes `contract.md`
+3. **Tech Lead** reads the PRD and codebase, designs the API contract — writes `engineering-design-doc.md`
 4. **Distinguished Engineer** (peer to EM) reviews the contract for architecture, integration risks, and long-term concerns
 5. **You approve the contract** before any implementation starts
 6. **Build phase** runs two streams in parallel:
@@ -35,7 +35,7 @@ PM → PRD → [your approval]
 
 All planning artifacts are stored per-task in `.velo/tasks/<slug>/`:
 - `prd.md` — Product Manager output
-- `contract.md` — Tech Lead API contract
+- `engineering-design-doc.md` — Tech Lead API contract
 
 ### Day-to-day tasks — `/velo:task`
 

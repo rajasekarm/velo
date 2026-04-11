@@ -81,7 +81,7 @@ If the user has changes: convey them to the PM for revision, wait for the update
 2. Spawn the agent with:
    - The task folder path: `.velo/tasks/<slug>/`
    - Instruction to read `.velo/tasks/<slug>/prd.md` and the existing codebase
-3. Their output: `.velo/tasks/<slug>/contract.md`
+3. Their output: `.velo/tasks/<slug>/engineering-design-doc.md`
 
 ### Contract Review Pass
 
@@ -89,14 +89,14 @@ After Tech Lead completes:
 
 1. Read `agents/distinguished-engineer.md`
 2. Spawn the Distinguished Engineer with the task folder path
-3. If verdict is **REVISE**: spawn Tech Lead again with the reviewer's critique, wait for revised `contract.md`, then re-run the Distinguished Engineer
+3. If verdict is **REVISE**: spawn Tech Lead again with the reviewer's critique, wait for revised `engineering-design-doc.md`, then re-run the Distinguished Engineer
 4. Repeat until verdict is **APPROVE**
 
 ### Contract Approval Gate
 
 Use **AskUserQuestion** to present the contract for approval:
 - **Header**: "Contract Review"
-- **Question**: "The contract is at `.velo/tasks/<slug>/contract.md` and passed internal review. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
+- **Question**: "The contract is at `.velo/tasks/<slug>/engineering-design-doc.md` and passed internal review. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
 - **Options**:
   - "Approved — proceed to build"
   - "I have changes"
@@ -119,7 +119,7 @@ Identify which domains are needed from the contract, then spawn:
 
 Spawn sequentially:
 1. DB engineer — schema migrations and data model changes (only if contract requires schema changes)
-2. BE engineer — API implementation against `.velo/tasks/<slug>/contract.md`
+2. BE engineer — API implementation against `.velo/tasks/<slug>/engineering-design-doc.md`
 
 ### Infra stream (if needed)
 
@@ -129,12 +129,12 @@ Spawn in parallel with backend stream if the contract or PRD requires infrastruc
 ### Frontend stream
 
 Spawn in parallel with backend stream:
-- FE engineer — builds UI against `.velo/tasks/<slug>/contract.md` using mocks/stubs for all API calls
+- FE engineer — builds UI against `.velo/tasks/<slug>/engineering-design-doc.md` using mocks/stubs for all API calls
 
 Each builder receives:
 - The task folder: `.velo/tasks/<slug>/`
 - The PRD: `.velo/tasks/<slug>/prd.md`
-- The approved contract: `.velo/tasks/<slug>/contract.md`
+- The approved contract: `.velo/tasks/<slug>/engineering-design-doc.md`
 - Context on what the other stream has completed (if relevant)
 
 ## Step 5 — Phase 4: Review
@@ -170,7 +170,7 @@ Velo — Summary
 ## Contract Proposal
 | Agent | Artifact | Tokens | Tools | Time |
 |---|---|---|---|---|
-| Tech Lead | `.velo/tasks/<slug>/contract.md` — <N endpoints, key decisions> | <tokens> | <tool_uses> | <duration> |
+| Tech Lead | `.velo/tasks/<slug>/engineering-design-doc.md` — <N endpoints, key decisions> | <tokens> | <tool_uses> | <duration> |
 
 ## What was built
 | Agent | Delivered | Tokens | Tools | Time |

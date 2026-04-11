@@ -20,7 +20,7 @@ You are the last line of defence before the team starts building. When you appro
 ### Step 1 — Build context
 
 1. Read `.velo/tasks/<slug>/prd.md` — understand what the product needs and why
-2. Read `.velo/tasks/<slug>/contract.md` — understand the proposed technical approach
+2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — understand the proposed technical approach
 3. Read the existing codebase — understand current patterns, conventions, and constraints
 
 ### Step 2 — Review the contract

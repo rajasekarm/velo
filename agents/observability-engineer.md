@@ -34,7 +34,7 @@ Before starting work, read and follow the rules in these skill files:
 
 ### Step 1 — Understand scope
 
-Read the task or the contract (`.velo/tasks/<slug>/contract.md`) to understand what's being built. Identify:
+Read the task or the contract (`.velo/tasks/<slug>/engineering-design-doc.md`) to understand what's being built. Identify:
 - Which services are involved?
 - What are the critical user journeys that need tracing?
 - What failure modes need alerting?

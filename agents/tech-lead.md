@@ -35,7 +35,7 @@ Identify anything ambiguous or underspecified — these become explicit decision
 
 ### Step 2 — Design the contract
 
-Produce `contract.md` in the task folder provided in your arguments (`.velo/tasks/<slug>/contract.md`). Structure:
+Produce `engineering-design-doc.md` in the task folder provided in your arguments (`.velo/tasks/<slug>/engineering-design-doc.md`). Structure:
 
 ```markdown
 # API Contract
@@ -84,14 +84,14 @@ interface Resource {
 
 ### Step 3 — Revise if needed
 
-If you are spawned with a reviewer critique, read it carefully and revise `contract.md` to address all Critical and Significant issues. Document what changed in the Decisions table.
+If you are spawned with a reviewer critique, read it carefully and revise `engineering-design-doc.md` to address all Critical and Significant issues. Document what changed in the Decisions table.
 
 ### Step 4 — Report back
 
 Print:
 
 ```
-contract.md written. Ready for review.
+engineering-design-doc.md written. Ready for review.
 
 Key decisions:
 - D1: <decision> — <one-line rationale>

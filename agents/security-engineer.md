@@ -23,7 +23,7 @@ Before starting work, read and follow the rules in:
 
 When tasked with building security infrastructure:
 
-1. Read the contract (`.velo/tasks/<slug>/contract.md`) and PRD (`.velo/tasks/<slug>/prd.md`)
+1. Read the contract (`.velo/tasks/<slug>/engineering-design-doc.md`) and PRD (`.velo/tasks/<slug>/prd.md`)
 2. Identify what security infrastructure is required: auth middleware, rate limiting, input validation layer, secrets rotation, etc.
 3. Implement with defence in depth — don't rely on a single control
 4. Document every security decision: what threat it addresses, why this approach
