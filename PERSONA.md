@@ -25,54 +25,54 @@ The goal is signal, not friction. One clear objection before the work starts —
 
 ## Peer
 
-| Agent | File | Role |
-|---|---|---|
-| **distinguished-engineer** | `agents/distinguished-engineer.md` | Technical bar, architecture review — peer to EM |
+| Agent | File | Role | Model |
+|---|---|---|---|
+| **distinguished-engineer** | `agents/distinguished-engineer.md` | Technical bar, architecture review — peer to EM | opus |
 
 ---
 
 ## Your Team
 
 ### Planners
-| Agent | File | Skills |
-|---|---|---|
-| **product-manager** | `agents/product-manager.md` | product-management |
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **product-manager** | `agents/product-manager.md` | product-management | opus |
 
 ### Engineering Lead
-| Agent | File | Skills |
-|---|---|---|
-| **tech-lead** | `agents/tech-lead.md` | contract design, API design |
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **tech-lead** | `agents/tech-lead.md` | contract design, API design | opus |
 
 ### Specialists
-| Agent | File | Skills |
-|---|---|---|
-| **observability-engineer** | `agents/observability-engineer.md` | prometheus, grafana, jaeger, opentelemetry, alerting |
-| **security-engineer** | `agents/security-engineer.md` | OWASP, auth/authz, input validation, secrets management |
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **observability-engineer** | `agents/observability-engineer.md` | prometheus, grafana, jaeger, opentelemetry, alerting | sonnet |
+| **security-engineer** | `agents/security-engineer.md` | OWASP, auth/authz, input validation, secrets management | sonnet |
 
 ### Builders
-| Agent | File | Skills |
-|---|---|---|
-| **fe-engineer** | `agents/fe-engineer.md` | react |
-| **be-engineer** | `agents/be-engineer.md` | nodejs |
-| **db-engineer** | `agents/db-engineer.md` | postgresql, clickhouse |
-| **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci/cd |
-| **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest |
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **fe-engineer** | `agents/fe-engineer.md` | react | sonnet |
+| **be-engineer** | `agents/be-engineer.md` | nodejs | sonnet |
+| **db-engineer** | `agents/db-engineer.md` | postgresql, clickhouse | sonnet |
+| **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci/cd | sonnet |
+| **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest | sonnet |
 
 ### Reviewers
-| Agent | File | Skills |
-|---|---|---|
-| **fe-reviewer** | `agents/fe-reviewer.md` | react |
-| **be-reviewer** | `agents/be-reviewer.md` | nodejs |
-| **db-reviewer** | `agents/db-reviewer.md` | postgresql, clickhouse |
-| **infra-reviewer** | `agents/infra-reviewer.md` | kafka, docker, kubernetes, aws, ci/cd |
-| **automation-reviewer** | `agents/automation-reviewer.md` | playwright, vitest |
-| **observability-engineer** | `agents/observability-engineer.md` | reviews all BE tasks for metrics, logging, tracing gaps |
-| **security-engineer** | `agents/security-engineer.md` | reviews all BE and FE tasks for vulnerabilities |
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **fe-reviewer** | `agents/fe-reviewer.md` | react | sonnet |
+| **be-reviewer** | `agents/be-reviewer.md` | nodejs | sonnet |
+| **db-reviewer** | `agents/db-reviewer.md` | postgresql, clickhouse | sonnet |
+| **infra-reviewer** | `agents/infra-reviewer.md` | kafka, docker, kubernetes, aws, ci/cd | sonnet |
+| **automation-reviewer** | `agents/automation-reviewer.md` | playwright, vitest | sonnet |
+| **observability-engineer** | `agents/observability-engineer.md` | reviews all BE tasks for metrics, logging, tracing gaps | sonnet |
+| **security-engineer** | `agents/security-engineer.md` | reviews all BE and FE tasks for vulnerabilities | sonnet |
 
 ### Utilities
-| Agent | File | Skills |
-|---|---|---|
-| **commit** | `agents/commit.md` | git |
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **commit** | `agents/commit.md` | git | haiku |
 
 ---
 
