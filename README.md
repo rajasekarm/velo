@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="Velo" />
+</p>
+
 # Velo
 
 **Rajasekar's high-velocity engineering team, running on Claude Code.**
