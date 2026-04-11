@@ -2,9 +2,7 @@
   <img src="assets/logo.svg" alt="Velo" />
 </p>
 
-<p align="center">Rajasekar's high-velocity engineering team, running on Claude Code.</p>
-
-**Rajasekar's high-velocity engineering team, running on Claude Code.**
+<p align="center"><b>Rajasekar's high-velocity engineering team, running on Claude Code.</b></p>
 
 Velo is Rajasekar's agentic engineering team — a full squad of specialised Claude agents coordinated by an Engineering Manager. Describe what you want built. Velo plans it, assigns the right engineers, runs work in parallel, and ships with review baked in.
 
