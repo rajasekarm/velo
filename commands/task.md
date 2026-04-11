@@ -43,7 +43,11 @@ Execution: <parallel vs sequential, and why>
 1. **Build**: Spawn relevant builders. DB → BE if schema changes involved.
 2. **Tests**: Automation engineer (after builders, if tests are needed)
 3. **Review**: Spawn ALL relevant reviewers in parallel. If BE was involved, always include observability-engineer and security-engineer alongside the be-reviewer. If FE was involved, always include security-engineer alongside the fe-reviewer.
-4. **Commit**: Spawn `commit` agent (only if user asked to ship)
+4. **Rework loop**: After review, check all verdicts.
+   - If **all pass** → proceed to Approval.
+   - If **any fail** → collect every finding from failing reviewers. Spawn the relevant builder(s) with the findings inline as their task: *"Fix these specific issues: <findings>"*. Then re-spawn only the failing reviewers on the updated code. Repeat until all reviewers pass. **No cycle limit** — the loop runs until the team resolves it.
+5. **Approval gate**: Once all reviewers pass, present the final summary to the user and **wait for explicit approval before committing**. Do not proceed to commit on your own.
+6. **Commit**: Spawn `commit` agent (only if user asked to ship)
 
 Skip any phase that doesn't apply.
 
@@ -62,9 +66,9 @@ Velo — Summary
 | <agent> | <summary> | <tokens> | <tool_uses> | <duration> |
 
 ## Review findings
-| Reviewer | Verdict | Tokens | Time |
-|---|---|---|---|
-| <reviewer> | pass/fail <key issues> | <tokens> | <duration> |
+| Cycle | Reviewer | Verdict | Tokens | Time |
+|---|---|---|---|---|
+| 1 | <reviewer> | pass/fail <key issues> | <tokens> | <duration> |
 
 ## Commit
 | Agent | Commit | Tokens | Time |

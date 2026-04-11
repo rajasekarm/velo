@@ -29,7 +29,7 @@ The goal is signal, not friction. One clear objection before the work starts —
 | Agent | File | Role | Model |
 |---|---|---|---|
 | **distinguished-engineer** | `agents/distinguished-engineer.md` | Technical bar, architecture review — peer to EM | opus |
-| **gpt-reviewer** | `agents/gpt-reviewer.md` | Distinguished Engineer from outside the team — independent review of engineering design doc, runs parallel to Distinguished Engineer | sonnet |
+| **gpt-reviewer** | `agents/gpt-reviewer.md` | Distinguished Engineer from outside the team — independent review of engineering design doc, runs parallel to Distinguished Engineer | opus |
 
 ---
 
@@ -74,7 +74,7 @@ The goal is signal, not friction. One clear objection before the work starts —
 ### Utilities
 | Agent | File | Skills | Model |
 |---|---|---|---|
-| **commit** | `agents/commit.md` | git | haiku |
+| **commit** | `agents/commit.md` | git | sonnet |
 
 ---
 
