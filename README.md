@@ -2,7 +2,7 @@
   <img src="assets/logo.svg" alt="Velo" />
 </p>
 
-# Velo
+<p align="center">Rajasekar's high-velocity engineering team, running on Claude Code.</p>
 
 **Rajasekar's high-velocity engineering team, running on Claude Code.**
 
