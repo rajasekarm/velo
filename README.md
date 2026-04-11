@@ -10,119 +10,96 @@ Velo is an agentic engineering team — a full squad of specialised Claude agent
 
 ### New features — `/velo:new`
 
-Structured workflow with mandatory planning and two approval gates before any code is written.
+Structured workflow with mandatory planning and approval gates before any code is written.
 
 ```
 PM → PRD → [your approval]
-         → Tech Lead → engineering-design-doc.md
-         → Distinguished Engineer → review
-         → [your approval]
-         → Build: DB→BE | Infra (if needed) | FE (parallel)
-         → Tests → Review → Commit
+  → Tech Lead → engineering-design-doc.md
+  → Distinguished Engineer + External DE (parallel) → review
+  → [your approval]
+  → Build: DB→BE | Infra (if needed) | FE (parallel)
+  → Tests
+  → Review → [fail] → Rework → re-review → repeat
+           → [all pass] → Learning extraction (if rework occurred)
+  → [your approval]
+  → Commit
 ```
-
-1. **Product Manager** defines requirements, user stories, and scope — writes `prd.md`
-2. **You approve the PRD** before technical design begins
-3. **Tech Lead** reads the PRD and codebase, writes the engineering design doc — `engineering-design-doc.md`
-4. **Distinguished Engineer** (peer to EM) reviews the engineering design doc for architecture, integration risks, and long-term concerns
-5. **You approve the engineering design doc** before any implementation starts
-6. **Build phase** runs two streams in parallel:
-   - Backend: DB Engineer → BE Engineer (sequential — schema before implementation)
-   - Frontend: FE Engineer (independent — builds against engineering design doc using mocks)
-   - Infra Engineer spawned if needed
-7. **Review phase** runs all relevant reviewers in parallel — including Security and Observability on every BE task
-8. **Commit** only when you ask to ship end-to-end
-
-All planning artifacts are stored per-task in `.velo/tasks/<slug>/`:
-- `prd.md` — Product Manager output
-- `engineering-design-doc.md` — Tech Lead engineering design doc
 
 ### Day-to-day tasks — `/velo:task`
 
-Lightweight path for bug fixes, refactors, and small changes. No planning phase, no approval gates. Assess → build → review → done.
+Lightweight path for bug fixes, refactors, and small changes. No planning phase.
+
+```
+Build → Tests → Review → [fail] → Rework → re-review → repeat
+                        → [all pass] → Learning extraction (if rework occurred)
+→ [your approval] → Commit
+```
+
+### Learning loop
+
+After any rework cycle, the Learnings Agent extracts codebase-specific patterns from reviewer findings and proposes additions to `.velo/learnings/`. You approve before anything is written. The team gets better with every task.
 
 ## The team
 
 ### Leadership
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Engineering Manager** | Velo | Orchestrates the team, owns delivery, never implements |
-| **Distinguished Engineer** | Distinguished Engineer | Peer to EM — sets technical bar, reviews architecture |
+| **Velo** (Engineering Manager) | — | Orchestrates the team, owns delivery, never implements |
+| **Distinguished Engineer** | opus | Peer to EM — sets technical bar, reviews architecture |
+| **External Distinguished Engineer** | opus | Independent review of engineering design doc, runs parallel to Distinguished Engineer |
 
 ### Planners
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Planner** | Product Manager | Requirements, user stories, scope decisions, PRD |
+| **Product Manager** | opus | Requirements, user stories, scope decisions, PRD |
 
 ### Engineering Lead
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Engineering Lead** | Tech Lead | API contract design, technical decisions before build |
+| **Tech Lead** | opus | Technical design, API surface, engineering design doc |
 
 ### Specialists
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Specialist** | Observability Engineer | Prometheus, Grafana, Jaeger, Pino+Loki — implements observability infra and reviews all BE tasks for metrics, logging, tracing gaps |
-| **Specialist** | Security Engineer | OWASP, auth/authz, input validation — reviews all BE and FE tasks for vulnerabilities |
+| **Observability Engineer** | sonnet | Implements observability infra — reviews all BE tasks for metrics, logging, tracing gaps |
+| **Security Engineer** | sonnet | Reviews all BE and FE tasks for vulnerabilities |
 
 ### Builders
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Builder** | Frontend Engineer | React components, routing, client-side logic |
-| **Builder** | Backend Engineer | APIs, business logic, Node.js services |
-| **Builder** | Database Engineer | Schema design, migrations, query optimisation |
-| **Builder** | Infrastructure Engineer | Docker, Kubernetes, AWS, Kafka, CI/CD |
-| **Builder** | Automation Engineer | Playwright e2e tests, Vitest unit tests |
+| **Frontend Engineer** | sonnet | React components, routing, client-side logic |
+| **Backend Engineer** | sonnet | APIs, business logic, Node.js services |
+| **Database Engineer** | sonnet | Schema design, migrations, query optimisation |
+| **Infrastructure Engineer** | sonnet | Docker, Kubernetes, AWS, Kafka, CI/CD |
+| **Automation Engineer** | sonnet | Playwright e2e tests, Vitest unit tests |
 
 ### Reviewers
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Reviewer** | Frontend Reviewer | UI quality, component correctness, React patterns |
-| **Reviewer** | Backend Reviewer | API design, error handling, Node.js correctness |
-| **Reviewer** | Database Reviewer | Schema correctness, index coverage, query safety |
-| **Reviewer** | Infrastructure Reviewer | Config hygiene, security posture, cost |
-| **Reviewer** | Automation Reviewer | Test coverage, reliability, flakiness |
+| **Frontend Reviewer** | sonnet | UI quality, component correctness, React patterns |
+| **Backend Reviewer** | sonnet | API design, error handling, Node.js correctness |
+| **Database Reviewer** | sonnet | Schema correctness, index coverage, query safety |
+| **Infrastructure Reviewer** | sonnet | Config hygiene, security posture, cost |
+| **Automation Reviewer** | sonnet | Test coverage, reliability, flakiness |
 
 ### Utilities
 
-| Role | Agent | Responsibility |
+| Agent | Model | Responsibility |
 |---|---|---|
-| **Utility** | Commit | Analyse diff, generate commit message, create git commit |
-
-## Skills
-
-Each agent reads domain-specific skill files before starting work — conventions, rules, and patterns they must follow.
-
-| Skill | Used by |
-|---|---|
-| `skills/react.md` | FE Engineer, FE Reviewer |
-| `skills/nodejs.md` | BE Engineer, BE Reviewer |
-| `skills/postgresql.md` | DB Engineer, DB Reviewer |
-| `skills/clickhouse.md` | DB Engineer, DB Reviewer |
-| `skills/kafka.md` | Infra Engineer, Infra Reviewer |
-| `skills/docker.md` | Infra Engineer, Infra Reviewer |
-| `skills/kubernetes.md` | Infra Engineer, Infra Reviewer |
-| `skills/aws.md` | Infra Engineer, Infra Reviewer |
-| `skills/ci-cd.md` | Infra Engineer, Infra Reviewer |
-| `skills/playwright.md` | Automation Engineer, Automation Reviewer |
-| `skills/vitest.md` | Automation Engineer, Automation Reviewer |
-| `skills/prometheus.md` | Observability Engineer |
-| `skills/grafana.md` | Observability Engineer |
-| `skills/opentelemetry.md` | Observability Engineer |
-| `skills/logging.md` | Observability Engineer |
-| `skills/security.md` | Security Engineer |
-| `skills/product-management.md` | Product Manager |
+| **Commit** | sonnet | Analyse diff, generate commit message, create git commit |
+| **Learnings Agent** | sonnet | Extracts codebase-specific patterns from rework cycles, proposes additions to `.velo/learnings/` |
 
 ## Why Velo?
 
-- **Approval-gated**: You approve the PRD before technical design starts. You approve the engineering design doc before code is written. Nothing is built without your sign-off on what and how.
-- **Contract-first parallelism**: Tech Lead defines the API surface before build. Backend and frontend build simultaneously against the same contract — no blocking, no rework.
-- **Security and observability baked in**: Every BE task is reviewed by three agents — BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets a Security review. These aren't optional.
-- **Right engineer for the job**: Scoped roles, domain-specific knowledge. Nobody wanders outside their lane.
-- **You set direction, Velo handles coordination**: One task in, a shipped feature out.
+- **Approval-gated**: PRD before technical design. Engineering design doc before code. Review results before commit. Nothing ships without your sign-off.
+- **Rework loop**: Reviewers that fail send builders back with findings inline. The loop runs until everything passes — no arbitrary caps.
+- **Learning loop**: Every rework cycle is a signal. The team captures what builders missed and builds institutional knowledge in `.velo/learnings/`.
+- **Dual independent review**: Engineering design docs are reviewed by both the Distinguished Engineer (internal) and an External Distinguished Engineer in parallel — two independent perspectives before build starts.
+- **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
+- **Right model for the job**: Strategic agents (EM peer, planners, tech lead) run on opus. Builders and reviewers run on sonnet. Commit runs on sonnet for reasoned history.

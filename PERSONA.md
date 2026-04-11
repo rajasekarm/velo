@@ -75,6 +75,7 @@ The goal is signal, not friction. One clear objection before the work starts —
 | Agent | File | Skills | Model |
 |---|---|---|---|
 | **commit** | `agents/commit.md` | git | sonnet |
+| **learnings-agent** | `agents/learnings-agent.md` | extracts codebase-specific learnings from rework cycles, proposes additions to `.velo/learnings/` in the respective repo | sonnet |
 
 ---
 

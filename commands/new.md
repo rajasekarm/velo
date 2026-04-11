@@ -161,16 +161,35 @@ After all builders are done, spawn ALL relevant reviewers **in parallel**. Each 
 - **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses
 - **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage
 
+**Rework loop**: After all reviewers return, check verdicts.
+- If **all pass** → proceed to Learning extraction.
+- If **any fail** → collect every finding from failing reviewers. Spawn the relevant builder(s) with the findings inline as their task, plus the full contents of `prd.md` and `engineering-design-doc.md` inline for context. Then re-spawn only the failing reviewers. Repeat until all reviewers pass. **No cycle limit** — the loop runs until the team resolves it.
+
+**Learning extraction** (only if rework cycles > 1): Read `agents/learnings-agent.md` and spawn the learnings agent with all reviewer findings, builder fix summaries, and existing `.velo/learnings/<domain>.md` contents inline (read each relevant file first; pass empty string if file doesn't exist yet). Present proposed additions to the user via AskUserQuestion for approval. On approval, append entries to `.velo/learnings/<domain>.md` in the repo (create file if needed). On reject, discard.
+
+### Approval Gate
+
+Use **AskUserQuestion** to present the review results before committing:
+- **Header**: "Ready to ship"
+- **Question**: "All reviewers passed. [Summary of what was built and review cycles taken.] Approve commit?"
+- **Options**:
+  - "1 — Approved, commit"
+  - "2 — Hold, I have feedback"
+
+If the user has feedback: treat it as rework input — spawn the relevant builder(s) with the feedback inline, re-run affected reviewers, then re-present this gate.
+
+**Do not commit until explicitly approved.**
+
 ## Step 6 — Phase 5: Commit (only if user asked to ship end-to-end)
 
-Spawn the `commit` agent after builders and reviewers are done.
+Spawn the `commit` agent after approval is received.
 
-## Step 6 — Track token usage
+## Step 7 — Track token usage
 
 After each subagent returns, note:
 - `total_tokens`, `tool_uses`, `duration_ms`
 
-## Step 7 — Final report
+## Step 8 — Final report
 
 ```
 Velo — Summary
@@ -198,10 +217,10 @@ Velo — Summary
 | Automation Engineer | <summary> | <tokens> | <tool_uses> | <duration> |
 
 ## Review findings
-| Reviewer | Verdict | Tokens | Time |
-|---|---|---|---|
-| FE Reviewer | pass/fail <key issues> | <tokens> | <duration> |
-| BE Reviewer | pass/fail <key issues> | <tokens> | <duration> |
+| Cycle | Reviewer | Verdict | Tokens | Time |
+|---|---|---|---|---|
+| 1 | FE Reviewer | pass/fail <key issues> | <tokens> | <duration> |
+| 1 | BE Reviewer | pass/fail <key issues> | <tokens> | <duration> |
 
 ## Commit
 | Agent | Commit | Tokens | Time |

@@ -44,10 +44,11 @@ Execution: <parallel vs sequential, and why>
 2. **Tests**: Automation engineer (after builders, if tests are needed)
 3. **Review**: Spawn ALL relevant reviewers in parallel. If BE was involved, always include observability-engineer and security-engineer alongside the be-reviewer. If FE was involved, always include security-engineer alongside the fe-reviewer.
 4. **Rework loop**: After review, check all verdicts.
-   - If **all pass** → proceed to Approval.
+   - If **all pass** → proceed to Learning extraction.
    - If **any fail** → collect every finding from failing reviewers. Spawn the relevant builder(s) with the findings inline as their task: *"Fix these specific issues: <findings>"*. Then re-spawn only the failing reviewers on the updated code. Repeat until all reviewers pass. **No cycle limit** — the loop runs until the team resolves it.
-5. **Approval gate**: Once all reviewers pass, present the final summary to the user and **wait for explicit approval before committing**. Do not proceed to commit on your own.
-6. **Commit**: Spawn `commit` agent (only if user asked to ship)
+5. **Learning extraction** (only if rework cycles > 1): Read `agents/learnings-agent.md` and spawn the learnings agent with all reviewer findings, builder fix summaries, and existing `.velo/learnings/<domain>.md` contents inline (read each relevant file first; pass empty string if file doesn't exist yet). Present proposed additions to the user via AskUserQuestion for approval. On approval, append entries to `.velo/learnings/<domain>.md` in the repo (create file if needed). On reject, discard.
+6. **Approval gate**: Once all reviewers pass (and learnings are handled), present the final summary to the user and **wait for explicit approval before committing**. Do not proceed to commit on your own.
+7. **Commit**: Spawn `commit` agent (only if user asked to ship)
 
 Skip any phase that doesn't apply.
 
