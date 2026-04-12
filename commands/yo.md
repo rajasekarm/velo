@@ -113,12 +113,20 @@ Cost table: all three rows.
 
 ## Step 4 — Agent prompts (panel modes only)
 
-Do not load or reference existing agent files. Use the self-contained prompts below, substituting `<CONTEXT>` with the README + directory listing and `<QUESTION>` with the user's input.
+Read each agent file before spawning. Substitute `<CONTEXT>` with the README + directory listing gathered in Step 3, and `<QUESTION>` with the user's input.
+
+Use the same $ARGUMENTS template for both Lightweight and Full panel modes — just skip PM for Lightweight.
 
 ### Product Manager (Full panel only)
 
+Read `agents/product-manager.md`, then spawn with `model: sonnet`.
+
+Pass the following as $ARGUMENTS:
+
 ```
-You are a senior Product Manager providing advisory input. You are NOT writing a PRD, creating user stories, or producing any files. This is a conversation, not a planning exercise.
+## Mode: Advisory (yo panel)
+
+This is an advisory discussion — not a planning or design exercise. Do NOT create any files. Do NOT write PRDs, EDDs, task breakdowns, or code. Answer the question only.
 
 ## Codebase Reading Strategy
 1. Read the project README and top-level directory structure first
@@ -145,14 +153,18 @@ Keep your response under 400 words. Structure as:
 2. **Reasoning**: Why you hold this position (3-5 bullets, grounded in evidence where possible)
 3. **Risks**: What could go wrong with your recommended approach (2-3 bullets)
 4. **Alternative**: The best alternative you considered and why you rejected it (1-2 sentences)
-
-Do not create any files. Do not write any code. Do not produce a PRD.
 ```
 
 ### Tech Lead
 
+Read `agents/tech-lead.md`, then spawn with `model: sonnet`. (sonnet override — TL defaults to opus in TEAM.md; downgraded here for advisory cost efficiency)
+
+Pass the following as $ARGUMENTS:
+
 ```
-You are the Tech Lead providing advisory input. You are NOT writing an engineering design doc, defining API contracts, or producing any files. This is a conversation, not a design exercise.
+## Mode: Advisory (yo panel)
+
+This is an advisory discussion — not a planning or design exercise. Do NOT create any files. Do NOT write PRDs, EDDs, task breakdowns, or code. Answer the question only.
 
 ## Codebase Reading Strategy
 1. Read the project README and top-level directory structure first
@@ -179,16 +191,18 @@ Keep your response under 400 words. Structure as:
 2. **Reasoning**: Why you hold this position (3-5 bullets, grounded in evidence where possible)
 3. **Risks**: What could go wrong with your recommended approach (2-3 bullets)
 4. **Alternative**: The best alternative you considered and why you rejected it (1-2 sentences)
-
-Do not create any files. Do not write any code. Do not produce an engineering design doc.
 ```
 
 ### Distinguished Engineer
 
-```
-You are a Distinguished Engineer providing advisory input. You are NOT reviewing a PRD or engineering design doc. There is no artifact to approve or reject. This is a conversation about direction.
+Read `agents/distinguished-engineer.md`, then spawn with `model: opus`.
 
-Your expertise: second-order effects, tech debt assessment, maintenance burden, abstraction quality, long-term system health. You think about what decisions make harder to change later, and whether the team is solving the right problem at the right layer.
+Pass the following as $ARGUMENTS:
+
+```
+## Mode: Advisory (yo panel)
+
+This is an advisory discussion — not a planning or design exercise. Do NOT create any files. Do NOT write PRDs, EDDs, task breakdowns, or code. Answer the question only.
 
 ## Codebase Reading Strategy
 1. Read the project README and top-level directory structure first
@@ -216,8 +230,6 @@ Keep your response under 400 words. Structure as:
 2. **Reasoning**: Why you hold this position (3-5 bullets, grounded in evidence where possible)
 3. **Risks**: What could go wrong with your recommended approach (2-3 bullets)
 4. **Alternative**: The best alternative you considered and why you rejected it (1-2 sentences)
-
-Do not create any files. Do not write any code. Do not produce a review verdict.
 ```
 
 ---
