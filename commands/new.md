@@ -4,6 +4,7 @@ argument-hint: Describe the feature or product idea
 ---
 
 @PERSONA.md
+@TEAM.md
 
 # Velo — New Work
 
@@ -83,7 +84,20 @@ If the user has changes: convey them to the PM for revision, wait for the update
    - The task folder path: `.velo/tasks/<slug>/`
    - The full contents of `prd.md` embedded directly in the prompt (do not ask the agent to read it — provide it inline)
    - Instruction to read the existing codebase for conventions and constraints
-4. Their output: `.velo/tasks/<slug>/engineering-design-doc.md`
+4. Their output: `.velo/tasks/<slug>/engineering-design-doc.md` and `.velo/tasks/<slug>/task-breakdown.md`
+
+### Validate Tech Lead output
+
+Before proceeding, verify both files exist:
+- `.velo/tasks/<slug>/engineering-design-doc.md`
+- `.velo/tasks/<slug>/task-breakdown.md`
+
+If either is missing — **stop**. Print:
+```
+Tech Lead did not produce [missing file]. Cannot proceed to review.
+Re-spawn Tech Lead with the same inputs and explicit instruction to produce both files.
+```
+Re-spawn Tech Lead, wait for both files, then re-validate before continuing.
 
 ### Engineering Design Doc Review
 
@@ -91,63 +105,52 @@ After Tech Lead completes:
 
 1. Read `.velo/tasks/<slug>/prd.md` — you will pass the contents inline
 2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — you will pass the contents inline
-3. Spawn **both reviewers in parallel**, each receiving both file contents embedded directly in the prompt (do not ask them to read files — provide contents inline):
-   - Read `agents/distinguished-engineer.md` → spawn Distinguished Engineer
-   - Read `agents/gpt-reviewer.md` → spawn External Distinguished Engineer
+3. Spawn **both reviewers in parallel**:
+   - Read `agents/distinguished-engineer.md` → spawn Distinguished Engineer with both file contents embedded directly in the prompt (do not ask it to read files — provide contents inline)
+   - Read `agents/gpt-reviewer.md` → spawn External Distinguished Engineer with the task folder path only — it reads files itself before calling Codex CLI
 
-Wait for both to return. Then:
+Wait for both to return. Track cycle count starting at 1.
 
-- If **either** returns **REVISE**: collect all critique from both reviewers, spawn Tech Lead with the combined feedback, wait for revised `engineering-design-doc.md`, then re-run both reviewers in parallel again
-- If **both** return **APPROVE**: proceed to the approval gate
+- If **both** return **APPROVE** → proceed to the approval gate.
+- If **either** returns **REVISE** and cycle < 3 → collect all critique from both reviewers. Spawn Tech Lead with combined feedback and what was already attempted in previous cycles. Wait for revised `engineering-design-doc.md` and `task-breakdown.md`. Re-validate both files exist. Increment cycle count and re-run both reviewers in parallel.
+- If **either** returns **REVISE** and cycle == 3 → stop. Use **AskUserQuestion** to surface:
+  - **Header**: "EDD review cap reached"
+  - **Question**: "3 EDD review cycles completed. The following issues remain unresolved: [list each unresolved finding with reviewer and severity]. How do you want to proceed?"
+  - **Options**:
+    - "1 — Continue revision (extend cap)"
+    - "2 — Accept as-is and proceed to approval gate"
+    - "3 — Abandon"
 
 ### Engineering Design Doc Approval Gate
 
-Use **AskUserQuestion** to present the engineering design doc for approval:
+Read `.velo/tasks/<slug>/task-breakdown.md` before presenting.
+
+Use **AskUserQuestion** to present the engineering design doc and task breakdown for approval:
 - **Header**: "Engineering Design Doc Review"
-- **Question**: "The engineering design doc is at `.velo/tasks/<slug>/engineering-design-doc.md` and passed review by Distinguished Engineer and External Distinguished Engineer. Summary: [list key endpoints and top 3 decisions]. Ready to proceed to build?"
+- **Question**: "The engineering design doc passed review. Summary: [list key endpoints and top 3 decisions]. Task breakdown: [list tasks in order with owners]. Ready to proceed to build?"
 - **Options**:
   - "1 — Approved, proceed to build"
   - "2 — I have changes"
 
 If the user has changes: convey them to the Tech Lead for revision, re-run both reviewers in parallel, then re-present.
 
-**Do not proceed to build until the engineering design doc is explicitly approved.**
+**Do not proceed to build until both the engineering design doc and task breakdown are explicitly approved.**
 
 ## Step 4 — Phase 2: Build
 
-Identify which domains are needed from the engineering design doc, then spawn:
-
-- **Phase 2 — Build**: Three streams:
-  - Backend stream (sequential): DB engineer (if schema changes) → BE engineer
-  - Infra stream (if needed, parallel): Infra engineer
-  - Frontend stream (parallel): FE engineer (independent; builds against engineering design doc using mocks)
-- **Phase 3 — Tests**: Automation engineer (after all builders are done)
-
-### Backend stream
-
-Spawn sequentially:
-1. DB engineer — schema migrations and data model changes (only if engineering design doc requires schema changes)
-2. BE engineer — API implementation against `.velo/tasks/<slug>/engineering-design-doc.md`
-
-### Infra stream (if needed)
-
-Spawn in parallel with backend stream if the engineering design doc or PRD requires infrastructure changes (new services, queues, etc.):
-- Infra engineer
-
-### Frontend stream
-
-Spawn in parallel with backend stream:
-- FE engineer — builds UI against `.velo/tasks/<slug>/engineering-design-doc.md` using mocks/stubs for all API calls
-
-Before spawning builders, read both files so you can pass contents inline:
+Read the task breakdown to determine execution order and parallelism:
+- Read `.velo/tasks/<slug>/task-breakdown.md`
 - Read `.velo/tasks/<slug>/prd.md`
 - Read `.velo/tasks/<slug>/engineering-design-doc.md`
 
+Execute tasks in the order defined by `task-breakdown.md`. Tasks with no dependencies run in parallel. Tasks with dependencies run only after their dependencies complete.
+
 Each builder receives (all embedded directly in the prompt — do not ask them to read files):
 - The task folder path: `.velo/tasks/<slug>/`
+- Their specific task from `task-breakdown.md` inline
 - The full contents of `prd.md` inline
 - The full contents of `engineering-design-doc.md` inline
-- Context on what the other stream has completed (if relevant)
+- Context on what completed tasks have delivered (if relevant)
 
 ## Step 5 — Phase 4: Review
 
@@ -161,9 +164,23 @@ After all builders are done, spawn ALL relevant reviewers **in parallel**. Each 
 - **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses
 - **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage
 
-**Rework loop**: After all reviewers return, check verdicts.
+**Rework loop**: After all reviewers return, check verdicts. Track cycle count starting at 1. Maintain a running list of unresolved findings across cycles.
+
 - If **all pass** → proceed to Learning extraction.
-- If **any fail** → collect every finding from failing reviewers. Spawn the relevant builder(s) with the findings inline as their task, plus the full contents of `prd.md` and `engineering-design-doc.md` inline for context. Then re-spawn only the failing reviewers. Repeat until all reviewers pass. **No cycle limit** — the loop runs until the team resolves it.
+- If **any fail** and cycle < 3:
+  - Collect findings from failing reviewers. Classify by severity: Critical / Significant / Minor.
+  - **Cycle 1**: builders fix all Critical + Significant issues.
+  - **Cycle 2**: builders fix remaining Critical issues only — skip Significant if already attempted.
+  - Pass builders: the unresolved findings inline + what was attempted in previous cycles + full `prd.md` and `engineering-design-doc.md` inline.
+  - Re-spawn only the failing reviewers with instruction: "Re-check only the previously flagged issues — do not perform a full re-review."
+  - Increment cycle count and repeat.
+- If **any fail** and cycle == 3 → stop. Use **AskUserQuestion** to surface:
+  - **Header**: "Rework cap reached"
+  - **Question**: "3 rework cycles completed. The following issues remain unresolved: [list each unresolved finding with reviewer and severity]. How do you want to proceed?"
+  - **Options**:
+    - "1 — Continue rework (extend cap)"
+    - "2 — Accept as-is and proceed to commit"
+    - "3 — Abandon — do not commit"
 
 **Learning extraction** (only if rework cycles > 1): Read `agents/learnings-agent.md` and spawn the learnings agent with all reviewer findings, builder fix summaries, and existing `.velo/learnings/<domain>.md` contents inline (read each relevant file first; pass empty string if file doesn't exist yet). Present proposed additions to the user via AskUserQuestion for approval. On approval, append entries to `.velo/learnings/<domain>.md` in the repo (create file if needed). On reject, discard.
 
@@ -206,7 +223,7 @@ Velo — Summary
 ## Engineering Design Doc
 | Agent | Artifact | Tokens | ~Cost | Tools | Time |
 |---|---|---|---|---|---|
-| Tech Lead | `.velo/tasks/<slug>/engineering-design-doc.md` — <N endpoints, key decisions> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| Tech Lead | `engineering-design-doc.md` — <N endpoints, key decisions> + `task-breakdown.md` — <N tasks> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 
 ## What was built
 | Agent | Delivered | Tokens | ~Cost | Tools | Time |

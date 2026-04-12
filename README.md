@@ -6,65 +6,15 @@
 
 Velo is an agentic engineering team — a full squad of specialised Claude agents coordinated by an Engineering Manager. Describe what you want built. Velo plans it, gets your approval at the right gates, runs work in parallel, and ships with review baked in.
 
-## How it works
+## Why Velo?
 
-### New features — `/velo:new`
-
-Structured workflow with mandatory planning and approval gates before any code is written.
-
-```mermaid
-flowchart TD
-    A([Start]) --> PM[Product Manager\nwrites prd.md]
-    PM --> A1{Your approval}
-    A1 -->|changes| PM
-    A1 -->|approved| TL[Tech Lead\nwrites engineering-design-doc.md]
-    TL --> REV[Distinguished Engineer\n+ Distinguished Engineer — GPT in parallel]
-    REV -->|REVISE| TL
-    REV -->|both APPROVE| A2{Your approval}
-    A2 -->|changes| TL
-    A2 -->|approved| BUILD
-
-    subgraph BUILD [Build — parallel streams]
-        direction LR
-        DB[DB Engineer] --> BE[BE Engineer]
-        INF[Infra Engineer\nif needed]
-        FE[FE Engineer\nbuilds against EDD]
-    end
-
-    BUILD --> TEST[Automation Engineer\nTests]
-    TEST --> REVIEW[All reviewers\nin parallel]
-    REVIEW -->|any fail| REWORK[Rework\nrelevant builders]
-    REWORK --> REVIEW
-    REVIEW -->|all pass| LEARN{Rework occurred?}
-    LEARN -->|yes| LA[Learnings Agent\nproposes additions]
-    LA --> A3{Your approval}
-    LEARN -->|no| A3
-    A3 -->|approved| COMMIT[Commit Agent]
-    A3 -->|hold| REWORK
-```
-
-### Day-to-day tasks — `/velo:task`
-
-Lightweight path for bug fixes, refactors, and small changes. No planning phase.
-
-```mermaid
-flowchart TD
-    A([Start]) --> BUILD[Relevant builders]
-    BUILD --> TEST[Automation Engineer\nTests]
-    TEST --> REVIEW[All reviewers\nin parallel]
-    REVIEW -->|any fail| REWORK[Rework\nrelevant builders]
-    REWORK --> REVIEW
-    REVIEW -->|all pass| LEARN{Rework occurred?}
-    LEARN -->|yes| LA[Learnings Agent\nproposes additions]
-    LA --> A1{Your approval}
-    LEARN -->|no| A1
-    A1 -->|approved| COMMIT[Commit Agent]
-    A1 -->|hold| REWORK
-```
-
-### Learning loop
-
-After any rework cycle, the Learnings Agent extracts codebase-specific patterns from reviewer findings and proposes additions to `.velo/learnings/`. You approve before anything is written. The team gets better with every task.
+- **Approval-gated**: PRD before technical design. Engineering design doc before code. Review results before commit. Nothing ships without your sign-off.
+- **Explicit task ordering**: Tech Lead produces a `task-breakdown.md` alongside the engineering design doc — who does what, in what order, what can run in parallel. Build phase executes it directly, no guessing.
+- **Bounded rework loop**: Reviewers that fail send builders back with findings inline. Cycle 1 fixes Critical + Significant, cycle 2 fixes remaining Critical only. Capped at 3 cycles — if issues remain, you decide: extend, accept as-is, or abandon.
+- **Learning loop**: Every rework cycle is a signal. The team captures what builders missed and builds institutional knowledge in `.velo/learnings/`.
+- **Dual independent review**: Engineering design docs are reviewed by both the Distinguished Engineer (Claude opus) and an External Reviewer (gpt-5.4 via Codex CLI) in parallel — two different models, two independent perspectives before build starts.
+- **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
+- **Right model for the job**: Tech lead and architecture reviewers run on opus. PM, builders, and reviewers run on sonnet.
 
 ## The team
 
@@ -74,13 +24,13 @@ After any rework cycle, the Learnings Agent extracts codebase-specific patterns 
 |---|---|---|
 | **Velo** (Engineering Manager) | — | Orchestrates the team, owns delivery, never implements |
 | **Distinguished Engineer** | opus | Peer to EM — sets technical bar, reviews architecture |
-| **External Distinguished Engineer** | opus | Independent review of engineering design doc, runs parallel to Distinguished Engineer |
+| **External Distinguished Engineer** | gpt-5.4 | Independent review of engineering design doc via Codex CLI, runs parallel to Distinguished Engineer |
 
 ### Planners
 
 | Agent | Model | Responsibility |
 |---|---|---|
-| **Product Manager** | opus | Requirements, user stories, scope decisions, PRD |
+| **Product Manager** | sonnet | Requirements, user stories, scope decisions, PRD |
 
 ### Engineering Lead
 
@@ -122,11 +72,15 @@ After any rework cycle, the Learnings Agent extracts codebase-specific patterns 
 | **Commit** | sonnet | Analyse diff, generate commit message, create git commit |
 | **Learnings Agent** | sonnet | Extracts codebase-specific patterns from rework cycles, proposes additions to `.velo/learnings/` |
 
-## Why Velo?
+## How it works
 
-- **Approval-gated**: PRD before technical design. Engineering design doc before code. Review results before commit. Nothing ships without your sign-off.
-- **Rework loop**: Reviewers that fail send builders back with findings inline. The loop runs until everything passes — no arbitrary caps.
-- **Learning loop**: Every rework cycle is a signal. The team captures what builders missed and builds institutional knowledge in `.velo/learnings/`.
-- **Dual independent review**: Engineering design docs are reviewed by both the Distinguished Engineer (internal) and an External Distinguished Engineer in parallel — two independent perspectives before build starts.
-- **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
-- **Right model for the job**: Strategic agents (EM peer, planners, tech lead) run on opus. Builders and reviewers run on sonnet. Commit runs on sonnet for reasoned history.
+See [WORKFLOW.md](WORKFLOW.md) for detailed flow diagrams.
+
+### `/velo:new` — New features
+Structured workflow: PM → Tech Lead → Dual review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
+
+### `/velo:task` — Day-to-day tasks
+Lightweight path for bug fixes, refactors, and small changes. No planning phase — straight to build and review.
+
+### `/velo:yo` — Advisory
+Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.

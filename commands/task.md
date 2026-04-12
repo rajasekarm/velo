@@ -4,6 +4,7 @@ argument-hint: Describe the task to execute
 ---
 
 @PERSONA.md
+@TEAM.md
 
 # Velo — Task
 

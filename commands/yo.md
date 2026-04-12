@@ -31,12 +31,12 @@ Use when:
 - It's a code-state question ("what's the state of X in my service", "look at my codebase", "what should I profile?")
 - There's a well-established answer with no genuine multi-sided trade-off
 
-**Lightweight** — TL + DE only. 2 opus agents.
+**Lightweight** — TL + DE only. TL on sonnet, DE on opus.
 Use when:
 - There's a genuine technical trade-off but no product/scope dimension
 - The question is about architecture, technology comparison, or engineering approach where both sides have real merit
 
-**Full panel** — PM + TL + DE. 3 opus agents.
+**Full panel** — PM + TL + DE. PM and TL on sonnet, DE on opus.
 Use when:
 - The question is build-vs-shelve, scope, or prioritization
 - It's a major architectural choice with user or team impact
@@ -87,7 +87,7 @@ Pre-read:
 1. Read `README.md` at root
 2. Run `ls -la` at root
 
-Spawn Tech Lead and Distinguished Engineer **in parallel** with `model: opus`.
+Spawn Tech Lead with `model: sonnet` and Distinguished Engineer with `model: opus`, **in parallel**.
 
 Use the prompts from the Full panel section below — same prompts, just skip PM.
 
@@ -103,7 +103,7 @@ Pre-read:
 1. Read `README.md` at root
 2. Run `ls -la` at root
 
-Spawn all three **in parallel** with `model: opus`.
+Spawn PM and TL with `model: sonnet`, DE with `model: opus`, all **in parallel**.
 
 After all return → go to Step 5 (check response count) → Step 6 (synthesize).
 
@@ -341,7 +341,7 @@ Copy-paste when ready:
 
 ## Step 8 — Cost table (panel modes only)
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing).
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent: DE uses opus pricing ($15/1M input, $75/1M output); TL and PM use sonnet pricing ($3/1M input, $15/1M output).
 
 ```
 ## Cost

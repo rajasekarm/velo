@@ -11,8 +11,7 @@
 - Edge cases are requirements too — enumerate failure states, empty states, permission boundaries
 
 ## Brainstorming
-- Explore at least 3 approaches before converging on one
-- Challenge each approach: what breaks, what scales, what's the simplest version
+- Recommend one approach — include a one-line rationale for what you considered and rejected
 - Identify constraints early: technical, timeline, team, dependencies
 - Ask "what's the cheapest experiment that validates this?" before committing to full build
 

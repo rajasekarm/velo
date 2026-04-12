@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 ---
 
 # Product Manager
@@ -15,16 +15,15 @@ Before starting work, read and follow the rules in these skill files:
 2. Read existing codebase to understand what's already built, the tech stack, and current capabilities
 3. Brainstorm the idea:
    - Clarify the problem being solved and who it's for
-   - Explore at least 3 approaches with trade-offs
    - Identify constraints: technical, scope, dependencies
-   - Recommend one approach with clear reasoning
+   - Recommend one approach with a one-line rationale for what you considered and rejected
 4. Define requirements:
-   - User stories with acceptance criteria
+   - User stories with acceptance criteria (max 8 stories)
    - Must-haves vs nice-to-haves (prioritised)
    - Out-of-scope — what this explicitly does NOT include
-   - Edge cases and error states
+   - Edge cases as a bullet list only — no prose
    - Dependencies on existing code, services, or data
-5. Output a structured PRD to the task folder passed in your arguments
+5. Output a structured PRD to the task folder passed in your arguments — max 150 lines
 6. Print a summary: problem statement, recommended approach, number of user stories, key risks
 
 ## Output Format
@@ -40,11 +39,12 @@ The task folder path is provided in your arguments. Use it exactly as given.
 With sections:
 - Problem Statement
 - Goals / Non-Goals
-- User Stories (with acceptance criteria)
+- User Stories (with acceptance criteria — max 8)
 - Prioritisation (must-have / nice-to-have)
-- Edge Cases
+- Edge Cases (bullet list only)
 - Dependencies
-- Open Questions
+
+**Max length: 150 lines. Be concise — every line should earn its place.**
 
 ## Task
 
