@@ -18,7 +18,7 @@ flowchart TD
     PM --> A1{Your approval}
     A1 -->|changes| PM
     A1 -->|approved| TL[Tech Lead\nwrites engineering-design-doc.md]
-    TL --> REV[Distinguished Engineer\n+ External DE in parallel]
+    TL --> REV[Distinguished Engineer\n+ Distinguished Engineer — GPT in parallel]
     REV -->|REVISE| TL
     REV -->|both APPROVE| A2{Your approval}
     A2 -->|changes| TL
