@@ -54,7 +54,7 @@ Skip any phase that doesn't apply.
 
 ## Step 4 — Track token usage
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`.
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing).
 
 ## Step 5 — Final report
 
@@ -62,9 +62,9 @@ After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`.
 Velo — Summary
 
 ## What was delivered
-| Agent | Delivered | Tokens | Tools | Time |
-|---|---|---|---|---|
-| <agent> | <summary> | <tokens> | <tool_uses> | <duration> |
+| Agent | Delivered | Tokens | ~Cost | Tools | Time |
+|---|---|---|---|---|---|
+| <agent> | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 
 ## Review findings
 | Cycle | Reviewer | Verdict | Tokens | Time |
@@ -80,7 +80,7 @@ Velo — Summary
 - <list>
 
 ## Cost
-Grand total: <tokens> tokens | <tool uses> tool calls | <wall time> elapsed
+Grand total: <tokens> tokens | ~$<total cost> | <tool uses> tool calls | <wall time> elapsed
 ```
 
 Only include rows for agents actually used.

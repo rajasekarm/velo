@@ -298,20 +298,20 @@ Copy-paste when ready:
 
 ## Step 9 — Track token usage
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`.
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing).
 
 ## Step 10 — Cost table
 
 ```
 ## Cost
 
-| Agent | Tokens | Tools | Time |
-|---|---|---|---|
-| Product Manager | <tokens> | <tool_uses> | <duration> |
-| Tech Lead | <tokens> | <tool_uses> | <duration> |
-| Distinguished Engineer | <tokens> | <tool_uses> | <duration> |
+| Agent | Tokens | ~Cost | Tools | Time |
+|---|---|---|---|---|
+| Product Manager | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| Tech Lead | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| Distinguished Engineer | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 
-Grand total: <sum> tokens | <tool uses> tool calls | <wall time> elapsed
+Grand total: <sum> tokens | ~$<total cost> | <tool uses> tool calls | <wall time> elapsed
 ```
 
 Only include rows for agents that responded.

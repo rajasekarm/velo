@@ -188,6 +188,7 @@ Spawn the `commit` agent after approval is received.
 
 After each subagent returns, note:
 - `total_tokens`, `tool_uses`, `duration_ms`
+- Approximate cost: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing)
 
 ## Step 8 — Final report
 
@@ -198,23 +199,23 @@ Velo — Summary
 <one-line description>
 
 ## Planning
-| Agent | Delivered | Tokens | Tools | Time |
-|---|---|---|---|---|
-| Product Manager | <summary> | <tokens> | <tool_uses> | <duration> |
+| Agent | Delivered | Tokens | ~Cost | Tools | Time |
+|---|---|---|---|---|---|
+| Product Manager | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 
 ## Engineering Design Doc
-| Agent | Artifact | Tokens | Tools | Time |
-|---|---|---|---|---|
-| Tech Lead | `.velo/tasks/<slug>/engineering-design-doc.md` — <N endpoints, key decisions> | <tokens> | <tool_uses> | <duration> |
+| Agent | Artifact | Tokens | ~Cost | Tools | Time |
+|---|---|---|---|---|---|
+| Tech Lead | `.velo/tasks/<slug>/engineering-design-doc.md` — <N endpoints, key decisions> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 
 ## What was built
-| Agent | Delivered | Tokens | Tools | Time |
-|---|---|---|---|---|
-| DB Engineer | <summary> | <tokens> | <tool_uses> | <duration> |
-| BE Engineer | <summary> | <tokens> | <tool_uses> | <duration> |
-| Infra Engineer | <summary> | <tokens> | <tool_uses> | <duration> |
-| FE Engineer | <summary> | <tokens> | <tool_uses> | <duration> |
-| Automation Engineer | <summary> | <tokens> | <tool_uses> | <duration> |
+| Agent | Delivered | Tokens | ~Cost | Tools | Time |
+|---|---|---|---|---|---|
+| DB Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| BE Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| Infra Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| FE Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+| Automation Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 
 ## Review findings
 | Cycle | Reviewer | Verdict | Tokens | Time |
@@ -231,10 +232,10 @@ Velo — Summary
 - <list all files created or modified>
 
 ## Cost breakdown
-Planners total: <sum> tokens
-Builders total: <sum> tokens
-Reviewers total: <sum> tokens
-Grand total: <sum all> tokens | <tool uses> tool calls | <wall time> elapsed
+Planners total: <sum> tokens | ~$<cost>
+Builders total: <sum> tokens | ~$<cost>
+Reviewers total: <sum> tokens | ~$<cost>
+Grand total: <sum all> tokens | ~$<total cost> | <tool uses> tool calls | <wall time> elapsed
 ```
 
 Only include rows for agents actually used.
