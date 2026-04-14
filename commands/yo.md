@@ -307,25 +307,17 @@ When unanimous:
 
 ## Step 7 — Mode switch handoff
 
-**Velo never executes `/velo:new` or `/velo:task` inline. Zero inline execution.**
-
 If next step is **BUILD**:
 
 ```
-Ready to build?
-
 Based on the discussion, here's the brief:
 
 > <draft brief — 2-4 sentences: core recommendation + approach + non-goals.>
 
-Copy-paste when ready:
-
-  /velo:new <draft brief>
-
-Or for a smaller task:
-
-  /velo:task <draft brief>
+Want me to kick this off?
 ```
+
+If the user says yes: invoke `/velo:new` for net-new features, `/velo:task` for smaller changes. Pass the draft brief as the argument.
 
 If next step is **SHELVE**:
 
@@ -334,8 +326,10 @@ My recommendation: shelve this.
 
 Reason: <1-2 sentences>
 
-If you disagree, /velo:new or /velo:task are always available.
+Want to reconsider?
 ```
+
+If the user says yes: treat as BUILD and proceed accordingly.
 
 If next step is **INVESTIGATE FURTHER**:
 
@@ -344,10 +338,10 @@ Not ready to commit yet. Suggested follow-up:
 
 > <specific follow-up question>
 
-Copy-paste when ready:
-
-  /velo:yo <follow-up question>
+Want me to dig into that?
 ```
+
+If the user says yes: invoke `/velo:yo` with the follow-up question.
 
 ---
 

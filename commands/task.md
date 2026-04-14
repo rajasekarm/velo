@@ -36,7 +36,7 @@ Execution: <parallel vs sequential, and why>
 
 ### Parallelism rules
 
-- **Parallel**: independent domains (FE + Infra), multiple reviewers
+- **Parallel**: independent domains (FE + Infra), multiple reviewers, **and multiple tasks of the same agent type when fully independent** (e.g. 3 independent BE tasks → spawn 3 BE engineers simultaneously, one per task)
 - **Sequential**: DB before BE (schema dependency), builders before reviewers
 
 ### Phases
