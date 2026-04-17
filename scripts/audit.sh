@@ -29,9 +29,9 @@ echo ""
 # ---------------------------------------------------------------------------
 # CHECK 1 — PERSONA.md → agent files
 # ---------------------------------------------------------------------------
-echo "[CHECK 1] PERSONA.md → agent files"
+echo "[CHECK 1] TEAM.md → agent files"
 
-persona_file="${REPO_ROOT}/PERSONA.md"
+persona_file="${REPO_ROOT}/TEAM.md"
 
 if [[ ! -f "${persona_file}" ]]; then
   echo "  ✗ PERSONA.md — NOT FOUND (cannot continue check 1)"
