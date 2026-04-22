@@ -319,41 +319,31 @@ When unanimous:
 
 ## Step 7 — Mode switch handoff
 
-If next step is **BUILD**:
+Regardless of the next-step recommendation from Step 6, always run this step after synthesis.
+
+**Draft brief format:** 2-4 sentences covering the core recommendation, the approach, and what is explicitly out of scope (non-goals).
+
+1. **Render the draft brief** as a blockquote so the user can review what would be handed off:
 
 ```
 Based on the discussion, here's the brief:
 
 > <draft brief — 2-4 sentences: core recommendation + approach + non-goals.>
-
-Want me to kick this off?
 ```
 
-If the user says yes: invoke `/velo:new` for net-new features, `/velo:task` for smaller changes. Pass the draft brief as the argument.
+2. **Load `AskUserQuestion` via ToolSearch** — `AskUserQuestion` is a deferred tool and its schema is not loaded by default. Before calling it, run `ToolSearch` with query `select:AskUserQuestion` to load the schema. Do this step explicitly before the `AskUserQuestion` call.
 
-If next step is **SHELVE**:
+3. **Call `AskUserQuestion`** with the following four options:
+   - `Start /velo:new` — for net-new features
+   - `Start /velo:task` — for smaller changes
+   - `Shelve` — drop it
+   - `Keep discussing` — stay in yo mode for follow-up
 
-```
-My recommendation: shelve this.
-
-Reason: <1-2 sentences>
-
-Want to reconsider?
-```
-
-If the user says yes: treat as BUILD and proceed accordingly.
-
-If next step is **INVESTIGATE FURTHER**:
-
-```
-Not ready to commit yet. Suggested follow-up:
-
-> <specific follow-up question>
-
-Want me to dig into that?
-```
-
-If the user says yes: invoke `/velo:yo` with the follow-up question.
+4. **Route on the user's selection:**
+   - `Start /velo:new` → invoke the `velo:new` skill, passing the draft brief as the argument (no retyping from the user)
+   - `Start /velo:task` → invoke the `velo:task` skill, passing the draft brief as the argument
+   - `Shelve` → acknowledge briefly (one sentence) and stop
+   - `Keep discussing` → do nothing; wait for the user's next message
 
 ---
 
