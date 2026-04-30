@@ -84,3 +84,6 @@ Lightweight path for bug fixes, refactors, and small changes. No planning phase 
 
 ### `/velo:yo` — Advisory
 Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.
+
+### `/velo:hunt` — Structured debug loop
+Symptom → hypothesis → root cause → handoff. Tight, iterative debugging mode that ends with a confirmed root cause and a handoff brief to `/velo:task` — or an explicit dead-end with what was ruled out.

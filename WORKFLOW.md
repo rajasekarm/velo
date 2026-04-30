@@ -62,6 +62,31 @@ flowchart TD
     A1 -->|hold| REWORK
 ```
 
+## `/velo:hunt` — Structured debug loop
+
+Symptom → hypothesis → root cause → handoff. No planning phase, no code written. Hunt ends with a confirmed root cause and a prose handoff brief, then routes to `/velo:task` (or `/velo:new` for infra/schema fixes).
+
+> **Operator note**: Hunt reads source files and git history. Bash is constrained to `git log`/`git blame` — verify your `settings.json` allowlist before use on sensitive repos.
+
+```mermaid
+flowchart TD
+    A([Start]) --> CL[Classify input]
+    CL -->|specific defect| CTX[Gather context\n1–3 clarifying questions]
+    CL -->|root cause known| TASK[Redirect → /velo:task]
+    CL -->|conceptual| YO[Redirect → /velo:yo]
+    CTX --> HYP[Propose hypotheses\nH1 / H2 / H3]
+    HYP --> LOOP[Investigation loop\nRead → update Hunt board]
+    LOOP -->|soft cap hit| ASK{Re-rank, keep going,\nor abandon?}
+    ASK -->|re-rank| LOOP
+    ASK -->|abandon| ABANDON[Abandon summary]
+    LOOP -->|evidence gate satisfied| RC[Confirm root cause\nfile:line + mechanism + trigger]
+    RC --> FIX[Fix proposal + handoff brief]
+    FIX --> HAND{Hand off}
+    HAND -->|/velo:task| TASK2[Start /velo:task]
+    HAND -->|/velo:new| NEW[Start /velo:new]
+    HAND -->|fix myself| DONE([Done])
+```
+
 ## Learning loop
 
 After any rework cycle, the Learnings Agent extracts codebase-specific patterns from reviewer findings and proposes additions to `.velo/learnings/`. You approve before anything is written. The team gets better with every task.
