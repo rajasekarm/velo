@@ -85,7 +85,19 @@ You are a Commit Agent. You generate precise commit messages and create git comm
       <derived from diff and commit message — what changed and why>
       ```
     - Create a temp file for the PR body: `BODY_FILE=$(mktemp /tmp/pr_body_XXXXXX.md)` and write the PR body to `$BODY_FILE`
-    - Sanitize the PR title: `TITLE=$(git log -1 --format="%s" | tr -cd 'a-zA-Z0-9 ()\[\]/_.,:-')`
+    - **Determine ticket ID** for PR title — the PR title must follow the format `[AGT-123] - Description`. Set the `TICKET` variable by checking these sources in order, stopping at the first source that yields a match against the regex `[A-Z]+-[0-9]+`:
+      - Branch name: `TICKET=$(git branch --show-current | grep -oE '[A-Z]+-[0-9]+' | head -1)`
+      - Commit messages on the branch: `TICKET=$(git log <base-branch>..HEAD --format=%B | grep -oE '[A-Z]+-[0-9]+' | head -1)`
+      - Recent conversation context — if the user mentioned a ticket ID matching `[A-Z]+-[0-9]+` in their most recent message or the message that triggered this PR flow, use that. Do not search older history.
+      - Prompt the user — if none of the above yields a match, ask explicitly: "No ticket ID found in branch, commits, or context. What is the ticket ID? (e.g. AGT-123)" and validate the response matches `^[A-Z]+-[0-9]+$` before proceeding. Re-ask up to 3 times on invalid or empty input; after the third invalid response, abort PR creation with a clear message and delete `$BODY_FILE`.
+      - If multiple distinct ticket IDs appear within a source (e.g. several tickets across commits), use the first match returned by the lookup. The branch-name source takes precedence over commits by virtue of the lookup order.
+    - Build the PR title — strip any existing ticket prefix from the commit subject so it isn't duplicated. Before building `$TITLE`, assert `$TICKET` is non-empty:
+      ```
+      if [ -z "$TICKET" ]; then echo "Ticket ID is empty, aborting PR creation."; rm -f "$BODY_FILE"; exit 1; fi
+      ```
+      ```
+      TITLE="[$TICKET] - $(git log -1 --format="%s" | sed -E 's/^\[[A-Z]+-[0-9]+\][[:space:]]*-?[[:space:]]*//' | tr -cd 'a-zA-Z0-9 ()\[\]/_.,:-')"
+      ```
     - Run: `gh pr create --base <base-branch> --head <current-branch> --title "$TITLE" --body-file "$BODY_FILE"`
     - Delete `$BODY_FILE` after `gh pr create` completes — whether it succeeds or fails
     - Print the PR URL on success
