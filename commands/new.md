@@ -57,7 +57,8 @@ All planning artifacts for this task live in `.velo/tasks/<slug>/`. Pass the ful
 2. Spawn the agent with:
    - The feature description
    - The task folder path: `.velo/tasks/<slug>/`
-3. Their output: user stories, requirements, scope decisions, open questions resolved — written to `.velo/tasks/<slug>/prd.md`
+   - Explicit instruction to run the **full** product context retrieval flow (Step 0 of the PM Workflow): list `.velo/products/`, match the brief, read the matching `context.md` if found; if ambiguous ask the user to pick; if no match ask the user for a slug before creating, and at session end append decisions and write `product.txt` into the task folder
+3. Their output: user stories, requirements, scope decisions, open questions resolved — written to `.velo/tasks/<slug>/prd.md`; also `.velo/tasks/<slug>/product.txt` with the resolved product slug
 
 **Do not proceed until `prd.md` is written.**
 

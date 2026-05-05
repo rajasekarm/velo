@@ -9,6 +9,8 @@ argument-hint: Ask a technical question, look at code state, or explore a trade-
 
 Fluid advisor mode. Ask Velo anything — about the codebase, a technical decision, a trade-off, a concept. Velo picks the right response pattern for the question: answer directly, bring in TL + DE, or convene the full panel.
 
+Prefix your input with `@pm`, `@tl`, or `@de` to bypass mode selection and target a single advisory agent directly.
+
 Not for building. If you want to build, use `/velo:new` or `/velo:task`.
 
 ---
@@ -28,9 +30,15 @@ If the user asks for code mid-discussion, stop and offer the handoff to `/velo:n
 ## Step 1 — Validate input
 
 1. **Empty or whitespace** → print `"What's the question?"` and stop.
-2. **Too vague** (fewer than 10 words with no named technology, architecture pattern, codebase component, or specific trade-off) → ask a clarifying question before proceeding.
-3. **Implementation request** (imperative verb + concrete artifact: add, fix, build, implement, refactor, create, delete, deploy... targeting a page, component, endpoint, table, service, function, agent, skill) → flag and ask: "This looks like a build request. Want to switch to `/velo:new` or `/velo:task`, or continue discussing?"
-4. **Multi-part** (3+ distinct questions) → pick the most important one, state which you're focusing on, or ask the user to narrow.
+2. **`@<agent>` prefix** — check first before any other validation:
+   - If input starts with `@pm`, `@tl`, or `@de` (case-insensitive) **and the prefix token is followed immediately by a space, tab, or end of input** (not embedded in a longer word — e.g. `@pmail` must not match `@pm`): strip the prefix and any following whitespace to get the question.
+     - If the remaining question is empty → print `"What's the question?"` and stop.
+     - Otherwise → route to **Single-agent mode** (Step 2). Skip steps 3–5 below; single-agent bypass makes vagueness, implementation-request, and multi-part checks irrelevant.
+   - If input starts with `@` followed by any other token (not `pm`, `tl`, or `de`) → print `"Unknown agent. Available: @pm, @tl, @de."` and stop.
+   - Note: multi-agent syntax (`@pm @tl`) is out of scope for v1 — single agent only.
+3. **Too vague** (fewer than 10 words with no named technology, architecture pattern, codebase component, or specific trade-off) → ask a clarifying question before proceeding.
+4. **Implementation request** (imperative verb + concrete artifact: add, fix, build, implement, refactor, create, delete, deploy... targeting a page, component, endpoint, table, service, function, agent, skill) → flag and ask: "This looks like a build request. Want to switch to `/velo:new` or `/velo:task`, or continue discussing?"
+5. **Multi-part** (3+ distinct questions) → pick the most important one, state which you're focusing on, or ask the user to narrow.
 
 ## Step 2 — Select mode
 
@@ -54,6 +62,8 @@ Use when:
 - It's a major architectural choice with user or team impact
 - PM's lens (who benefits, what's the scope risk, cheapest experiment) would change the answer
 
+**Single-agent** — the specific agent the user prefixed with `@`. Used only when Step 1 detected an `@<agent>` prefix. Velo does not select this mode — the user did.
+
 Announce the selected mode before proceeding:
 
 For Direct:
@@ -69,6 +79,11 @@ For Lightweight:
 For Full panel:
 ```
 **Full panel — PM + TL + DE.** [one sentence on why — e.g. "Scope and architecture both in play."]
+```
+
+For Single-agent:
+```
+**Single-agent — @<agent>.** User-targeted advisory; skipping mode selection.
 ```
 
 ---
@@ -123,11 +138,39 @@ Cost table: all three rows.
 
 ---
 
-## Step 4 — Agent prompts (panel modes only)
+### Single-agent mode
+
+Pre-read:
+1. Read `README.md` at root
+2. Run `ls -la` at root
+
+Spawn only the agent the user targeted. Use the prompt template for that agent from Step 4 — do not duplicate it here.
+
+- `@pm` → Product Manager, `model: sonnet`
+- `@tl` → Tech Lead, `model: sonnet`
+- `@de` → Distinguished Engineer, `model: opus`
+
+Skip Step 5 (no panel-count check needed — only one agent).
+
+Skip Step 6 synthesis (no multiple positions to reconcile). Instead, present the agent's response directly:
+
+```
+## <Agent name>'s Take
+
+<agent's full response>
+```
+
+Then proceed to Step 7 to generate the draft brief and routing options. The brief is drawn from the single agent's response rather than panel synthesis.
+
+Cost table: one row only — the targeted agent.
+
+---
+
+## Step 4 — Agent prompts (panel and Single-agent modes)
 
 Read each agent file before spawning. Substitute `<CONTEXT>` with the README + directory listing gathered in Step 3, and `<QUESTION>` with the user's input.
 
-Use the same $ARGUMENTS template for both Lightweight and Full panel modes — just skip PM for Lightweight.
+Use the same $ARGUMENTS template for Lightweight, Full panel, and Single-agent modes — just skip PM for Lightweight, and spawn only the targeted agent for Single-agent.
 
 ### Product Manager (Full panel only)
 
@@ -139,6 +182,9 @@ Pass the following as $ARGUMENTS:
 ## Mode: Advisory (yo panel)
 
 This is an advisory discussion — not a planning or design exercise. Do NOT create any files. Do NOT write PRDs, EDDs, task breakdowns, or code. Answer the question only.
+
+## Product Context Retrieval (read-only)
+Run the product context retrieval from Step 0 of your Workflow — list `.velo/products/`, match the user's brief against slugs and aliases, and read the matching `context.md` if found. If no match is found, skip silently — do not ask and do not create. This is read-only: do NOT append to `context.md` and do NOT create new product files. If context is found, factor it into your response silently — do not open with the "Continuing on..." header in advisory mode (the yo panel has its own output format).
 
 ## Codebase Reading Strategy
 1. Read the project README and top-level directory structure first
@@ -319,9 +365,9 @@ When unanimous:
 
 ## Step 7 — Mode switch handoff
 
-Regardless of the next-step recommendation from Step 6, always run this step after synthesis.
+Always run this step after panel synthesis (Step 6) or after presenting a Single-agent response. It runs for every mode except Direct.
 
-**Draft brief format:** 2-4 sentences covering the core recommendation, the approach, and what is explicitly out of scope (non-goals).
+**Draft brief format:** 2-4 sentences covering the core recommendation, the approach, and what is explicitly out of scope (non-goals). For Single-agent mode, base the brief on the single agent's response. For panel modes, base it on the synthesis from Step 6.
 
 1. **Render the draft brief** as a blockquote so the user can review what would be handed off:
 
@@ -347,7 +393,7 @@ Based on the discussion, here's the brief:
 
 ---
 
-## Step 8 — Cost table (panel modes only)
+## Step 8 — Cost table (panel and Single-agent modes only)
 
 After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent: DE uses opus pricing ($15/1M input, $75/1M output); TL and PM use sonnet pricing ($3/1M input, $15/1M output).
 
@@ -363,7 +409,7 @@ After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Co
 Grand total: <sum> tokens | ~$<total cost> | <tool uses> tool calls | <wall time> elapsed
 ```
 
-Only include rows for agents that responded. Omit cost table entirely for Direct mode.
+Only include rows for agents that responded. For Single-agent mode, the table has one row — the targeted agent. Omit cost table entirely for Direct mode.
 
 ---
 

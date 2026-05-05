@@ -1,0 +1,13 @@
+# Backend / Agent Design Learnings
+
+- [2026-05-03] `agents/product-manager.md` had a mode-escape clause appended as a trailing sentence after the No-match outcome bullet, making it structurally subordinate to the create-file instruction it was meant to suppress → when an agent runs in both Workflow and Advisory modes, every outcome branch must carry an inline mode-conditional (e.g. `Workflow: … / Advisory: …`), not a trailing escape rule tacked on after the bullets
+
+- [2026-05-03] `agents/product-manager.md` Ambiguous branch said "ask the user and wait" with no Advisory Mode guard; in Advisory Mode the PM is a subagent and cannot block on user input → every outcome bullet in an agent that runs in both modes needs an explicit inline Advisory branch with a non-blocking fallback (e.g. silent skip or best-guess proceed); a flat "ask and wait" instruction is only valid inside a `Workflow:` guard
+
+- [2026-05-03] Preamble-suppression rule for the PM agent lived only in `commands/yo.md`'s argument block, not in `agents/product-manager.md` itself; any caller that spawned the PM without yo.md's arguments would inject the preamble → behavioral rules that govern an agent's output must be authored in the agent's own file; placing them only in a calling skill's argument block is fragile and breaks on future callers
+
+- [2026-05-03] `commands/yo.md` PM prompt block summarized the product-context flow but omitted the no-match silent-skip branch; readers of yo.md alone could not determine what happens on no-match → when a skill file summarizes an agent's multi-branch flow, enumerate every branch including silent/no-op ones; omitting "nothing happens" branches causes reader confusion and drift when the agent file is later updated
+
+- [2026-05-03] `commands/yo.md` prefix-detection rule said "starts with `@pm`" with no boundary constraint; an LLM reading that rule matched `@pmail` as `@pm` because string-starts-with in prose is greedy and does not imply word-boundary → whenever a skill file specifies pattern-matching on user input (prefix, suffix, or substring), explicitly state the boundary condition (e.g. "followed immediately by a space, tab, or end of input; must not be embedded in a longer token")
+
+- [2026-05-03] `commands/yo.md` Step 4 heading read "Agent prompts (panel modes only)" after a Single-agent mode was added that also consumed those templates; the heading became a false scope claim that contradicted the new branch → when adding a new mode or branch to a skill file, grep all headings in that file for scope qualifiers ("X only", "X mode only", "panels only", "Workflow only") and verify each still holds; these qualifiers are behavioral claims, not just labels
