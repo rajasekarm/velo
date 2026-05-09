@@ -1,0 +1,37 @@
+{
+  "name": "velo",
+  "version": "1.0.0",
+  "description": "Rajasekar's agentic engineering team workflow for Codex.",
+  "author": {
+    "name": "Rajasekar"
+  },
+  "homepage": "https://github.com/rajasekarm/velo",
+  "repository": "https://github.com/rajasekarm/velo",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "engineering",
+    "workflow",
+    "codex"
+  ],
+  "skills": "./.agents/skills/",
+  "interface": {
+    "displayName": "Velo",
+    "shortDescription": "Agentic engineering team workflow for Codex",
+    "longDescription": "Velo provides mode-specific Codex workflows for advisory discussion, structured debugging, scoped implementation, and full feature delivery.",
+    "developerName": "Rajasekar",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/rajasekarm/velo",
+    "defaultPrompt": [
+      "Ask Velo for engineering advice",
+      "Hunt down a bug with Velo",
+      "Start a Velo task"
+    ],
+    "brandColor": "#111827",
+    "screenshots": []
+  }
+}

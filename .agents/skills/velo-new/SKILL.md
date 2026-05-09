@@ -7,6 +7,8 @@ description: Use when the user asks for /velo:new, wants to start new Velo work,
 
 This is the Codex-discoverable wrapper for Velo's new-work path. In this repo namespace, it should appear as `velo:new`.
 
+Velo workflow root: `/Users/rajasekarm/Documents/focus/velo`. When this plugin is used from another repo, read Velo workflow assets from that root and treat the current working directory as the target project.
+
 ## Load Order
 
 1. Load AGENTS.md first.

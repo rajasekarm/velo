@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-skill_file="${repo_root}/.agents/skills/velo/SKILL.md"
+generic_skill_file="${repo_root}/.agents/skills/velo/SKILL.md"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -18,13 +18,9 @@ assert_file_contains() {
   fi
 }
 
-[[ -f "${skill_file}" ]] || fail ".agents/skills/velo/SKILL.md must exist so Codex can expose Velo as a repo skill"
-
-assert_file_contains "${skill_file}" "name: velo"
-assert_file_contains "${skill_file}" "description: Use when the user asks for Velo"
-assert_file_contains "${skill_file}" "Load AGENTS.md first."
-assert_file_contains "${skill_file}" "Treat commands/*.md as playbooks"
-assert_file_contains "${skill_file}" "Do not implement directly when the Velo workflow requires delegation or review gates."
+if [[ -e "${generic_skill_file}" ]]; then
+  fail ".agents/skills/velo/SKILL.md must not exist; generic Velo should stay hidden from slash commands"
+fi
 
 assert_wrapper_skill() {
   local skill_dir="$1"
@@ -37,6 +33,7 @@ assert_wrapper_skill() {
 
   assert_file_contains "${wrapper_file}" "name: ${skill_name}"
   assert_file_contains "${wrapper_file}" "description: ${trigger}"
+  assert_file_contains "${wrapper_file}" 'Velo workflow root: `/Users/rajasekarm/Documents/focus/velo`.'
   assert_file_contains "${wrapper_file}" "Load AGENTS.md first."
   assert_file_contains "${wrapper_file}" "Read \`${playbook}\`"
   assert_file_contains "${wrapper_file}" "Treat this as a Codex wrapper around the existing Velo playbook."
