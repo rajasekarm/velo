@@ -229,7 +229,7 @@ Spawn the `commit` agent after approval is received.
 
 After each subagent returns, note:
 - `total_tokens`, `tool_uses`, `duration_ms`
-- Approximate cost: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing)
+- Approximate cost using the runtime adapter's pricing for each resolved model class
 
 ## Step 9 — Final report
 

@@ -22,6 +22,8 @@ assert_file_contains() {
 
 assert_file_contains "${agents_file}" "AGENTS.md is the Codex-native entrypoint for this repo."
 assert_file_contains "${agents_file}" "Keep the existing Claude assets intact."
+assert_file_contains "${agents_file}" "Treat \`TEAM.md\` model classes as provider-neutral routing intent;"
+assert_file_contains "${agents_file}" "Treat \`model:\` frontmatter in \`agents/*.md\` as a Claude compatibility hint,"
 assert_file_contains "${agents_file}" 'Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.'
 assert_file_contains "${agents_file}" 'Treat `.agents/skills/velo-{new,task,yo,hunt}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, and `velo:hunt`.'
 assert_file_contains "${agents_file}" 'Treat `.codex-plugin/plugin.json` as the local Codex plugin manifest.'
