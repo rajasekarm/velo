@@ -31,7 +31,7 @@ Plan:
 - FE Engineer: <UI to build against engineering design doc> (parallel with backend)
 - ...
 
-Execution: PM → Tech Lead (approval gate) → Build (backend stream + FE stream in parallel) → Tests → Review
+Execution: PM → Tech Lead (approval gate) → Build (backend stream + FE stream in parallel) → Spec Check → Review
 ```
 
 ## Step 1b — Create task folder
@@ -153,7 +153,32 @@ Each builder receives (all embedded directly in the prompt — do not ask them t
 - The full contents of `engineering-design-doc.md` inline
 - Context on what completed tasks have delivered (if relevant)
 
-## Step 5 — Phase 4: Review
+## Step 5 — Phase 3: Spec Check
+
+After all builders finish, before spawning any reviewers, run the spec checker.
+
+1. Read `agents/spec-checker.md`
+2. Spawn the spec-checker with the task folder path (`.velo/tasks/<slug>/`) as its argument
+
+The spec-checker reads `prd.md`, the engineering design doc, and the full diff, then classifies every acceptance criterion as Met / Partially Met / Unmet / Cannot Determine / PRD Ambiguous.
+
+**If verdict is FAIL**: collect the `## Rework guidance` section from the spec-checker output. Send each Unmet or Partially Met criterion back to the responsible builder(s) with the criterion text and file evidence inline. Wait for builders to finish rework, then re-run the spec-checker.
+
+The rework loop is capped at 2 automatic cycles:
+- **Cycle 1**: Standard rework — fix all Unmet and Partially Met criteria.
+- **Cycle 2**: Rework with explicit note to builders that this is the final automatic cycle. Same scope as cycle 1.
+- **Cycle 3 (escalation)**: Pause and surface the remaining gap to the user. Present the failing criteria, what the builders have already attempted, and offer three options:
+  1. **Extend** — run another rework cycle (and another, until the user calls it).
+  2. **Accept-with-FYI** — proceed to Review phase; remaining unmet criteria become FYI items the human reviewer must verify at merge time.
+  3. **Abandon** — stop the workflow; no review, no commit.
+
+**If verdict is BLOCKED** (PRD ambiguity): spec-checker has flagged that one or more criteria are unclear in the PRD itself, not the diff. Do not send to builders. Read the spec-checker's `## PRD ambiguity` section, then spawn the Product Manager (`agents/product-manager.md`) with the ambiguous criteria inline as the task: "Resolve the following PRD ambiguities and update `prd.md`." After PM updates the PRD, re-run the spec-checker. Repeat until verdict is PASS or FAIL (BLOCKED loops back to PM, never to builders).
+
+**If verdict is PASS**: proceed to Review phase.
+
+Do not spawn any reviewer until spec-checker returns PASS.
+
+## Step 6 — Phase 4: Review
 
 Before spawning reviewers, read both planning artifacts so you can pass contents inline:
 - Read `.velo/tasks/<slug>/prd.md`
@@ -167,7 +192,7 @@ After all builders are done, spawn ALL relevant reviewers **in parallel**. Each 
 
 **Rework loop**: After all reviewers return, check verdicts. Track cycle count starting at 1. Maintain a running list of unresolved findings across cycles.
 
-- If **all pass** → proceed to Learning extraction.
+- If **all pass** → proceed to Approval Gate.
 - If **any fail** and cycle < 3:
   - Collect findings from failing reviewers. Classify by severity: Critical / Significant / Minor.
   - **Cycle 1**: builders fix all Critical + Significant issues.
@@ -183,8 +208,6 @@ After all builders are done, spawn ALL relevant reviewers **in parallel**. Each 
     - "2 — Accept as-is and proceed to commit"
     - "3 — Abandon — do not commit"
 
-**Learning extraction** (only if rework cycles > 1): Read `agents/learnings-agent.md` and spawn the learnings agent with all reviewer findings, builder fix summaries, and existing `.velo/learnings/<domain>.md` contents inline (read each relevant file first; pass empty string if file doesn't exist yet). Present proposed additions to the user via AskUserQuestion for approval. On approval, append entries to `.velo/learnings/<domain>.md` in the repo (create file if needed). On reject, discard.
-
 ### Approval Gate
 
 Use **AskUserQuestion** to present the review results before committing:
@@ -198,17 +221,17 @@ If the user has feedback: treat it as rework input — spawn the relevant builde
 
 **Do not commit until explicitly approved.**
 
-## Step 6 — Phase 5: Commit (only if user asked to ship end-to-end)
+## Step 7 — Phase 5: Commit (only if user asked to ship end-to-end)
 
 Spawn the `commit` agent after approval is received.
 
-## Step 7 — Track token usage
+## Step 8 — Track token usage
 
 After each subagent returns, note:
 - `total_tokens`, `tool_uses`, `duration_ms`
 - Approximate cost: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing)
 
-## Step 8 — Final report
+## Step 9 — Final report
 
 ```
 Velo — Summary
@@ -234,6 +257,11 @@ Velo — Summary
 | Infra Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 | FE Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 | Automation Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
+
+## Spec Check
+| Cycle | Verdict | Criteria Met | Tokens | Time |
+|---|---|---|---|---|
+| 1 | pass/fail | <N>/<total> | <tokens> | <duration> |
 
 ## Review findings
 | Cycle | Reviewer | Verdict | Tokens | Time |

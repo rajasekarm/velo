@@ -19,7 +19,7 @@
 ### Engineering Lead
 | Agent | File | Skills | Model |
 |---|---|---|---|
-| **tech-lead** | `agents/tech-lead.md` | engineering design doc, API design | opus |
+| **tech-lead** | `agents/tech-lead.md` | engineering design doc, API design, Velo system architecture (agents, commands, skills) | opus |
 
 ### Specialists
 | Agent | File | Skills | Model |
@@ -36,6 +36,11 @@
 | **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci/cd | sonnet |
 | **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest | sonnet |
 
+### Verifiers
+| Agent | File | Skills | Model |
+|---|---|---|---|
+| **spec-checker** | `agents/spec-checker.md` | spec-vs-PRD verification | sonnet |
+
 ### Reviewers
 | Agent | File | Skills | Model |
 |---|---|---|---|
@@ -51,7 +56,6 @@
 | Agent | File | Skills | Model |
 |---|---|---|---|
 | **commit** | `agents/commit.md` | git | sonnet |
-| **learnings-agent** | `agents/learnings-agent.md` | extracts codebase-specific learnings from rework cycles, proposes additions to `.velo/learnings/` in the respective repo | sonnet |
 
 ---
 

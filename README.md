@@ -11,7 +11,7 @@ Velo is an agentic engineering team — a full squad of specialised Claude agent
 - **Approval-gated**: PRD before technical design. Engineering design doc before code. Review results before commit. Nothing ships without your sign-off.
 - **Explicit task ordering**: Tech Lead produces a `task-breakdown.md` alongside the engineering design doc — who does what, in what order, what can run in parallel. Build phase executes it directly, no guessing.
 - **Bounded rework loop**: Reviewers that fail send builders back with findings inline. Cycle 1 fixes Critical + Significant, cycle 2 fixes remaining Critical only. Capped at 3 cycles — if issues remain, you decide: extend, accept as-is, or abandon.
-- **Learning loop**: Every rework cycle is a signal. The team captures what builders missed and builds institutional knowledge in `.velo/learnings/`.
+- **Spec-check before review**: Every build is verified against the PRD before reviewers run. Acceptance criteria are mapped to diff evidence; unmet criteria trigger rework. Capped at 2 automatic cycles — on the 3rd, you decide: extend, accept-with-FYI, or abandon. Ambiguous PRDs route back to the PM, not the builder.
 - **Dual independent review**: Engineering design docs are reviewed by both the Distinguished Engineer (Claude opus) and an External Reviewer (gpt-5.4 via Codex CLI) in parallel — two different models, two independent perspectives before build starts.
 - **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
 - **Right model for the job**: Tech lead and architecture reviewers run on opus. PM, builders, and reviewers run on sonnet.
@@ -70,7 +70,6 @@ Velo is an agentic engineering team — a full squad of specialised Claude agent
 | Agent | Model | Responsibility |
 |---|---|---|
 | **Commit** | sonnet | Analyse diff, generate commit message, create git commit |
-| **Learnings Agent** | sonnet | Extracts codebase-specific patterns from rework cycles, proposes additions to `.velo/learnings/` |
 
 ## How it works
 
