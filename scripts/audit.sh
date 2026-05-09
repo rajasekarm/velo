@@ -15,6 +15,24 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Allow-list: agents that legitimately have no skill file references.
+# Utility/verifier agents whose work doesn't depend on a skill manual.
+# Do NOT add `learnings-agent` here — orphan files should still warn.
+AGENTS_WITHOUT_SKILLS=(
+  "commit"
+  "distinguished-engineer"
+  "gpt-reviewer"
+  "spec-checker"
+  "tech-lead"
+)
+
+# Allow-list: commands that legitimately have no agent file references.
+# Generic routers that spawn agents dynamically based on the task.
+COMMANDS_WITHOUT_AGENTS=(
+  "hunt"
+  "task"
+)
+
 errors=0
 warnings=0
 
@@ -79,16 +97,28 @@ else
 
   while IFS= read -r agent_file; do
     agent_rel="agents/$(basename "${agent_file}")"
+    agent_name="$(basename "${agent_file}" .md)"
 
     # Extract backtick-wrapped paths matching skills/... that point to a file
     # (last component must contain a dot — filters out bare directory references).
     # Handles `skills/foo.md` and nested forms like `skills/dir/file.md`.
+    # Filter out glob patterns (*, ?, [) — these are descriptive, not literal refs.
     # || true: grep exits 1 on no match; we handle the empty-string case below.
-    skill_refs="$(grep -oE '`skills/[^` ]+\.[^` /]+`' "${agent_file}" | tr -d '`' || true)"
+    skill_refs="$(grep -oE '`skills/[^` ]+\.[^` /]+`' "${agent_file}" | tr -d '`' | grep -v '[][*?]' || true)"
 
     if [[ -z "${skill_refs}" ]]; then
-      echo "  ⚠ WARNING — ${agent_rel}: no skill file references found"
-      warnings=$((warnings + 1))
+      # Allow-list check: skip warning for utility/verifier agents
+      skip_warning=0
+      for allowed in "${AGENTS_WITHOUT_SKILLS[@]}"; do
+        if [[ "${agent_name}" == "${allowed}" ]]; then
+          skip_warning=1
+          break
+        fi
+      done
+      if [[ ${skip_warning} -eq 0 ]]; then
+        echo "  ⚠ WARNING — ${agent_rel}: no skill file references found"
+        warnings=$((warnings + 1))
+      fi
       continue
     fi
 
@@ -133,13 +163,25 @@ else
 
   while IFS= read -r cmd_file; do
     cmd_rel="commands/$(basename "${cmd_file}")"
+    cmd_name="$(basename "${cmd_file}" .md)"
 
+    # Filter out glob patterns (*, ?, [) — these are descriptive, not literal refs.
     # || true: grep exits 1 on no match; we handle the empty-string case below.
-    agent_refs="$(grep -oE '`agents/[^`]+\.md`' "${cmd_file}" | tr -d '`' | sort -u || true)"
+    agent_refs="$(grep -oE '`agents/[^`]+\.md`' "${cmd_file}" | tr -d '`' | grep -v '[][*?]' | sort -u || true)"
 
     if [[ -z "${agent_refs}" ]]; then
-      echo "  ⚠ WARNING — ${cmd_rel}: no agent file references found"
-      warnings=$((warnings + 1))
+      # Allow-list check: skip warning for generic-router commands
+      skip_warning=0
+      for allowed in "${COMMANDS_WITHOUT_AGENTS[@]}"; do
+        if [[ "${cmd_name}" == "${allowed}" ]]; then
+          skip_warning=1
+          break
+        fi
+      done
+      if [[ ${skip_warning} -eq 0 ]]; then
+        echo "  ⚠ WARNING — ${cmd_rel}: no agent file references found"
+        warnings=$((warnings + 1))
+      fi
       continue
     fi
 
@@ -184,11 +226,26 @@ else
     skill_rel="${skill_file/${REPO_ROOT}\//}"
 
     # Check whether this path appears in the referenced skills list
-    if ! grep -qxF "${skill_rel}" "${REFERENCED_SKILLS_TMP}" 2>/dev/null; then
-      echo "  ⚠ ${skill_rel} — not referenced by any agent"
-      warnings=$((warnings + 1))
-      found_any_dead=1
+    if grep -qxF "${skill_rel}" "${REFERENCED_SKILLS_TMP}" 2>/dev/null; then
+      continue
     fi
+
+    # Index-style follow-through:
+    # If this file is under skills/<name>-rules/, check whether skills/<name>.md
+    # exists as an index and references the rules directory. If so, the file is
+    # loaded on-demand via the index — not dead.
+    if [[ "${skill_rel}" =~ ^skills/([^/]+)-rules/ ]]; then
+      index_name="${BASH_REMATCH[1]}"
+      index_file="${REPO_ROOT}/skills/${index_name}.md"
+      rules_dir_ref="skills/${index_name}-rules/"
+      if [[ -f "${index_file}" ]] && grep -qF "${rules_dir_ref}" "${index_file}"; then
+        continue
+      fi
+    fi
+
+    echo "  ⚠ ${skill_rel} — not referenced by any agent"
+    warnings=$((warnings + 1))
+    found_any_dead=1
   done < <(find "${skills_dir}" -name '*.md' \
     ! -path '*/rules/*.md' \
     ! -name 'update-skill.md' \
