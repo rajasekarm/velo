@@ -45,10 +45,17 @@ If the user asks Velo directly to write code, review code, or analyze files mid-
    - If input starts with `@` followed by any other token (not `pm`, `tl`, or `de`) → print `"Unknown agent. Available: @pm, @tl, @de."` and stop.
    - Note: multi-agent syntax (`@pm @tl`) is out of scope for v1 — single agent only.
 3. **Too vague** (fewer than 10 words with no named technology, architecture pattern, codebase component, or specific trade-off) → ask a clarifying question before proceeding.
-4. **Action request** (imperative verb targeting a concrete artifact) → yo does not perform actions; route to the right skill. Detect by verb class:
-   - **Build verbs** (add, fix, build, implement, refactor, create, delete, deploy) targeting a page, component, endpoint, table, service, function, agent, skill → ask: "This looks like a build request. Want to switch to `/velo:new` (net-new) or `/velo:task` (smaller change), or continue discussing?"
-   - **Review verbs** (review, audit, critique, check, inspect, analyze) targeting code, a PR, a branch, a file, a service, security, performance → ask: "This looks like a review request. Want to switch to `/review` (current changes), `/security-review` (security focus), or `/ultrareview` (full-branch multi-agent review), or continue discussing?"
-   - Do not perform the action yourself in either case.
+4. **Action request** (imperative verb targeting a concrete artifact) — Detect by verb class, then call `AskUserQuestion` to present the route. Do NOT preface with meta-commentary about why yo doesn't do work; render the question as a clickable popup, not as prose. Do not perform the action yourself in either case.
+   - **Build verbs** (add, fix, build, implement, refactor, create, delete, deploy) targeting a page, component, endpoint, table, service, function, agent, skill → call `AskUserQuestion` with question "This looks like a build request — which route?" and 3 options:
+     - `Start /velo:new` — net-new feature with full PRD/EDD pipeline
+     - `Start /velo:task` — smaller change, lighter workflow
+     - `Keep discussing` — stay in yo mode for follow-up
+   - **Review verbs** (review, audit, critique, check, inspect, analyze) targeting code, a PR, a branch, a file, a service, security, performance → call `AskUserQuestion` with question "This looks like a review request — which route?" and 4 options:
+     - `Start /review` — review current changes
+     - `Start /security-review` — security focus
+     - `Start /ultrareview` — full-branch multi-agent review
+     - `Keep discussing` — stay in yo mode for follow-up
+   - Note: `AskUserQuestion` is a deferred tool — load it via `ToolSearch` query `select:AskUserQuestion` before the first call in a session. After the user picks, route directly to the chosen skill (e.g. invoke `velo:task` skill, passing context as the argument). If they pick "Keep discussing", do nothing further on the routing — wait for the user's next message.
 5. **Multi-part** (3+ distinct questions) → pick the most important one, state which you're focusing on, or ask the user to narrow.
 
 ## Step 2 — Select mode
