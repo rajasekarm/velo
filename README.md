@@ -14,7 +14,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 - **Spec-check before review**: Every build is verified against the PRD before reviewers run. Acceptance criteria are mapped to diff evidence; unmet criteria trigger rework. Capped at 2 automatic cycles — on the 3rd, you decide: extend, accept-with-FYI, or abandon. Ambiguous PRDs route back to the PM, not the builder.
 - **Dual independent review**: Engineering design docs are reviewed by both the Distinguished Engineer (`deep-reasoning`) and an External Reviewer (`external-review`) in parallel — two independent perspectives before build starts.
 - **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
-- **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. PM, builders, and reviewers use `balanced`. Runtime adapters map these classes to provider-specific models.
+- **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. PM, builders, and reviewers use `balanced`. `ADAPTER.md` maps these classes to the active runtime.
 
 ## The team
 
@@ -24,7 +24,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 |---|---|---|
 | **Velo** (Engineering Manager) | — | Orchestrates the team, owns delivery, never implements |
 | **Distinguished Engineer** | deep-reasoning | Peer to EM — sets technical bar, reviews architecture |
-| **External Distinguished Engineer** | external-review | Independent review of engineering design doc via Codex CLI, runs parallel to Distinguished Engineer |
+| **External Distinguished Engineer** | external-review | Independent review of engineering design doc through `run-external-review`, runs parallel to Distinguished Engineer |
 
 ### Planners
 

@@ -4,6 +4,7 @@ argument-hint: Describe the symptom, error message, or failing condition
 ---
 
 @PERSONA.md
+@ADAPTER.md
 
 # Velo — Hunt
 
@@ -17,7 +18,7 @@ Not for building. Not for advice. Not for known fixes — those go straight to `
 
 **Never write code in hunt mode.** Not snippets, not pseudocode, not diffs, not patches, not inline fixes. Hunt produces prose only: hypotheses, evidence, root cause, fix proposal.
 
-**If the user asks for code mid-hunt, decline.** Offer the Step 6 handoff to `/velo:task` via `AskUserQuestion` instead (F5).
+**If the user asks for code mid-hunt, decline.** Offer the Step 6 handoff to `/velo:task` via `ask-options` instead (F5).
 
 This rule applies to every step, every failure mode, and every branch of the skill.
 
@@ -53,8 +54,7 @@ Print the mode banner:
 1. **Specific observed defect, no known root cause** — signals: error message, log entry, stack trace, observed wrong output, specific failing condition — continue to Step 2.
 
 2. **Root cause already stated by user** — signals: user names a specific file or function as the cause, or proposes a concrete fix:
-   - If `AskUserQuestion` schema is not loaded yet in this session, run `ToolSearch` with query `select:AskUserQuestion` to load it. Subsequent calls in this skill do not need to reload.
-   - Call `AskUserQuestion`:
+   - Use `ask-options`:
      - Header: `"Looks like a build request"`
      - Question: `"Root cause sounds known. Switch to /velo:task to fix it?"`
      - Options:
@@ -63,8 +63,7 @@ Print the mode banner:
        - `Cancel`
 
 3. **Conceptual / no observed defect** — signals: "how should…", "is X better than Y", "what's the right way to…":
-   - If `AskUserQuestion` schema is not loaded yet in this session, run `ToolSearch` with query `select:AskUserQuestion` to load it.
-   - Call `AskUserQuestion`:
+   - Use `ask-options`:
      - Header: `"Sounds advisory"`
      - Question: `"This looks like a discussion, not a debug. Switch to /velo:yo?"`
      - Options:
@@ -107,12 +106,12 @@ Render the Hunt board (template below). Every counter must be visible.
 For the active hypothesis, one step at a time:
 
 1. Name the next read — file, grep pattern, or git log — and why it tests the hypothesis.
-2. Perform the read using `Read`, `Grep`, or `Glob`. Use `Bash` only for `git log` or `git blame` (D9 — read-only history attribution). No other Bash. All reads must comply with the path scope rule (Tool allowlist note).
+2. Perform the read through `read-files`. Use `run-shell` only for `git log` or `git blame` (D9 — read-only history attribution). No other shell commands. All reads must comply with the path scope rule (Tool allowlist note).
 3. Re-render the Hunt board: update confidence on the active hypothesis, append new evidence to the ledger, update counters, state next action.
 
 Rules:
 - Every step must read a real artefact. No speculation steps — if there's nothing to read, name why and propose what would unblock the read.
-- **Soft cap (D4)**: at 5 steps on the active hypothesis with no confidence increase, OR 3 consecutive no-progress steps globally (whichever fires first — global stall pre-empts the per-hypothesis cap when both fire on the same step), call `AskUserQuestion`:
+- **Soft cap (D4)**: at 5 steps on the active hypothesis with no confidence increase, OR 3 consecutive no-progress steps globally (whichever fires first — global stall pre-empts the per-hypothesis cap when both fire on the same step), use `ask-options`:
   - Header: `"Investigation stalled"`
   - Question: `"<N> steps with no progress. Re-rank, keep going, or abandon?"`
   - Options:
@@ -122,7 +121,7 @@ Rules:
 - **Session-level hard cap**: at 15 total investigation steps (across all hypotheses, across all re-ranks), fire F1 unconditionally — do **not** offer "Keep going". The total-step counter is visible on the Hunt board (`Total steps: N/15`) and is **never reset**, even after an F1 reset-and-re-rank.
 - High confidence + concrete evidence satisfying the evidence gate → proceed to Step 5.
 
-**Stall pre-emption rule**: if both soft caps fire on the same step (5 steps on active AND 3-step global streak), use the global stall `AskUserQuestion` prompt — do not fire two separate prompts.
+**Stall pre-emption rule**: if both soft caps fire on the same step (5 steps on active AND 3-step global streak), use the global stall interaction prompt — do not fire two separate prompts.
 
 ---
 
@@ -168,7 +167,7 @@ If F12 was triggered at any point during this hunt, append to the handoff brief:
 > Note: F12 triggered during investigation of <path>. The fix builder should treat this file as sensitive — least-privilege reads only.
 ```
 
-Then call `AskUserQuestion`:
+Then use `ask-options`:
 - Header: `"Root cause confirmed — ready to hand off"`
 - Question: `"How do you want to proceed?"`
 - Options:
@@ -185,7 +184,7 @@ Then call `AskUserQuestion`:
 ## Step 7 — Abandon / summary
 
 Triggered by:
-- User selects "Abandon" at any `AskUserQuestion` prompt
+- User selects "Abandon" at any interaction prompt
 - User types "abandon", "give up", or "stop" mid-hunt
 - F1 (all hypotheses ruled out or stalled with no confirmation)
 - F2 dead-end (cannot reproduce and no logs available)
@@ -276,15 +275,15 @@ Next step if resuming: <one line>
 
 | ID | Trigger | Handling |
 |---|---|---|
-| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Call `AskUserQuestion`: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
+| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Use `ask-options`: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
 | F2 | User cannot reproduce the bug | Ask for logs or a minimal repro. If neither is available → route through Step 7 (abandon summary). |
-| F3 | Bug spans multiple services | Call `AskUserQuestion`: `Switch to /velo:yo` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
-| F4 | Fix requires schema migration / infra change | Step 6 substitutes `Start /velo:new` for `Start /velo:task` in the `AskUserQuestion` options. |
-| F5 | User asks Velo to write code mid-hunt | Decline per Hard Rule. Call `AskUserQuestion`: `Start /velo:task`, `Keep investigating`, `Abandon`. |
-| F6 | Investigation reveals intentional behaviour (feature gap) | Call `AskUserQuestion`: `Switch to /velo:yo`, `Switch to /velo:new`, `Abandon`. Do not continue hunt after flagging. |
-| F7 | Known upstream dependency issue | Call `AskUserQuestion`: `Continue hunting (workaround)`, `Switch to /velo:yo`, `Abandon`. |
-| F8 | Tool error (`Read`/`Grep`/`Glob`/`Bash` returns failure) | Re-render Hunt board. Log the failed read in the evidence ledger as `error: <message>`. Propose an alternative read. Two consecutive tool errors → trigger F1. |
-| F9 | Bash blocked (permission denied for `git log` / `git blame`) | Skip the history read. Continue with `Read`/`Grep`/`Glob`. Note in evidence ledger: `skipped: git history unavailable`. |
+| F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:yo` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
+| F4 | Fix requires schema migration / infra change | Step 6 substitutes `Start /velo:new` for `Start /velo:task` in the interaction prompt options. |
+| F5 | User asks Velo to write code mid-hunt | Decline per Hard Rule. Use `ask-options`: `Start /velo:task`, `Keep investigating`, `Abandon`. |
+| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:yo`, `Switch to /velo:new`, `Abandon`. Do not continue hunt after flagging. |
+| F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:yo`, `Abandon`. |
+| F8 | File or shell access error returns failure | Re-render Hunt board. Log the failed read in the evidence ledger as `error: <message>`. Propose an alternative read. Two consecutive tool errors → trigger F1. |
+| F9 | Shell history read blocked (permission denied for `git log` / `git blame`) | Skip the history read. Continue with file reads and search. Note in evidence ledger: `skipped: git history unavailable`. |
 | F10 | Stack trace contains only library frames (no first-party code) | Ask user for the calling code path or the entry point that triggered the trace. Do not hypothesise on library internals. |
 | F11 | Two reads return contradictory evidence on the same hypothesis | Add both to the evidence ledger as `+`/`−`. Downgrade confidence one level. Name a tie-breaker read as the next action. |
 | F12 | Investigation surfaces a secret or credential (see Secret-handling rule D12) | Stop reading that artefact immediately. Do not print, quote, paraphrase, abbreviate, summarise, or reference the value anywhere. Note in the ledger: `redacted: <artefact path, no content>`. If the secret appeared in any prior output in this session, redact it retroactively in the next Hunt board re-render with `[REDACTED]` and note the prior leak as `redaction-error: <artefact path>`. Proceed to Step 6 handoff with the F12 sensitivity note appended. |
@@ -294,11 +293,11 @@ Next step if resuming: <one line>
 
 ## Tool allowlist note (D9)
 
-This skill uses `Read`, `Grep`, `Glob` only. `Bash` is allowed only for `git log` and `git blame` (history attribution — both read-only). No other Bash commands.
+This skill uses `read-files` for file reads and search. `run-shell` is allowed only for `git log` and `git blame` (history attribution — both read-only). No other shell commands.
 
-This skill relies on `settings.json` enforcement to constrain Bash. Operators MUST verify their `settings.json` Bash allowlist restricts Bash to `git log` and `git blame` only before running this skill on sensitive repositories. The skill's prose constraint is not a permission boundary.
+This skill relies on runtime enforcement to constrain shell access. Operators MUST verify their runtime shell allowlist restricts shell commands to `git log` and `git blame` only before running this skill on sensitive repositories. The skill's prose constraint is not a permission boundary.
 
-**Path scope**: All reads (`Read`, `Grep`, `Glob`, `Bash` git commands) MUST be scoped to the current repository root.
+**Path scope**: All file reads, searches, and git history commands MUST be scoped to the current repository root.
 
 Explicitly forbidden paths: `~/.ssh/`, `~/.aws/`, `~/.gnupg/`, `~/.config/`, `/etc/`, `/var/`, `/root/`, and any absolute path outside the repo root.
 

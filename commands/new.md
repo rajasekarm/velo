@@ -4,6 +4,7 @@ argument-hint: Describe the feature or product idea
 ---
 
 @PERSONA.md
+@ADAPTER.md
 @TEAM.md
 
 # Velo — New Work
@@ -64,7 +65,7 @@ All planning artifacts for this task live in `.velo/tasks/<slug>/`. Pass the ful
 
 ### PRD Approval Gate
 
-Use **AskUserQuestion** to present the PRD for approval:
+Use `ask-options` to present the PRD for approval:
 - **Header**: "PRD Review"
 - **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Ready to proceed to engineering design doc?"
 - **Options**:
@@ -108,13 +109,13 @@ After Tech Lead completes:
 2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — you will pass the contents inline
 3. Spawn **both reviewers in parallel**:
    - Read `agents/distinguished-engineer.md` → spawn Distinguished Engineer with both file contents embedded directly in the prompt (do not ask it to read files — provide contents inline)
-   - Read `agents/gpt-reviewer.md` → spawn External Distinguished Engineer with the task folder path only — it reads files itself before calling Codex CLI
+   - Read `agents/gpt-reviewer.md` → spawn External Distinguished Engineer with the task folder path only — it reads files itself before using `run-external-review`
 
 Wait for both to return. Track cycle count starting at 1.
 
 - If **both** return **APPROVE** → proceed to the approval gate.
 - If **either** returns **REVISE** and cycle < 3 → collect all critique from both reviewers. Spawn Tech Lead with combined feedback and what was already attempted in previous cycles. Wait for revised `engineering-design-doc.md` and `task-breakdown.md`. Re-validate both files exist. Increment cycle count and re-run both reviewers in parallel.
-- If **either** returns **REVISE** and cycle == 3 → stop. Use **AskUserQuestion** to surface:
+- If **either** returns **REVISE** and cycle == 3 → stop. Use `ask-options` to surface:
   - **Header**: "EDD review cap reached"
   - **Question**: "3 EDD review cycles completed. The following issues remain unresolved: [list each unresolved finding with reviewer and severity]. How do you want to proceed?"
   - **Options**:
@@ -126,7 +127,7 @@ Wait for both to return. Track cycle count starting at 1.
 
 Read `.velo/tasks/<slug>/task-breakdown.md` before presenting.
 
-Use **AskUserQuestion** to present the engineering design doc and task breakdown for approval:
+Use `ask-options` to present the engineering design doc and task breakdown for approval:
 - **Header**: "Engineering Design Doc Review"
 - **Question**: "The engineering design doc passed review. Summary: [list key endpoints and top 3 decisions]. Task breakdown: [list tasks in order with owners]. Ready to proceed to build?"
 - **Options**:
@@ -200,7 +201,7 @@ After all builders are done, spawn ALL relevant reviewers **in parallel**. Each 
   - Pass builders: the unresolved findings inline + what was attempted in previous cycles + full `prd.md` and `engineering-design-doc.md` inline.
   - Re-spawn only the failing reviewers with instruction: "Re-check only the previously flagged issues — do not perform a full re-review."
   - Increment cycle count and repeat.
-- If **any fail** and cycle == 3 → stop. Use **AskUserQuestion** to surface:
+- If **any fail** and cycle == 3 → stop. Use `ask-options` to surface:
   - **Header**: "Rework cap reached"
   - **Question**: "3 rework cycles completed. The following issues remain unresolved: [list each unresolved finding with reviewer and severity]. How do you want to proceed?"
   - **Options**:
@@ -210,7 +211,7 @@ After all builders are done, spawn ALL relevant reviewers **in parallel**. Each 
 
 ### Approval Gate
 
-Use **AskUserQuestion** to present the review results before committing:
+Use `ask-options` to present the review results before committing:
 - **Header**: "Ready to ship"
 - **Question**: "All reviewers passed. [Summary of what was built and review cycles taken.] Approve commit?"
 - **Options**:
@@ -229,7 +230,7 @@ Spawn the `commit` agent after approval is received.
 
 After each subagent returns, note:
 - `total_tokens`, `tool_uses`, `duration_ms`
-- Approximate cost using the runtime adapter's pricing for each resolved model class
+- Approximate cost through `report-cost`
 
 ## Step 9 — Final report
 

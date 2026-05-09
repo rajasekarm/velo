@@ -6,13 +6,14 @@ AGENTS.md is the Codex-native entrypoint for this repo.
 
 These instructions apply to the entire repository.
 
-Velo was originally designed around Claude Code. Keep the existing Claude assets intact. Add Codex behavior as an explicit compatibility layer instead of rewriting the Claude workflow in place.
+Velo was originally designed around Claude Code. Keep Claude compatibility explicit through `ADAPTER.md` instead of hard-coding runtime-specific workflow terms in shared playbooks.
 
 ## Codex Mapping
 
-- Treat `PERSONA.md` as the Claude Engineering Manager persona, not as Codex's primary instruction file.
+- Treat `PERSONA.md` as Velo Engineering Manager behavior shared by the playbooks, not as Codex's primary instruction file.
+- Treat `ADAPTER.md` as the runtime compatibility contract for concept names such as `resolve-model`, `ask-options`, `spawn-agent`, `track-tasks`, `load-tool`, `handoff-mode`, and `report-cost`.
 - Treat `TEAM.md` as the roster of reusable role prompts.
-- Treat `TEAM.md` model classes as provider-neutral routing intent; resolve them through the active runtime adapter instead of reading them as provider model names.
+- Treat `TEAM.md` model classes as provider-neutral routing intent; resolve them through `ADAPTER.md` instead of reading them as provider model names.
 - Treat `agents/*.md` as role prompt templates that Codex can read when a task needs that role.
 - Treat `model:` frontmatter in `agents/*.md` as a Claude compatibility hint, not as Codex routing authority.
 - Treat `skills/*.md` as local reference material. They are not Codex skills unless converted into `SKILL.md` directories.

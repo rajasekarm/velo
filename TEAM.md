@@ -63,20 +63,11 @@
 
 ## Model Classes
 
-Model classes describe the reasoning budget Velo needs from a role. Runtime adapters translate these classes to provider-specific model names.
-
-| Model Class | Intent | Claude Adapter | Codex Adapter |
-|---|---|---|---|
-| balanced | Routine planning, build, verification, and review work | sonnet | default inherited model or medium reasoning |
-| deep-reasoning | Architecture, high-risk design review, and second-order trade-offs | opus | high or xhigh reasoning |
-| external-review | Independent outside-model review for design documents | Codex CLI reviewer from `agents/gpt-reviewer.md` | latest suitable GPT model via Codex CLI |
+Model classes are defined in `ADAPTER.md`. The roster above uses them as provider-neutral routing intent.
 
 ## How to spawn an agent
 
 1. Read the agent file to get their prompt
-2. Resolve the row's model class for the current runtime using the adapter table above.
-3. Use the Agent tool with:
-   - `description`: Short label like "Tech Lead" or "Principal FE Engineer"
-   - `prompt`: Agent file content with `$ARGUMENTS` replaced by their specific task
-   - `model`: Resolved provider-specific model when the runtime supports it; otherwise omit and rely on the current Codex model/reasoning setting
-   - `mode`: "auto"
+2. Replace `$ARGUMENTS` with the task-specific prompt
+3. Resolve the row's model class through `ADAPTER.md`
+4. Spawn through `spawn-agent`

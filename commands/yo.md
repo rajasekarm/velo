@@ -4,6 +4,7 @@ argument-hint: Ask a technical question, look at code state, or explore a trade-
 ---
 
 @PERSONA.md
+@ADAPTER.md
 
 # Velo — Yo
 
@@ -45,17 +46,17 @@ If the user asks Velo directly to write code, review code, or analyze files mid-
    - If input starts with `@` followed by any other token (not `pm`, `tl`, or `de`) → print `"Unknown agent. Available: @pm, @tl, @de."` and stop.
    - Note: multi-agent syntax (`@pm @tl`) is out of scope for v1 — single agent only.
 3. **Too vague** (fewer than 10 words with no named technology, architecture pattern, codebase component, or specific trade-off) → ask a clarifying question before proceeding.
-4. **Action request** (imperative verb targeting a concrete artifact) — Detect by verb class, then call `AskUserQuestion` to present the route. Do NOT preface with meta-commentary about why yo doesn't do work; render the question as a clickable popup, not as prose. Do not perform the action yourself in either case.
-   - **Build verbs** (add, fix, build, implement, refactor, create, delete, deploy) targeting a page, component, endpoint, table, service, function, agent, skill → call `AskUserQuestion` with question "This looks like a build request — which route?" and 3 options:
+4. **Action request** (imperative verb targeting a concrete artifact) — Detect by verb class, then use `ask-options` to present the route. Do NOT preface with meta-commentary about why yo doesn't do work; render through the richest interaction supported by the runtime. Do not perform the action yourself in either case.
+   - **Build verbs** (add, fix, build, implement, refactor, create, delete, deploy) targeting a page, component, endpoint, table, service, function, agent, skill → ask "This looks like a build request — which route?" with 3 options:
      - `Start /velo:new` — net-new feature with full PRD/EDD pipeline
      - `Start /velo:task` — smaller change, lighter workflow
      - `Keep discussing` — stay in yo mode for follow-up
-   - **Review verbs** (review, audit, critique, check, inspect, analyze) targeting code, a PR, a branch, a file, a service, security, performance → call `AskUserQuestion` with question "This looks like a review request — which route?" and 4 options:
-     - `Start /review` — review current changes
-     - `Start /security-review` — security focus
-     - `Start /ultrareview` — full-branch multi-agent review
+   - **Review verbs** (review, audit, critique, check, inspect, analyze) targeting code, a PR, a branch, a file, a service, security, performance → ask "This looks like a review request — which route?" with 4 options:
+     - `Start review` — route through `handoff-mode`
+     - `Start security review` — route through `handoff-mode`
+     - `Start ultrareview` — route through `handoff-mode`
      - `Keep discussing` — stay in yo mode for follow-up
-   - Note: `AskUserQuestion` is a deferred tool — load it via `ToolSearch` query `select:AskUserQuestion` before the first call in a session. After the user picks, route directly to the chosen skill (e.g. invoke `velo:task` skill, passing context as the argument). If they pick "Keep discussing", do nothing further on the routing — wait for the user's next message.
+   - After the user picks, route through `handoff-mode`. If they pick "Keep discussing", do nothing further on the routing — wait for the user's next message.
 5. **Multi-part** (3+ distinct questions) → pick the most important one, state which you're focusing on, or ask the user to narrow.
 
 ## Step 2 — Select mode
@@ -111,7 +112,7 @@ For Single-agent:
 
 ### Direct mode
 
-Direct mode answers from pure knowledge and conversation context. **Do not read files.** No `README.md`, no `ls`, no Glob, no Grep, no Read. If the answer requires reading the codebase, you picked the wrong mode — escalate to Lightweight.
+Direct mode answers from pure knowledge and conversation context. **Do not read files.** No repository reads, shell directory listings, or file searches. If the answer requires reading the codebase, you picked the wrong mode — escalate to Lightweight.
 
 1. Answer directly from knowledge and conversation context
 2. If you find yourself wanting to read a file to answer, stop and re-route to Lightweight panel (TL + DE) so the agents do the reading
@@ -126,7 +127,7 @@ No cost table for Direct mode.
 
 Pre-read:
 1. Read `README.md` at root
-2. Run `ls -la` at root
+2. Capture the top-level directory listing through `read-files`
 
 Spawn Tech Lead with `model class: balanced` and Distinguished Engineer with `model class: deep-reasoning`, **in parallel**.
 
@@ -142,7 +143,7 @@ Cost table: TL + DE rows only.
 
 Pre-read:
 1. Read `README.md` at root
-2. Run `ls -la` at root
+2. Capture the top-level directory listing through `read-files`
 
 Spawn PM and TL with `model class: balanced`, DE with `model class: deep-reasoning`, all **in parallel**.
 
@@ -156,7 +157,7 @@ Cost table: all three rows.
 
 Pre-read:
 1. Read `README.md` at root
-2. Run `ls -la` at root
+2. Capture the top-level directory listing through `read-files`
 
 Spawn only the agent the user targeted. Use the prompt template for that agent from Step 4 — do not duplicate it here.
 
@@ -391,9 +392,9 @@ Based on the discussion, here's the brief:
 > <draft brief — 2-4 sentences: core recommendation + approach + non-goals.>
 ```
 
-2. **Load `AskUserQuestion` via ToolSearch** — `AskUserQuestion` is a deferred tool and its schema is not loaded by default. Before calling it, run `ToolSearch` with query `select:AskUserQuestion` to load the schema. Do this step explicitly before the `AskUserQuestion` call.
+2. Prepare `ask-options`. If the active runtime requires deferred tool lookup, use `load-tool`.
 
-3. **Call `AskUserQuestion`** with the following four options:
+3. Ask with the following four options:
    - `Start /velo:new` — for net-new features
    - `Start /velo:task` — for smaller changes
    - `Shelve` — drop it
@@ -409,7 +410,7 @@ Based on the discussion, here's the brief:
 
 ## Step 8 — Cost table (panel and Single-agent modes only)
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent using the runtime adapter's pricing for each resolved model class.
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms` when available. Compute approximate cost per agent through `report-cost`.
 
 ```
 ## Cost

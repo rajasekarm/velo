@@ -21,7 +21,8 @@ assert_file_contains() {
 [[ -f "${agents_file}" ]] || fail "AGENTS.md must exist as the Codex-native repo entrypoint"
 
 assert_file_contains "${agents_file}" "AGENTS.md is the Codex-native entrypoint for this repo."
-assert_file_contains "${agents_file}" "Keep the existing Claude assets intact."
+assert_file_contains "${agents_file}" "Keep Claude compatibility explicit through \`ADAPTER.md\`"
+assert_file_contains "${agents_file}" "Treat \`ADAPTER.md\` as the runtime compatibility contract"
 assert_file_contains "${agents_file}" "Treat \`TEAM.md\` model classes as provider-neutral routing intent;"
 assert_file_contains "${agents_file}" "Treat \`model:\` frontmatter in \`agents/*.md\` as a Claude compatibility hint,"
 assert_file_contains "${agents_file}" 'Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.'

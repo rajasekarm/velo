@@ -4,6 +4,7 @@ argument-hint: Describe the task to execute
 ---
 
 @PERSONA.md
+@ADAPTER.md
 @TEAM.md
 
 # Velo — Task
@@ -32,7 +33,7 @@ Execution: <parallel vs sequential, and why>
 
 ## Step 3 — Create todo list
 
-`TodoWrite` is a deferred tool — its schema is not loaded by default. Before calling it, run `ToolSearch` with query `select:TodoWrite` to load the schema. Do this every time before the first `TodoWrite` call in a session.
+Use `track-tasks` to create and maintain the task list.
 
 Decompose the task into concrete todo items:
 
@@ -41,7 +42,7 @@ Decompose the task into concrete todo items:
 - Add lifecycle items that apply: "Review findings", "Present summary for approval", "Commit" when relevant.
 - Even trivial single-agent tasks get a list — the user explicitly wants visibility into all work, no matter how small.
 
-Call `TodoWrite` to register the full list upfront, with every item set to `pending`.
+Register the full list upfront through `track-tasks`, with every item set to `pending`.
 
 As work proceeds:
 - Mark an item `in_progress` the moment you start it.
@@ -50,11 +51,11 @@ As work proceeds:
 
 ## Step 4 — Spawn subagents
 
-**Use the Agent tool for every team member. Do not role-play agents yourself.**
+**Use `spawn-agent` for every team member. Do not role-play agents yourself.**
 
 ### Parallelism rules
 
-- **Parallel**: When multiple todo items are independent, their agents MUST be spawned in a single message — one Agent tool call per item, all in the same assistant turn, so they run concurrently. This applies to independent domains (FE + Infra), multiple reviewers, and multiple tasks of the same agent type (e.g. 3 independent BE tasks → 3 Agent calls in one message). Sequential spawning of independent work is a bug, not a style choice.
+- **Parallel**: When multiple todo items are independent, their agents MUST be spawned in one runtime turn through `spawn-agent`, so they run concurrently. This applies to independent domains (FE + Infra), multiple reviewers, and multiple tasks of the same agent type. Sequential spawning of independent work is a bug, not a style choice.
 - **Dependency** = a later item needs output from an earlier one. Absent a real dependency, parallelize.
 - **Sequential**: DB before BE (schema dependency), builders before reviewers
 
@@ -75,7 +76,7 @@ Skip any phase that doesn't apply.
 
 ## Step 5 — Track token usage
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent using the runtime adapter's pricing for each resolved model class.
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms` when available. Compute approximate cost per agent through `report-cost`.
 
 ## Step 6 — Final report
 
