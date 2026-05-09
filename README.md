@@ -70,6 +70,8 @@ Velo is an agentic engineering team — a full squad of specialised Claude agent
 | Agent | Model | Responsibility |
 |---|---|---|
 | **Commit** | sonnet | Analyse diff, generate commit message, create git commit |
+| **Spec Writer** | sonnet | Write technical specifications from PRDs when needed |
+| **Learnings Agent** | sonnet | Extract codebase-specific learnings after rework cycles |
 
 ## How it works
 

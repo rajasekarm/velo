@@ -17,11 +17,11 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Allow-list: agents that legitimately have no skill file references.
 # Utility/verifier agents whose work doesn't depend on a skill manual.
-# Do NOT add `learnings-agent` here — orphan files should still warn.
 AGENTS_WITHOUT_SKILLS=(
   "commit"
   "distinguished-engineer"
   "gpt-reviewer"
+  "learnings-agent"
   "spec-checker"
   "tech-lead"
 )
@@ -45,28 +45,28 @@ echo "=== Velo Agent Audit ==="
 echo ""
 
 # ---------------------------------------------------------------------------
-# CHECK 1 — PERSONA.md → agent files
+# CHECK 1 — TEAM.md → agent files
 # ---------------------------------------------------------------------------
 echo "[CHECK 1] TEAM.md → agent files"
 
-persona_file="${REPO_ROOT}/TEAM.md"
+team_file="${REPO_ROOT}/TEAM.md"
 
-if [[ ! -f "${persona_file}" ]]; then
-  echo "  ✗ PERSONA.md — NOT FOUND (cannot continue check 1)"
+if [[ ! -f "${team_file}" ]]; then
+  echo "  ✗ TEAM.md — NOT FOUND (cannot continue check 1)"
   errors=$((errors + 1))
 else
   # Extract backtick-wrapped paths matching agents/*.md from table rows.
   # Example line: | **be-engineer** | `agents/be-engineer.md` | nodejs |
-  persona_agents="$(grep -oE '`agents/[^`]+\.md`' "${persona_file}" | tr -d '`' | sort -u)"
+  team_agents="$(grep -oE '`agents/[^`]+\.md`' "${team_file}" | tr -d '`' | sort -u)"
 
-  if [[ -z "${persona_agents}" ]]; then
-    echo "  ⚠ WARNING — no agent file references found in PERSONA.md"
+  if [[ -z "${team_agents}" ]]; then
+    echo "  ⚠ WARNING — no agent file references found in TEAM.md"
     warnings=$((warnings + 1))
   else
     while IFS= read -r agent_path; do
       # Reject paths containing .. to prevent path traversal
       if [[ "${agent_path}" == *".."* ]]; then
-        echo "  ✗ PERSONA.md → ${agent_path} — REJECTED (path traversal)"
+        echo "  ✗ TEAM.md → ${agent_path} — REJECTED (path traversal)"
         errors=$((errors + 1))
         continue
       fi
@@ -77,7 +77,7 @@ else
         echo "  ✗ ${agent_path} — NOT FOUND"
         errors=$((errors + 1))
       fi
-    done <<< "${persona_agents}"
+    done <<< "${team_agents}"
   fi
 fi
 
@@ -253,6 +253,37 @@ else
 
   if [[ ${found_any_dead} -eq 0 ]]; then
     echo "  (all skill files are referenced)"
+  fi
+fi
+
+echo ""
+
+# ---------------------------------------------------------------------------
+# CHECK 5 — Codex layer tests
+# ---------------------------------------------------------------------------
+echo "[CHECK 5] Codex layer tests"
+
+tests_dir="${REPO_ROOT}/tests"
+
+if [[ ! -d "${tests_dir}" ]]; then
+  echo "  (tests/ directory not found — skipping)"
+else
+  found_any_test=0
+
+  while IFS= read -r test_file; do
+    found_any_test=1
+    test_rel="${test_file/${REPO_ROOT}\//}"
+
+    if bash "${test_file}"; then
+      echo "  ✓ ${test_rel}"
+    else
+      echo "  ✗ ${test_rel} — FAILED"
+      errors=$((errors + 1))
+    fi
+  done < <(find "${tests_dir}" -name '*.test.sh' | sort)
+
+  if [[ ${found_any_test} -eq 0 ]]; then
+    echo "  (no shell tests found)"
   fi
 fi
 
