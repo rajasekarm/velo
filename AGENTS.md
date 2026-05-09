@@ -12,7 +12,9 @@ Velo was originally designed around Claude Code. Keep the existing Claude assets
 
 - Treat `PERSONA.md` as the Claude Engineering Manager persona, not as Codex's primary instruction file.
 - Treat `TEAM.md` as the roster of reusable role prompts.
+- Treat `TEAM.md` model classes as provider-neutral routing intent; resolve them through the active runtime adapter instead of reading them as provider model names.
 - Treat `agents/*.md` as role prompt templates that Codex can read when a task needs that role.
+- Treat `model:` frontmatter in `agents/*.md` as a Claude compatibility hint, not as Codex routing authority.
 - Treat `skills/*.md` as local reference material. They are not Codex skills unless converted into `SKILL.md` directories.
 - Keep Velo as the umbrella Engineering Manager concept, not as a separate Codex-discoverable skill.
 - Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.

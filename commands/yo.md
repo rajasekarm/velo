@@ -70,12 +70,12 @@ Use when:
 
 If the question requires reading the codebase to answer (e.g. "what's in my X service", "look at my codebase", "what should I profile?"), do **not** use Direct mode — escalate to **Lightweight** so TL/DE read the code. Yo never reads files for analysis.
 
-**Lightweight** — TL + DE only. TL on sonnet, DE on opus.
+**Lightweight** — TL + DE only. TL uses `model class: balanced`, DE uses `model class: deep-reasoning`.
 Use when:
 - There's a genuine technical trade-off but no product/scope dimension
 - The question is about architecture, technology comparison, or engineering approach where both sides have real merit
 
-**Full panel** — PM + TL + DE. PM and TL on sonnet, DE on opus.
+**Full panel** — PM + TL + DE. PM and TL use `model class: balanced`, DE uses `model class: deep-reasoning`.
 Use when:
 - The question is build-vs-shelve, scope, or prioritization
 - It's a major architectural choice with user or team impact
@@ -128,7 +128,7 @@ Pre-read:
 1. Read `README.md` at root
 2. Run `ls -la` at root
 
-Spawn Tech Lead with `model: sonnet` and Distinguished Engineer with `model: opus`, **in parallel**.
+Spawn Tech Lead with `model class: balanced` and Distinguished Engineer with `model class: deep-reasoning`, **in parallel**.
 
 Use the prompts from the Full panel section below — same prompts, just skip PM.
 
@@ -144,7 +144,7 @@ Pre-read:
 1. Read `README.md` at root
 2. Run `ls -la` at root
 
-Spawn PM and TL with `model: sonnet`, DE with `model: opus`, all **in parallel**.
+Spawn PM and TL with `model class: balanced`, DE with `model class: deep-reasoning`, all **in parallel**.
 
 After all return → go to Step 5 (check response count) → Step 6 (synthesize).
 
@@ -160,9 +160,9 @@ Pre-read:
 
 Spawn only the agent the user targeted. Use the prompt template for that agent from Step 4 — do not duplicate it here.
 
-- `@pm` → Product Manager, `model: sonnet`
-- `@tl` → Tech Lead, `model: sonnet`
-- `@de` → Distinguished Engineer, `model: opus`
+- `@pm` → Product Manager, `model class: balanced`
+- `@tl` → Tech Lead, `model class: balanced`
+- `@de` → Distinguished Engineer, `model class: deep-reasoning`
 
 Skip Step 5 (no panel-count check needed — only one agent).
 
@@ -188,7 +188,7 @@ Use the same $ARGUMENTS template for Lightweight, Full panel, and Single-agent m
 
 ### Product Manager (Full panel only)
 
-Read `agents/product-manager.md`, then spawn with `model: sonnet`.
+Read `agents/product-manager.md`, then spawn with `model class: balanced`.
 
 Pass the following as $ARGUMENTS:
 
@@ -229,7 +229,7 @@ Keep your response under 400 words. Structure as:
 
 ### Tech Lead
 
-Read `agents/tech-lead.md`, then spawn with `model: sonnet`. (sonnet override — TL defaults to opus in TEAM.md; downgraded here for advisory cost efficiency)
+Read `agents/tech-lead.md`, then spawn with `model class: balanced`. (advisory override — TL defaults to `deep-reasoning` in TEAM.md; downgraded here for cost efficiency)
 
 Pass the following as $ARGUMENTS:
 
@@ -267,7 +267,7 @@ Keep your response under 400 words. Structure as:
 
 ### Distinguished Engineer
 
-Read `agents/distinguished-engineer.md`, then spawn with `model: opus`.
+Read `agents/distinguished-engineer.md`, then spawn with `model class: deep-reasoning`.
 
 Pass the following as $ARGUMENTS:
 
@@ -409,7 +409,7 @@ Based on the discussion, here's the brief:
 
 ## Step 8 — Cost table (panel and Single-agent modes only)
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent: DE uses opus pricing ($15/1M input, $75/1M output); TL and PM use sonnet pricing ($3/1M input, $15/1M output).
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent using the runtime adapter's pricing for each resolved model class.
 
 ```
 ## Cost

@@ -75,7 +75,7 @@ Skip any phase that doesn't apply.
 
 ## Step 5 — Track token usage
 
-After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent: `tokens × $27 / 1,000,000` (blended rate: 80% input @ $15/1M + 20% output @ $75/1M, opus pricing).
+After each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent using the runtime adapter's pricing for each resolved model class.
 
 ## Step 6 — Final report
 
