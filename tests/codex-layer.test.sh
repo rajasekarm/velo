@@ -22,8 +22,9 @@ assert_file_contains() {
 
 assert_file_contains "${agents_file}" "AGENTS.md is the Codex-native entrypoint for this repo."
 assert_file_contains "${agents_file}" "Keep the existing Claude assets intact."
-assert_file_contains "${agents_file}" "Treat .agents/skills/velo/SKILL.md as the general Codex-discoverable wrapper for the Velo workflow."
+assert_file_contains "${agents_file}" 'Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.'
 assert_file_contains "${agents_file}" 'Treat `.agents/skills/velo-{new,task,yo,hunt}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, and `velo:hunt`.'
+assert_file_contains "${agents_file}" 'Treat `.codex-plugin/plugin.json` as the local Codex plugin manifest.'
 assert_file_contains "${agents_file}" "Treat commands/*.md as workflow playbooks, not automatic Codex slash commands."
 assert_file_contains "${agents_file}" "Use Codex slash commands for session control only."
 assert_file_contains "${agents_file}" "Do not commit or push without explicit per-action approval."

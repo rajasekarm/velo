@@ -7,6 +7,8 @@ description: Use when the user asks for /velo:yo, wants Velo advice, or wants an
 
 This is the Codex-discoverable wrapper for Velo's advisory path. In this repo namespace, it should appear as `velo:yo`.
 
+Velo workflow root: `/Users/rajasekarm/Documents/focus/velo`. When this plugin is used from another repo, read Velo workflow assets from that root and treat the current working directory as the target project.
+
 ## Load Order
 
 1. Load AGENTS.md first.
