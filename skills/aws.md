@@ -1,3 +1,7 @@
+---
+name: aws
+description: AWS infrastructure with ECS/EKS, RDS, ElastiCache, SQS, S3, IAM, VPC, CloudWatch. Least-privilege IAM, private subnets, infrastructure as code.
+---
 # AWS
 
 **Scope:** ECS/EKS, RDS, ElastiCache, SQS, S3, IAM, VPC, CloudWatch.

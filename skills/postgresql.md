@@ -1,3 +1,7 @@
+---
+name: postgresql
+description: PostgreSQL schema design, indexing, query optimisation, migrations. Parameterised queries, btree/GIN/partial indexes, zero-downtime migrations, EXPLAIN ANALYZE.
+---
 # PostgreSQL
 
 **Scope:** Schema design, indexing, query optimisation, migrations.

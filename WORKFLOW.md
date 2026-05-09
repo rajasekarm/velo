@@ -34,11 +34,8 @@ flowchart TD
     REWORK --> REVIEW
     REVIEW -->|cycle 3| A3C{Your call}
     A3C -->|extend| REWORK
-    A3C -->|accept| LEARN{Rework occurred?}
-    REVIEW -->|all pass| LEARN{Rework occurred?}
-    LEARN -->|yes| LA[Learnings Agent\nproposes additions]
-    LA --> A3{Your approval}
-    LEARN -->|no| A3
+    A3C -->|accept| A3{Your approval}
+    REVIEW -->|all pass| A3{Your approval}
     A3 -->|approved| COMMIT[Commit Agent]
     A3 -->|hold| REWORK
 ```
@@ -54,10 +51,7 @@ flowchart TD
     TEST --> REVIEW[All reviewers\nin parallel]
     REVIEW -->|any fail| REWORK[Rework\nrelevant builders]
     REWORK --> REVIEW
-    REVIEW -->|all pass| LEARN{Rework occurred?}
-    LEARN -->|yes| LA[Learnings Agent\nproposes additions]
-    LA --> A1{Your approval}
-    LEARN -->|no| A1
+    REVIEW -->|all pass| A1{Your approval}
     A1 -->|approved| COMMIT[Commit Agent]
     A1 -->|hold| REWORK
 ```
@@ -86,7 +80,3 @@ flowchart TD
     HAND -->|/velo:new| NEW[Start /velo:new]
     HAND -->|fix myself| DONE([Done])
 ```
-
-## Learning loop
-
-After any rework cycle, the Learnings Agent extracts codebase-specific patterns from reviewer findings and proposes additions to `.velo/learnings/`. You approve before anything is written. The team gets better with every task.

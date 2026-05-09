@@ -82,7 +82,7 @@ else
 
     # Extract backtick-wrapped paths matching skills/... that point to a file
     # (last component must contain a dot — filters out bare directory references).
-    # Handles `skills/foo.md` and `skills/vercel-react-best-practices/SKILL.md`.
+    # Handles `skills/foo.md` and nested forms like `skills/dir/file.md`.
     # || true: grep exits 1 on no match; we handle the empty-string case below.
     skill_refs="$(grep -oE '`skills/[^` ]+\.[^` /]+`' "${agent_file}" | tr -d '`' || true)"
 

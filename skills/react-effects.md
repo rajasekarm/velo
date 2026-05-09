@@ -1,3 +1,7 @@
+---
+name: react-effects
+description: When NOT to use useEffect in React. Derived state, event handlers, useMemo patterns, syncing with external systems only.
+---
 # React Effects — When Not to Use useEffect
 
 ## The rule

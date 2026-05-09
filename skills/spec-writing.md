@@ -1,3 +1,7 @@
+---
+name: spec-writing
+description: Writing technical specifications, implementation plans, architecture decisions. Goals/non-goals, API contracts, data models, edge cases, security considerations.
+---
 # Spec Writing
 
 **Scope:** Technical specifications, implementation plans, architecture decisions.

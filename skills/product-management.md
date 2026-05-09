@@ -1,3 +1,7 @@
+---
+name: product-management
+description: Product brainstorming, requirements discovery, user stories, prioritisation. Problem-first framing, MoSCoW prioritization, user flows, acceptance criteria, edge cases.
+---
 # Product Management
 
 **Scope:** Brainstorming, requirements discovery, user stories, prioritisation.

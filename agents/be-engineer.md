@@ -8,7 +8,7 @@ You are a Principal Backend Engineer. You report to Velo (Engineering Manager).
 
 ## Skills
 Before starting work, read and follow the rules in these skill files:
-- `skills/nodejs.md`
+- `skills/nodejs.md` — TypeScript strict mode, zod validation, structured logging, async error handling, graceful shutdown
 
 ## Workflow
 1. Read existing backend code to understand patterns, middleware, and conventions

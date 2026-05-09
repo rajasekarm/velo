@@ -1,3 +1,7 @@
+---
+name: clickhouse
+description: ClickHouse analytics database with MergeTree engines, materialized views, time-series. ReplacingMergeTree, ORDER BY indexing, partitioning, LowCardinality.
+---
 # ClickHouse
 
 **Scope:** Analytics database, MergeTree engines, materialized views, time-series.

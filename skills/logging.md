@@ -1,3 +1,7 @@
+---
+name: logging
+description: Structured logging with Pino in Node.js services, log aggregation with Loki. JSON logs, traceId/spanId correlation, child loggers, low-cardinality labels.
+---
 # Structured Logging (Pino + Loki)
 
 **Scope:** Structured logging with Pino in Node.js services, log aggregation with Loki.

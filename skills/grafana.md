@@ -1,3 +1,7 @@
+---
+name: grafana
+description: Grafana dashboard design, alerting, SLO panels, Prometheus and Loki data sources. RED metrics, template variables, version-controlled JSON dashboards.
+---
 # Grafana
 
 **Scope:** Dashboard design, alerting, SLO panels, Prometheus and Loki data sources.

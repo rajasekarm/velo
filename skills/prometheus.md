@@ -1,3 +1,7 @@
+---
+name: prometheus
+description: Prometheus metrics collection, PromQL, alerting rules, recording rules. RED metrics, histogram buckets, naming conventions, low-cardinality labels, SLO thresholds.
+---
 # Prometheus
 
 **Scope:** Metrics collection, PromQL, alerting rules, and recording rules.

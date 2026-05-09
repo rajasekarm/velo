@@ -1,3 +1,7 @@
+---
+name: kafka
+description: Kafka event streaming with KafkaJS, consumers, producers, schema management. Manual offset commits, dead letter topics, idempotent processing, Avro schemas.
+---
 # Kafka
 
 **Scope:** Event streaming with KafkaJS, consumers, producers, schema management.

@@ -1,3 +1,7 @@
+---
+name: ci-cd
+description: CI/CD with GitHub Actions pipelines, deployment workflows, release automation. Pinned action SHAs, secrets handling, branch protection, dependency caching.
+---
 # CI/CD
 
 **Scope:** GitHub Actions pipelines, deployment workflows, release automation.

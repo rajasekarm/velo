@@ -1,3 +1,7 @@
+---
+name: opentelemetry
+description: Distributed tracing instrumentation with OpenTelemetry, trace context propagation, sampling, Jaeger backend. Span naming, async context, error recording, baggage.
+---
 # OpenTelemetry & Jaeger
 
 **Scope:** Distributed tracing instrumentation, trace context propagation, sampling, Jaeger as the tracing backend.

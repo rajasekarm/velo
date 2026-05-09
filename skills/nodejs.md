@@ -1,3 +1,7 @@
+---
+name: nodejs
+description: Server-side Node.js with TypeScript strict mode. Express/Fastify, zod validation, structured logging, async error handling, graceful shutdown, connection pooling.
+---
 # Node.js / TypeScript
 
 **Scope:** Server-side Node.js with TypeScript strict mode.

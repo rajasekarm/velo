@@ -1,3 +1,7 @@
+---
+name: docker
+description: Docker container builds with multi-stage, security, local development. Distroless runtime, non-root users, pinned versions, .dockerignore, HEALTHCHECK.
+---
 # Docker
 
 **Scope:** Container builds, multi-stage, security, local development.

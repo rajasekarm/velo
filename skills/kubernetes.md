@@ -1,3 +1,7 @@
+---
+name: kubernetes
+description: Kubernetes deployments, Helm, autoscaling, security, networking. Resource limits, liveness/readiness probes, HPA, PDB, NetworkPolicy, sealed secrets.
+---
 # Kubernetes
 
 **Scope:** Deployments, Helm, autoscaling, security, networking.

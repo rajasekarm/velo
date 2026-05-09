@@ -1,3 +1,7 @@
+---
+name: security
+description: Application security covering OWASP Top 10, auth/authz, input validation, secrets management, API security. Parameterised queries, security headers, least privilege, short-lived tokens.
+---
 # Security
 
 **Scope:** Application security — OWASP Top 10, auth/authz, input validation, secrets management, API security.

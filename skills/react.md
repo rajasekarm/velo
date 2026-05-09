@@ -1,3 +1,7 @@
+---
+name: react
+description: React with TypeScript, hooks-first, accessibility-first. Custom hooks, error boundaries, context vs Zustand vs TanStack Query, lazy loading, profiling-driven memoization.
+---
 # React
 
 **Scope:** React with TypeScript, hooks-first, accessibility-first.

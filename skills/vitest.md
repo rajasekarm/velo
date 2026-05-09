@@ -1,3 +1,7 @@
+---
+name: vitest
+description: Vitest/Jest unit and integration testing, mocking, ESM-native test runner. describe/it structure, supertest HTTP integration, factories over fixtures, typed mocks.
+---
 # Vitest / Jest
 
 **Scope:** Unit and integration testing, mocking, ESM-native test runner.

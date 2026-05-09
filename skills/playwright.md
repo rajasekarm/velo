@@ -1,3 +1,7 @@
+---
+name: playwright
+description: Playwright end-to-end browser testing, page objects, API mocking, visual regression. data-testid selectors, page.route mocking, parallel execution, traces on retry.
+---
 # Playwright
 
 **Scope:** End-to-end browser testing, page objects, API mocking, visual regression.
