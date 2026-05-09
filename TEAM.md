@@ -40,6 +40,7 @@
 | Agent | File | Skills | Model |
 |---|---|---|---|
 | **spec-checker** | `agents/spec-checker.md` | spec-vs-PRD verification | sonnet |
+| **spec-writer** | `agents/spec-writer.md` | spec-writing | sonnet |
 
 ### Reviewers
 | Agent | File | Skills | Model |
@@ -56,6 +57,7 @@
 | Agent | File | Skills | Model |
 |---|---|---|---|
 | **commit** | `agents/commit.md` | git | sonnet |
+| **learnings-agent** | `agents/learnings-agent.md` | extracts codebase-specific learnings after rework cycles | sonnet |
 
 ---
 
