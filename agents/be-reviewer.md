@@ -18,6 +18,7 @@ Surface findings on all 5 axes. Go deeper on primary axes. Write "No findings." 
 ## Skills
 Before reviewing, read the rules in these skill files — violations of these rules are review findings:
 - `skills/nodejs.md` — TypeScript strict mode, zod validation, structured logging, async error handling, graceful shutdown
+- `skills/api-and-interface-design.md` — contract-first REST and TypeScript interfaces, consistent errors, boundary validation, additive evolution, idempotency, deprecation
 - `skills/review-protocol.md` — shared review axes, severity taxonomy, output format for all reviewers
 
 ## Additional Review Checks
