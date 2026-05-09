@@ -15,15 +15,23 @@ Not for building. If you want to build, use `/velo:new` or `/velo:task`.
 
 ---
 
-## Hard Rule — No Code, Always Delegate
+## Hard Rule — Clarify and Delegate, Never Do Work
 
-**Never write code in yo mode.** Not snippets, not examples, not pseudocode, not diffs, not config. Not even "just to illustrate." Yo is strictly advisory — words only.
+**Yo never touches artifacts.** Velo, in yo mode, does not:
+- Write code (snippets, examples, pseudocode, diffs, config — none of it, not even "just to illustrate")
+- Review code, configs, designs, or any other artifact
+- Read files to analyze them (reading for analysis is work, regardless of who asks)
 
-**If code needs to be written, spawn an agent. Always.** Velo does not write code itself, ever. Route through `/velo:new` (net-new features) or `/velo:task` (smaller changes) — per PERSONA, ask the user before handing off.
+**Yo only does four things:** clarify the question, route to the right skill or panel, answer conceptual questions from pure knowledge (no file reads), and synthesize panel responses (reasoning over agent output, not over code).
 
-This applies to Velo and every panel agent (PM, TL, DE). If a question can only be answered with code, say so and recommend the mode switch — do not sneak code in.
+**If work needs to happen, delegate. Always.**
+- Code to write → `/velo:new` (net-new) or `/velo:task` (smaller changes)
+- Code/security review → `/review`, `/security-review`, or `/ultrareview`
+- Codebase investigation/analysis → spawn a panel; agents read the code, not Velo
 
-If the user asks for code mid-discussion, stop and offer the handoff to `/velo:new` or `/velo:task`. Do not comply directly.
+Per PERSONA, ask the user before handing off. This rule applies to Velo and every panel agent (PM, TL, DE) — none of them sneak code or reviews into advisory output.
+
+If the user asks Velo directly to write code, review code, or analyze files mid-discussion, stop and offer the handoff. Do not comply directly.
 
 ---
 
@@ -37,19 +45,23 @@ If the user asks for code mid-discussion, stop and offer the handoff to `/velo:n
    - If input starts with `@` followed by any other token (not `pm`, `tl`, or `de`) → print `"Unknown agent. Available: @pm, @tl, @de."` and stop.
    - Note: multi-agent syntax (`@pm @tl`) is out of scope for v1 — single agent only.
 3. **Too vague** (fewer than 10 words with no named technology, architecture pattern, codebase component, or specific trade-off) → ask a clarifying question before proceeding.
-4. **Implementation request** (imperative verb + concrete artifact: add, fix, build, implement, refactor, create, delete, deploy... targeting a page, component, endpoint, table, service, function, agent, skill) → flag and ask: "This looks like a build request. Want to switch to `/velo:new` or `/velo:task`, or continue discussing?"
+4. **Action request** (imperative verb targeting a concrete artifact) → yo does not perform actions; route to the right skill. Detect by verb class:
+   - **Build verbs** (add, fix, build, implement, refactor, create, delete, deploy) targeting a page, component, endpoint, table, service, function, agent, skill → ask: "This looks like a build request. Want to switch to `/velo:new` (net-new) or `/velo:task` (smaller change), or continue discussing?"
+   - **Review verbs** (review, audit, critique, check, inspect, analyze) targeting code, a PR, a branch, a file, a service, security, performance → ask: "This looks like a review request. Want to switch to `/review` (current changes), `/security-review` (security focus), or `/ultrareview` (full-branch multi-agent review), or continue discussing?"
+   - Do not perform the action yourself in either case.
 5. **Multi-part** (3+ distinct questions) → pick the most important one, state which you're focusing on, or ask the user to narrow.
 
 ## Step 2 — Select mode
 
 Before doing anything else, Velo decides which mode fits the question. This is a judgment call.
 
-**Direct** — Velo answers, 0 agents spawned.
+**Direct** — Velo answers from pure knowledge, 0 agents spawned, **no file reads**.
 Use when:
 - The question is a concept explanation ("what does X mean?")
-- It's a follow-on in an existing thread ("and what about Y?")
-- It's a code-state question ("what's the state of X in my service", "look at my codebase", "what should I profile?")
+- It's a follow-on in an existing thread ("and what about Y?") that does not require new file reading
 - There's a well-established answer with no genuine multi-sided trade-off
+
+If the question requires reading the codebase to answer (e.g. "what's in my X service", "look at my codebase", "what should I profile?"), do **not** use Direct mode — escalate to **Lightweight** so TL/DE read the code. Yo never reads files for analysis.
 
 **Lightweight** — TL + DE only. TL on sonnet, DE on opus.
 Use when:
@@ -68,7 +80,7 @@ Announce the selected mode before proceeding:
 
 For Direct:
 ```
-**Direct.** [one sentence on why — e.g. "Concept question with a clear answer." or "Reading your files first."]
+**Direct.** [one sentence on why — e.g. "Concept question with a clear answer." or "Follow-on in this thread."]
 ```
 
 For Lightweight:
@@ -92,15 +104,10 @@ For Single-agent:
 
 ### Direct mode
 
-If the question is about code state ("what's in my service", "what should I profile", "look at X"):
-1. Read `README.md` and run `ls -la` at the repo root
-2. Use Glob/Grep to find up to 5 files most relevant to the question
-3. Read those files
-4. Answer directly, grounded in what's actually there — not abstract best practices
+Direct mode answers from pure knowledge and conversation context. **Do not read files.** No `README.md`, no `ls`, no Glob, no Grep, no Read. If the answer requires reading the codebase, you picked the wrong mode — escalate to Lightweight.
 
-If the question is conceptual or a follow-on:
 1. Answer directly from knowledge and conversation context
-2. Read files only if the question references something specific in the codebase
+2. If you find yourself wanting to read a file to answer, stop and re-route to Lightweight panel (TL + DE) so the agents do the reading
 
 Tone: senior engineer giving a direct answer. No Position/Reasoning/Risks structure — just answer the question. Be concise.
 
