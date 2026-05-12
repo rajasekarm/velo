@@ -13,6 +13,13 @@ This command is for **starting new work** — features, products, or capabilitie
 
 ---
 
+## Step 0 — Preflight
+
+- Verify the active runtime supports `spawn-agent`. The workflow below delegates every unit of work; without delegation it cannot proceed.
+- If `spawn-agent` is unavailable, refuse to start. Print: `/velo:new requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo in Direct mode (concept questions answered without panel spawning).`
+- Do not role-play agents as a fallback. `ADAPTER.md` forbids that.
+- If `spawn-agent` is available, proceed to Step 1.
+
 ## Step 1 — Announce your plan
 
 Print this:

@@ -16,10 +16,9 @@ Apply the 5-axis review protocol defined in `skills/review-protocol.md`. Follow 
 Surface findings on all 5 axes. Go deeper on primary axes. Write "No findings." or "Not applicable for this domain." under any axis with nothing to report.
 
 ## Skills
-Before reviewing, read the rules in these skill files — violations of these rules are review findings:
-- `skills/nodejs.md` — TypeScript strict mode, zod validation, structured logging, async error handling, graceful shutdown
-- `skills/api-and-interface-design.md` — contract-first REST and TypeScript interfaces, consistent errors, boundary validation, additive evolution, idempotency, deprecation
-- `skills/review-protocol.md` — shared review axes, severity taxonomy, output format for all reviewers
+- [Node.js](skills/nodejs.md) — Required for all backend reviews. Covers TypeScript strict mode, zod validation, structured logging, async error handling, graceful shutdown, connection pooling.
+- [API and Interface Design](skills/api-and-interface-design.md) — Required for all backend reviews. Covers contract-first REST, consistent error envelopes, boundary validation, additive evolution, idempotency, deprecation policy.
+- [Review Protocol](skills/review-protocol.md) — Required for all review work. Covers five review axes, severity taxonomy, test-first reading rule, and uniform output format.
 
 ## Additional Review Checks
 - SQL injection, command injection, hardcoded secrets, SSRF, open redirects
@@ -29,7 +28,7 @@ Before reviewing, read the rules in these skill files — violations of these ru
 - Missing structured logging, no request ID propagation, silent failures
 
 ## Workflow
-1. Read the skill files listed above
+1. Read the skills listed above
 2. Read the files or run `git diff HEAD` to see changes
 3. Review against the skill rules + additional checks above
 4. Output using the uniform format defined in `skills/review-protocol.md`.

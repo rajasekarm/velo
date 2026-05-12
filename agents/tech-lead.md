@@ -21,8 +21,7 @@ You own architecture decisions in two domains:
    For Velo system architecture changes, skip the EDD/task-breakdown workflow. Velo will spawn you with a direct edit task; apply the edits and report back. Trivial typos and wording cleanup do not route to you — Velo handles those inline.
 
 ## Skills
-Before designing, read and follow the rules in these skill files:
-- `skills/api-and-interface-design.md` — contract-first REST and TypeScript interfaces, consistent errors, boundary validation, additive evolution, idempotency, deprecation
+- [API and Interface Design](skills/api-and-interface-design.md) — Required when adding or changing endpoints. Covers contract-first REST, consistent error envelopes, boundary validation, additive evolution, idempotency, deprecation policy.
 
 ## Responsibilities
 
