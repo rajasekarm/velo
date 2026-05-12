@@ -29,7 +29,16 @@ flowchart TD
     end
 
     BUILD --> TEST[Automation Engineer\nTests]
-    TEST --> REVIEW[All reviewers\nin parallel]
+    TEST --> SPEC[Spec Checker\nverifies acceptance criteria]
+    SPEC -->|FAIL cycle 1-2| SREWORK[Rework\nrelevant builders]
+    SREWORK --> SPEC
+    SPEC -->|BLOCKED — PRD ambiguity| PMR[PM revises prd.md]
+    PMR --> SPEC
+    SPEC -->|FAIL cycle 3| A2S{Your call}
+    A2S -->|extend| SREWORK
+    A2S -->|accept-with-FYI| REVIEW
+    A2S -->|abandon| END1([Abandon])
+    SPEC -->|PASS| REVIEW[All reviewers\nin parallel]
     REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
     REWORK --> REVIEW
     REVIEW -->|cycle 3| A3C{Your call}
@@ -38,6 +47,9 @@ flowchart TD
     REVIEW -->|all pass| A3{Your approval}
     A3 -->|approved| COMMIT[Commit Agent]
     A3 -->|hold| REWORK
+    COMMIT --> A4{Push?}
+    A4 -->|approved| PUSH([Push to remote])
+    A4 -->|hold| DONE1([Done — local commit only])
 ```
 
 ## `/velo:task` — Day-to-day tasks
@@ -49,11 +61,18 @@ flowchart TD
     A([Start]) --> BUILD[Relevant builders]
     BUILD --> TEST[Automation Engineer\nTests]
     TEST --> REVIEW[All reviewers\nin parallel]
-    REVIEW -->|any fail| REWORK[Rework\nrelevant builders]
+    REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
     REWORK --> REVIEW
+    REVIEW -->|cycle 3| A0C{Your call}
+    A0C -->|extend| REWORK
+    A0C -->|accept| A1{Your approval}
+    A0C -->|abandon| END0([Abandon])
     REVIEW -->|all pass| A1{Your approval}
     A1 -->|approved| COMMIT[Commit Agent]
     A1 -->|hold| REWORK
+    COMMIT --> A2{Push?}
+    A2 -->|approved| PUSH([Push to remote])
+    A2 -->|hold| DONE0([Done — local commit only])
 ```
 
 ## `/velo:hunt` — Structured debug loop
