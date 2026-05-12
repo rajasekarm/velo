@@ -24,12 +24,20 @@ For new features that don't exist yet, use `/velo:new` instead.
 
 ## Step 1 — Understand the task
 
-Read the task. Identify which domains are involved and whether agents can run in parallel or must be sequential.
+Read the request. Produce two outputs before announcing anything: a **domain partition** (which agents are involved, parallel vs sequential) and an **assumptions ledger** (every term in the request you had to interpret).
+
+Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every term in the request whose interpretation could change which user sees what, which code path runs, or which data gets touched. Resolve each term per the rule, then record it in the Assumptions ledger.
+
+Scope note: "Skip clarifying questions" mode (when the user has opted out of mid-flow questions) applies to workflow friction — preferences, naming, ordering. It does NOT authorize silent guesses on requirement semantics. Requirement-semantic ambiguities still go in the Assumptions ledger; stop-and-ask still fires when an unsurfaced interpretation could change user-visible behavior.
 
 ## Step 2 — Announce your plan
 
 ```
 Velo here. Assessing the task...
+
+Assumptions (flag if wrong):
+- <term from request> → <interpretation/signal>
+- (write "(none)" only if every term in the request resolves to exactly one obvious signal)
 
 Plan:
 - <agent>: <what they'll do>

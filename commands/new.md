@@ -20,7 +20,13 @@ This command is for **starting new work** — features, products, or capabilitie
 - Do not role-play agents as a fallback. `ADAPTER.md` forbids that.
 - If `spawn-agent` is available, proceed to Step 1.
 
-## Step 1 — Announce your plan
+## Step 1 — Understand the request and announce your plan
+
+Before announcing, produce two things: a **plan** (which agents, in what order) and an **assumptions ledger** (every term in the request you had to interpret).
+
+Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every term in the request whose interpretation could change which user sees what, which code path runs, or which data gets touched. Resolve each term per the rule, then record it in the Assumptions ledger.
+
+Scope note: "Skip clarifying questions" mode (when the user has opted out of mid-flow questions) applies to workflow friction — preferences, naming, ordering. It does NOT authorize silent guesses on requirement semantics. Requirement-semantic ambiguities still go in the Assumptions ledger; stop-and-ask still fires when an unsurfaced interpretation could change user-visible behavior.
 
 Print this:
 
@@ -29,6 +35,10 @@ Velo here. Starting new work...
 
 Feature: <one-line summary of what's being built>
 Task folder: .velo/tasks/<task-slug>/
+
+Assumptions (flag if wrong):
+- <term from request> → <interpretation/signal>
+- (write "(none)" only if every term in the request resolves to exactly one obvious signal)
 
 Plan:
 - Product Manager: <what they'll explore/decide>
@@ -66,7 +76,8 @@ All planning artifacts for this task live in `.velo/tasks/<slug>/`. Pass the ful
    - The feature description
    - The task folder path: `.velo/tasks/<slug>/`
    - Explicit instruction to run the **full** product context retrieval flow (Step 0 of the PM Workflow): list `.velo/products/`, match the brief, read the matching `context.md` if found; if ambiguous ask the user to pick; if no match ask the user for a slug before creating, and at session end append decisions and write `product.txt` into the task folder
-3. Their output: user stories, requirements, scope decisions, open questions resolved — written to `.velo/tasks/<slug>/prd.md`; also `.velo/tasks/<slug>/product.txt` with the resolved product slug
+   - Explicit instruction that `prd.md` MUST open with an `## Assumptions (flag if wrong)` section. Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every term from the brief whose interpretation could change which user sees what, which code path runs, or which data gets touched — each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term in the brief resolves to exactly one obvious signal. Pass through any assumptions Velo already flagged in the announcement. If the PM revises or rejects any assumption Velo flagged in the announcement, the PRD's Assumptions section is authoritative — note the divergence in that section. Velo's announcement Assumptions are superseded by the PRD's on conflict.
+3. Their output: user stories, requirements, scope decisions, open questions resolved — written to `.velo/tasks/<slug>/prd.md` (with the Assumptions section at the top); also `.velo/tasks/<slug>/product.txt` with the resolved product slug
 
 **Do not proceed until `prd.md` is written.**
 
@@ -74,7 +85,7 @@ All planning artifacts for this task live in `.velo/tasks/<slug>/`. Pass the ful
 
 Use `ask-options` to present the PRD for approval:
 - **Header**: "PRD Review"
-- **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Ready to proceed to engineering design doc?"
+- **Question**: "I've written the PRD at `.velo/tasks/<slug>/prd.md`. Here's a summary: [2–3 bullet summary of goals, user stories, and scope]. Assumptions: [the PRD's Assumptions list, or '(none)']. Ready to proceed to engineering design doc?"
 - **Options**:
   - "1 — Approved, proceed to engineering design doc"
   - "2 — I have changes"
@@ -93,7 +104,8 @@ If the user has changes: convey them to the PM for revision, wait for the update
    - The task folder path: `.velo/tasks/<slug>/`
    - The full contents of `prd.md` embedded directly in the prompt (do not ask the agent to read it — provide it inline)
    - Instruction to read the existing codebase for conventions and constraints
-4. Their output: `.velo/tasks/<slug>/engineering-design-doc.md` and `.velo/tasks/<slug>/task-breakdown.md`
+   - Explicit instruction that `engineering-design-doc.md` MUST include an `## Assumptions (flag if wrong)` section. Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every technical interpretation made when translating the PRD into design — terms whose meaning could change which code path runs, which data gets touched, or which contract the team commits to. Each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term resolves to exactly one obvious signal. If the EDD discovers a PRD assumption is wrong (e.g. the technical reality contradicts a product-level interpretation), STOP and notify Velo before continuing — the PRD must be revised first. Do not silently override PRD assumptions in the EDD.
+4. Their output: `.velo/tasks/<slug>/engineering-design-doc.md` (with the Assumptions section included) and `.velo/tasks/<slug>/task-breakdown.md`
 
 ### Validate Tech Lead output
 
@@ -136,7 +148,7 @@ Read `.velo/tasks/<slug>/task-breakdown.md` before presenting.
 
 Use `ask-options` to present the engineering design doc and task breakdown for approval:
 - **Header**: "Engineering Design Doc Review"
-- **Question**: "The engineering design doc passed review. Summary: [list key endpoints and top 3 decisions]. Task breakdown: [list tasks in order with owners]. Ready to proceed to build?"
+- **Question**: "The engineering design doc passed review. Summary: [list key endpoints and top 3 decisions]. Assumptions: [the EDD's Assumptions list, or '(none)']. Task breakdown: [list tasks in order with owners]. Ready to proceed to build?"
 - **Options**:
   - "1 — Approved, proceed to build"
   - "2 — I have changes"

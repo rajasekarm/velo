@@ -18,9 +18,9 @@ Not for building. Not for advice. Not for known fixes — those go straight to `
 
 **Never write code in hunt mode.** Not snippets, not pseudocode, not diffs, not patches, not inline fixes. Hunt produces prose only: hypotheses, evidence, root cause, fix proposal.
 
-**If the user asks for code mid-hunt, decline.** Offer the Step 6 handoff to `/velo:task` via `ask-options` instead (F5).
+**If the user asks for code mid-hunt, decline.** Offer the `HANDOFF` state via `ask-options` instead (F5).
 
-This rule applies to every step, every failure mode, and every branch of the skill.
+This rule applies to every state, every failure mode, and every branch of the skill.
 
 ---
 
@@ -37,7 +37,67 @@ This rule applies to every step, every failure mode, and every branch of the ski
 
 ---
 
-## Step 1 — Validate input + classify
+## Preconditions
+
+The following must be true before the workflow starts. If any precondition fails, the skill cannot run safely.
+
+1. **Adapter concepts available**: `read-files`, `run-shell`, `ask-options`, `handoff-mode` are all defined and bound in the runtime adapter.
+2. **Runtime capability — file reads**: the runtime exposes `read-files` against the repository root.
+3. **Runtime capability — shell allowlist**: the runtime restricts `run-shell` to read-only history attribution (`git log`, `git blame`). Operators MUST verify this allowlist before running the skill on sensitive repos — the prose constraint here is not a permission boundary.
+4. **Runtime capability — option prompts**: `ask-options` is available; without it, gated transitions cannot solicit user choice.
+5. **Repo state — current working directory is a repository root**: path-scope enforcement depends on a well-defined repo root. Reads, searches, and history commands MUST be scoped to that root.
+6. **PERSONA + ADAPTER imports loaded**: tone rules and adapter concept names resolve before state `VALIDATE` begins.
+
+---
+
+## Telemetry
+
+Log every state transition. Mandatory — without transition logs there is no way to tune the soft caps.
+
+**Minimum payload per event**: `{state_from, state_to, trigger, timestamp}`.
+
+**Trigger taxonomy**:
+- `auto` — non-gated transition (entry conditions met)
+- `user-gate:<choice>` — user-gated transition, with the chosen option recorded
+- `failure:<F-code>` — transition fired by a failure mode (e.g. `failure:F1`)
+- `cap:<name>` — transition fired by a counter cap (e.g. `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`)
+
+Events to emit:
+0. **Precondition check result** — fired before entering `VALIDATE`. Payload includes `trigger=preconditions:ok` or `trigger=preconditions:fail:<name>`. Logged regardless of outcome; on failure this is the last event before the skill halts.
+1. **State entry** — entry into each state (`state_from` = previous, `state_to` = entered). When the entry was triggered by a counter cap, the entry event carries `trigger=cap:<name>` (e.g. `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`); cap firings are not logged as a separate event. When the entry was triggered by a failure mode, `trigger=failure:<F-code>` (see event 3 — failure events still fire for the F-code itself).
+2. **Option resolution** — every `ask-options` resolution (record the chosen option in `trigger`).
+3. **Failure firing** — every failure-mode firing (F1–F12), even if the F-code re-enters the same state.
+4. (reserved — counter-cap firings are folded into event 1 via `trigger=cap:<name>` to avoid double logging.)
+5. **Skill termination** — fired when the workflow exits via `[exit]` (successful hunt complete) or reaches the `ABANDON` terminal. Payload includes `trigger=terminal:<reason>` where `<reason>` names the exit path: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-new`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
+
+---
+
+## Workflow state machine
+
+The workflow runs a per-hunt super-state machine. Inside `INVESTIGATE`, a per-hypothesis sub-state machine runs (see "Hypothesis state machine" below) — workflow states own orchestration; the hypothesis sub-state machine tracks individual hypotheses.
+
+States:
+
+- `VALIDATE` — classify the input
+- `CONTEXT` — gather repro signals
+- `HYPOTHESIZE` — propose ≤3 ranked hypotheses, render the Hunt board
+- `INVESTIGATE` — iterate reads against the active hypothesis
+- `STALLED` — soft cap fired; re-rank, keep going, or abandon
+- `CONFIRM` — evidence gate satisfied; declare root cause
+- `HANDOFF` — emit fix proposal + handoff brief; offer follow-on commands
+- `ABANDON` — terminal; emit abandon summary
+
+**Reading guide**: each state's `Exit conditions` list is the authoritative source for transitions out of that state. There is no separate top-level transition map — when you need to know "where does this go next?", read the `Exit conditions` block on the current state.
+
+---
+
+## State: VALIDATE
+
+**Entry condition**: skill invoked with `$ARGUMENTS`.
+
+**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition (e.g. `Cannot start hunt: precondition failed — <name>: <one-line reason>`). Do not proceed to the banner, the pre-gates, or the classifier. Emit the precondition-check telemetry event (see Telemetry — Event 0) with `trigger=preconditions:ok` on success or `trigger=preconditions:fail:<name>` on failure, regardless of outcome.
+
+**Body**:
 
 Print the mode banner:
 
@@ -51,44 +111,63 @@ Print the mode banner:
 
 **Three-way classifier** (D10) — applied after both pre-gates pass:
 
-1. **Specific observed defect, no known root cause** — signals: error message, log entry, stack trace, observed wrong output, specific failing condition — continue to Step 2.
+1. **Specific observed defect, no known root cause** — signals: error message, log entry, stack trace, observed wrong output, specific failing condition — proceed to `CONTEXT`.
 
 2. **Root cause already stated by user** — signals: user names a specific file or function as the cause, or proposes a concrete fix:
    - Use `ask-options`:
      - Header: `"Looks like a build request"`
      - Question: `"Root cause sounds known. Switch to /velo:task to fix it?"`
      - Options:
-       - `Start /velo:task` — invoke `velo:task` with brief = user's stated cause + symptom
-       - `Continue hunting` — treat as defect, proceed to Step 2
-       - `Cancel`
+       - `Start /velo:task` — invoke `velo:task` with brief = user's stated cause + symptom (exit hunt)
+       - `Continue hunting` — treat as defect, proceed to `CONTEXT`
+       - `Cancel` (exit hunt)
 
 3. **Conceptual / no observed defect** — signals: "how should…", "is X better than Y", "what's the right way to…":
    - Use `ask-options`:
      - Header: `"Sounds advisory"`
      - Question: `"This looks like a discussion, not a debug. Switch to /velo:yo?"`
      - Options:
-       - `Start /velo:yo` — invoke `velo:yo` with the original input
-       - `Continue hunting`
-       - `Cancel`
+       - `Start /velo:yo` — invoke `velo:yo` with the original input (exit hunt)
+       - `Continue hunting` — proceed to `CONTEXT`
+       - `Cancel` (exit hunt)
+
+**Exit conditions**:
+- Classifier branch 1 → (auto) → `CONTEXT`
+- Classifier branch 2 → (user-gate: Start /velo:task / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
+- Classifier branch 3 → (user-gate: Start /velo:yo / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
+
+**Failure modes**: can trigger F5 (if user requests code mid-classification).
 
 ---
 
-## Step 2 — Gather context
+## State: CONTEXT
+
+**Entry condition**: classifier in `VALIDATE` selected "continue hunting" (or branch 1 auto-advanced).
+
+**Body**:
 
 Ask 1–3 numbered clarifying questions per PERSONA.md. Lead with "I need X clarifications:" and number each one.
 
-Required signals to collect before Step 3:
+Required signals to collect before exiting:
 - Repro steps — or explicit "cannot reproduce" (triggers F2 path)
 - What's been tried already
 - Suspected file or area (if any)
 
-**Stack-trace input branch**: if the input is or contains a stack trace, read the trace, identify the first non-library frame, and verify the path is within the repo root (path scope rule — see Tool allowlist note). If the path is outside the repo root, note as `out-of-scope: <path>` and ask the user for the corresponding first-party file or relative path. If the path is in scope, read that file. Then ask one targeted question about the call path or the triggering condition. After the user answers, proceed to Step 3.
+**Stack-trace input branch**: if the input is or contains a stack trace, read the trace, identify the first non-library frame, and verify the path is within the repo root (path scope rule — see Tool allowlist note). If the path is outside the repo root, note as `out-of-scope: <path>` and ask the user for the corresponding first-party file or relative path. If the path is in scope, read that file. Then ask one targeted question about the call path or the triggering condition. After the user answers, exit to `HYPOTHESIZE`.
 
-After the user answers all questions, proceed to Step 3.
+**Exit conditions**:
+- All required signals collected → (auto) → `HYPOTHESIZE`
+- User cannot reproduce AND no logs available → (failure:F2) → `ABANDON`
+
+**Failure modes**: can trigger F2, F8, F10, F12.
 
 ---
 
-## Step 3 — Propose hypotheses + render Hunt board
+## State: HYPOTHESIZE
+
+**Entry condition**: `CONTEXT` collected all required signals.
+
+**Body**:
 
 Propose ≤3 hypotheses, ranked H1/H2/H3 by likelihood. For each:
 - One-line statement
@@ -99,9 +178,18 @@ State which hypothesis is active (H1) and why it ranks first.
 
 Render the Hunt board (template below). Every counter must be visible.
 
+**Exit conditions**:
+- Hunt board rendered with active H1 → (auto) → `INVESTIGATE`
+
+**Failure modes**: can trigger F3 (if hypotheses span services), F6 (if intentional-behaviour suspected on inspection of the symptom).
+
 ---
 
-## Step 4 — Investigation loop
+## State: INVESTIGATE
+
+**Entry condition**: an active hypothesis exists; Hunt board is current.
+
+**Body**:
 
 For the active hypothesis, one step at a time:
 
@@ -111,21 +199,70 @@ For the active hypothesis, one step at a time:
 
 Rules:
 - Every step must read a real artefact. No speculation steps — if there's nothing to read, name why and propose what would unblock the read.
-- **Soft cap (D4)**: at 5 steps on the active hypothesis with no confidence increase, OR 3 consecutive no-progress steps globally (whichever fires first — global stall pre-empts the per-hypothesis cap when both fire on the same step), use `ask-options`:
-  - Header: `"Investigation stalled"`
-  - Question: `"<N> steps with no progress. Re-rank, keep going, or abandon?"`
-  - Options:
-    - `Re-rank now` — rule out the active hypothesis, promote the next-best pending hypothesis to active, reset `stepsOnActive` to 0
-    - `Keep going` — no transition; counters continue from current values
-    - `Abandon` — proceed to Step 7
-- **Session-level hard cap**: at 15 total investigation steps (across all hypotheses, across all re-ranks), fire F1 unconditionally — do **not** offer "Keep going". The total-step counter is visible on the Hunt board (`Total steps: N/15`) and is **never reset**, even after an F1 reset-and-re-rank.
-- High confidence + concrete evidence satisfying the evidence gate → proceed to Step 5.
+- **Soft cap (D4)**: at 5 steps on the active hypothesis with no confidence increase, OR 3 consecutive no-progress steps globally (whichever fires first — global stall pre-empts the per-hypothesis cap when both fire on the same step), transition to `STALLED`.
+- **Session-level hard cap**: at 15 total investigation steps (across all hypotheses, across all re-ranks), fire F1 unconditionally — F1 transitions to `STALLED` with the F1 variant prompt (no "Keep going" option). The total-step counter is visible on the Hunt board (`Total steps: N/15`) and is **never reset**, even after an F1 reset-and-re-rank.
+- **All-hypotheses-exhausted F1**: if all 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation, fire F1 → `STALLED` (F1 variant).
+- High confidence + concrete evidence satisfying the evidence gate → exit to `CONFIRM`.
 
-**Stall pre-emption rule**: if both soft caps fire on the same step (5 steps on active AND 3-step global streak), use the global stall interaction prompt — do not fire two separate prompts.
+**Stall pre-emption rule**: if both soft caps fire on the same step (5 steps on active AND 3-step global streak), use the global stall interaction prompt — do not fire two separate prompts. Single transition to `STALLED`.
+
+**Exit conditions**:
+- Evidence gate satisfied → (auto) → `CONFIRM`
+- Soft cap fires (per-hypothesis or global) → (cap:steps-on-active or cap:no-progress-streak) → `STALLED`
+- F1 fires (total-steps cap or all-hypotheses exhausted) → (failure:F1) → `STALLED` (F1 variant)
+- User types "abandon"/"give up"/"stop" → `ABANDON`
+
+**Failure modes**: can trigger F1, F3, F5, F6, F7, F8, F9, F10, F11, F12. (F2 fires only from `CONTEXT` — see global F-table.)
 
 ---
 
-## Step 5 — Confirm root cause
+## State: STALLED
+
+**Entry condition**: a soft cap fired in `INVESTIGATE`, OR F1 fired (total-steps cap or all-hypotheses exhausted).
+
+**Body**:
+
+Re-render the Hunt board so the user can see current state, counters, and ledger before deciding.
+
+**Variant A — soft-cap stall** (per-hypothesis 5-step cap or global 3-step no-progress streak, total steps still < 15 and at least one pending hypothesis remains):
+
+Use `ask-options`:
+- Header: `"Investigation stalled"`
+- Question: `"<N> steps with no progress. Re-rank, keep going, or abandon?"`
+- Options:
+  - `Re-rank now` — rule out the active hypothesis, promote the next-best pending hypothesis to active, reset `stepsOnActive` to 0
+  - `Keep going` — no transition; counters continue from current values
+  - `Abandon` — proceed to `ABANDON`
+
+**Variant B — F1 stall** (total steps reached 15, OR all 3 hypotheses ruled-out / soft-capped):
+
+Use `ask-options`:
+- Header: `"Investigation stalled"`
+- Question: matches the F1 trigger context.
+- Options:
+  - `Reset and re-rank with new hypotheses` — replaces current 3, doesn't extend (D4); resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset
+  - `Switch to /velo:yo` (exit hunt)
+  - `Abandon` — proceed to `ABANDON`
+
+When total steps = 15, do **not** offer "Keep going" — F1 variant only.
+
+**Exit conditions**:
+- Variant A: `Re-rank now` → (user-gate: Re-rank now) → `INVESTIGATE` with new active hypothesis
+- Variant A: `Keep going` → (user-gate: Keep going) → `INVESTIGATE` (no counter change)
+- Variant A: `Abandon` → (user-gate: Abandon) → `ABANDON`
+- Variant B: `Reset and re-rank with new hypotheses` → (user-gate: Reset and re-rank) → `HYPOTHESIZE` (new 3, counters per F1 rule)
+- Variant B: `Switch to /velo:yo` → (user-gate: Switch to /velo:yo) → `[exit]`
+- Variant B: `Abandon` → (user-gate: Abandon) → `ABANDON`
+
+**Failure modes**: STALLED returns to `INVESTIGATE` on "Keep going" or "Reset and re-rank"; the cap may re-trigger on the next `INVESTIGATE` step. See `INVESTIGATE` for F1 trigger conditions. STALLED itself can trigger F8 if a board re-render needs reads that fail.
+
+---
+
+## State: CONFIRM
+
+**Entry condition**: `INVESTIGATE` reports evidence gate satisfied.
+
+**Body**:
 
 Declare root cause only when all three elements are present (D5 evidence gate):
 
@@ -133,7 +270,7 @@ Declare root cause only when all three elements are present (D5 evidence gate):
 - Mechanism of failure (one paragraph explaining how the defect produces the symptom)
 - Trigger conditions (what causes the failure path to activate)
 
-If any element is missing, return to Step 4 and name the next read that would supply the missing element. Do not speculate to fill a gap. If investigation cannot supply the missing element, trigger F1.
+If any element is missing, return to `INVESTIGATE` and name the next read that would supply the missing element. Do not speculate to fill a gap. If investigation cannot supply the missing element, trigger F1 (which transitions to `STALLED`).
 
 When all three are present, print the root cause declaration:
 
@@ -145,11 +282,20 @@ Mechanism: <one paragraph>
 Trigger conditions: <one line>
 ```
 
-Proceed to Step 6.
+**Exit conditions**:
+- All three elements present, declaration printed → (auto) → `HANDOFF`
+- Element missing, next read available → (auto) → `INVESTIGATE`
+- Element missing, no read available → (failure:F1) → `STALLED`
+
+**Failure modes**: can trigger F1, F12 (if confirmation surfaces secret material).
 
 ---
 
-## Step 6 — Fix proposal + handoff
+## State: HANDOFF
+
+**Entry condition**: `CONFIRM` printed a valid root cause declaration.
+
+**Body**:
 
 Print the prose fix proposal — no code. Describe what to change, where, and why it resolves the root cause.
 
@@ -174,28 +320,43 @@ Then use `ask-options`:
   - `Start /velo:task` — invoke `velo:task` with the handoff brief as argument (default path)
   - `Start /velo:new` — use this option instead of `/velo:task` when fix requires schema migration or infra change (F4 substitution)
   - `Fix myself` — print the successful-exit summary template (below) and stop
-  - `Keep investigating` — return to Step 4 with the current Hunt board
-  - `Abandon` — proceed to Step 7
+  - `Keep investigating` — return to `INVESTIGATE` with the current Hunt board
+  - `Abandon` — proceed to `ABANDON`
 
 **F4 substitution rule**: if the fix approach requires a schema migration or infra change, substitute `Start /velo:new` for `Start /velo:task` in the options above. Do not offer both.
 
+**Exit conditions**:
+- `Start /velo:task` → (user-gate: Start /velo:task) → `[exit]` (handoff via `handoff-mode`)
+- `Start /velo:new` → (user-gate: Start /velo:new) → `[exit]` (handoff via `handoff-mode`, F4 path)
+- `Fix myself` → (user-gate: Fix myself) → `[exit]` after emitting successful-exit summary
+- `Keep investigating` → (user-gate: Keep investigating) → `INVESTIGATE`
+- `Abandon` → (user-gate: Abandon) → `ABANDON`
+
+**Failure modes**: can trigger F4 (rerouting to `/velo:new`), F5 (if user requests code instead of handoff).
+
 ---
 
-## Step 7 — Abandon / summary
+## State: ABANDON
 
-Triggered by:
+**Entry condition**: any of:
 - User selects "Abandon" at any interaction prompt
 - User types "abandon", "give up", or "stop" mid-hunt
-- F1 (all hypotheses ruled out or stalled with no confirmation)
+- F1 variant where user picks "Abandon"
 - F2 dead-end (cannot reproduce and no logs available)
 
+**Body**:
+
 Print the abandon summary template (below). No file written.
+
+**Exit conditions**: terminal. Skill ends.
+
+**Failure modes**: none — this is the terminal sink for failures that route here.
 
 ---
 
 ## Hunt board render template
 
-Render after every Step 3 initial board and every Step 4 read. Every counter must appear — if a counter doesn't render, it cannot justify a state transition. Omit rows for hypotheses not proposed — a two-hypothesis hunt renders two rows.
+Render at `HYPOTHESIZE` entry and after every `INVESTIGATE` step (and on `STALLED` entry). Every counter must appear — if a counter doesn't render, it cannot justify a state transition. Omit rows for hypotheses not proposed — a two-hypothesis hunt renders two rows.
 
 ```
 ### Hunt board
@@ -223,16 +384,18 @@ Status values: `pending`, `active`, `confirmed`, `ruled-out`.
 
 ## Hypothesis state machine
 
+Per-hypothesis sub-state machine. Runs **inside** `INVESTIGATE` — workflow states own orchestration; this table tracks individual hypotheses as they progress.
+
 States: `pending` → `active` → (`confirmed` | `ruled-out`).
 
 | From | Trigger | To | Side effects |
 |---|---|---|---|
 | pending | Selected by Velo as next-best after a re-rank | active | `stepsOnActive` resets to 0 |
-| active | Step 5 evidence gate satisfied | confirmed | Proceed to Step 6 |
-| active | Soft-cap re-rank chosen by user with no evidence-for | ruled-out | `stepsOnActive` resets; next-ranked pending → active |
+| active | Evidence gate satisfied (in `CONFIRM`) | confirmed | Workflow proceeds to `HANDOFF` |
+| active | Soft-cap re-rank chosen by user with no evidence-for (`STALLED` Variant A → `Re-rank now`) | ruled-out | `stepsOnActive` resets; next-ranked pending → active |
 | active | Soft-cap "Keep going" chosen | active | No transition; counters continue |
 | active | Step finds explicit counter-evidence (condition impossible to hit) | ruled-out | `stepsOnActive` resets; next-ranked pending → active |
-| pending | All 3 hypotheses ruled-out OR all hit 5-step soft cap with no confirmation | — | Trigger F1 |
+| pending | All 3 hypotheses ruled-out OR all hit 5-step soft cap with no confirmation | — | Trigger F1 → `STALLED` (Variant B) |
 
 Counter resets:
 - `stepsOnActive` — resets on any hypothesis switch (re-rank or rule-out). On F1 "Reset and re-rank": reset `stepsOnActive` to 0, reset `noProgressStreak` to 0. Total step counter is **not** reset (the 15-cap is session-level).
@@ -240,7 +403,7 @@ Counter resets:
 
 ---
 
-## Successful-exit summary template (Step 6 — "Fix myself")
+## Successful-exit summary template (HANDOFF — "Fix myself")
 
 ```
 ### Hunt complete — root cause confirmed
@@ -255,7 +418,7 @@ Hypotheses ruled out: H2 (<why>), H3 (<why>)
 
 ---
 
-## Abandon summary template (Step 7)
+## Abandon summary template (ABANDON)
 
 ```
 ### Hunt abandoned
@@ -273,12 +436,16 @@ Next step if resuming: <one line>
 
 ## Failure modes
 
+Global F-table. State headers cross-reference these by ID — do not duplicate per state.
+
+Note: `S2-silent` is session-spanning and not localized to any state — it applies whenever the user goes silent mid-hunt, regardless of the current state.
+
 | ID | Trigger | Handling |
 |---|---|---|
-| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Use `ask-options`: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
-| F2 | User cannot reproduce the bug | Ask for logs or a minimal repro. If neither is available → route through Step 7 (abandon summary). |
+| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Transition to `STALLED` (Variant B). Options: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
+| F2 | User cannot reproduce the bug | Ask for logs or a minimal repro. If neither is available → transition to `ABANDON`. |
 | F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:yo` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
-| F4 | Fix requires schema migration / infra change | Step 6 substitutes `Start /velo:new` for `Start /velo:task` in the interaction prompt options. |
+| F4 | Fix requires schema migration / infra change | In `HANDOFF`, substitute `Start /velo:new` for `Start /velo:task` in the interaction prompt options. |
 | F5 | User asks Velo to write code mid-hunt | Decline per Hard Rule. Use `ask-options`: `Start /velo:task`, `Keep investigating`, `Abandon`. |
 | F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:yo`, `Switch to /velo:new`, `Abandon`. Do not continue hunt after flagging. |
 | F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:yo`, `Abandon`. |
@@ -286,7 +453,7 @@ Next step if resuming: <one line>
 | F9 | Shell history read blocked (permission denied for `git log` / `git blame`) | Skip the history read. Continue with file reads and search. Note in evidence ledger: `skipped: git history unavailable`. |
 | F10 | Stack trace contains only library frames (no first-party code) | Ask user for the calling code path or the entry point that triggered the trace. Do not hypothesise on library internals. |
 | F11 | Two reads return contradictory evidence on the same hypothesis | Add both to the evidence ledger as `+`/`−`. Downgrade confidence one level. Name a tie-breaker read as the next action. |
-| F12 | Investigation surfaces a secret or credential (see Secret-handling rule D12) | Stop reading that artefact immediately. Do not print, quote, paraphrase, abbreviate, summarise, or reference the value anywhere. Note in the ledger: `redacted: <artefact path, no content>`. If the secret appeared in any prior output in this session, redact it retroactively in the next Hunt board re-render with `[REDACTED]` and note the prior leak as `redaction-error: <artefact path>`. Proceed to Step 6 handoff with the F12 sensitivity note appended. |
+| F12 | Investigation surfaces a secret or credential (see Secret-handling rule D12) | Stop reading that artefact immediately. Do not print, quote, paraphrase, abbreviate, summarise, or reference the value anywhere. Note in the ledger: `redacted: <artefact path, no content>`. If the secret appeared in any prior output in this session, redact it retroactively in the next Hunt board re-render with `[REDACTED]` and note the prior leak as `redaction-error: <artefact path>`. Proceed to `HANDOFF` with the F12 sensitivity note appended. |
 | S2-silent | User goes silent mid-hunt | No proactive ping. On next user message, re-render the current Hunt board and continue from where the investigation stopped. |
 
 ---
