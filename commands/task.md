@@ -55,26 +55,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 ## Telemetry
 
-Log every state transition. Mandatory — without transition logs there is no way to tune the soft caps.
+Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F7 per [Velo Failure Modes](skills/velo-failure-modes.md). F8 does not apply to `/velo:task` (no PRD/EDD phase).
 
-**Minimum payload per event**: `{state_from, state_to, trigger, timestamp}`.
+**Cap names used by this command**: `cap:review-cycles` (F2 at `REVIEW`).
 
-**Trigger taxonomy**:
-- `auto` — non-gated transition (entry conditions met)
-- `user-gate:<choice>` — user-gated transition, with the chosen option recorded
-- `failure:<F-code>` — transition fired by a failure mode (e.g. `failure:F2`)
-- `cap:<name>` — transition fired by a counter cap (e.g. `cap:review-cycles`)
-
-Events to emit:
-0. **Precondition check result** — fired before entering `VALIDATE`. Payload includes `trigger=preconditions:ok` or `trigger=preconditions:fail:<name>`. Logged regardless of outcome; on failure this is the last event before the skill halts.
-1. **State entry** — entry into each state (`state_from` = previous, `state_to` = entered). When the entry was triggered by a counter cap, the entry event carries `trigger=cap:<name>`; cap firings are not logged as a separate event. When the entry was triggered by a failure mode, `trigger=failure:<F-code>` (see event 3 — failure events still fire for the F-code itself).
-2. **Option resolution** — every `ask-options` resolution (record the chosen option in `trigger`).
-3. **Failure firing** — every failure-mode firing (F1–F7), even if the F-code re-enters the same state.
-4. (reserved — counter-cap firings are folded into event 1 via `trigger=cap:<name>` to avoid double logging.)
-
-**Dual emission on F2 cap**: when F2 fires due to a per-phase cap, two events emit: state-entry into the destination with `trigger=cap:<phase>-cycles`, AND a failure event with `trigger=failure:F2`.
-
-5. **Skill termination** — fired when the workflow exits via `[exit]` (successful task complete) or reaches the `ABANDON` terminal. Payload includes `trigger=terminal:<reason>` where `<reason>` names the exit path: `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-validate`, `preflight-failed`.
+**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-validate`, `preflight-failed`.
 
 ---
 
@@ -199,14 +184,11 @@ Update the todo list when transitioning between sub-phases — mark the complete
 1. **Builders**: spawn relevant builders. DB → BE if schema changes involved.
 2. **Tests**: spawn automation-engineer after builders, if tests are needed.
 
-**Parallelism rules**:
-- **Parallel**: when multiple todo items are independent, their agents MUST be spawned in one runtime turn through `spawn-agent`, so they run concurrently. This applies to independent domains (FE + Infra), multiple reviewers, and multiple tasks of the same agent type. Sequential spawning of independent work is a bug, not a style choice.
-- **Dependency** = a later item needs output from an earlier one. Absent a real dependency, parallelize.
-- **Sequential**: DB before BE (schema dependency), builders before reviewers.
+Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Parallelism](skills/velo-parallelism.md).
 
 **Token tracking**: after each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms`. Compute approximate cost per agent through `report-cost`.
 
-**Descope monitoring (per PERSONA)**: if the build phase exceeds the expected agent count, OR a builder flags scope confusion, fire F3 / F4 as appropriate.
+**Descope monitoring**: triggers and procedure per [Velo Descope Ritual](skills/velo-descope-ritual.md). Fire F3 / F4 as appropriate.
 
 **Exit conditions**:
 - All builders + tests done → (auto) → `REVIEW`
@@ -225,11 +207,7 @@ Update the todo list when transitioning between sub-phases — mark the complete
 
 **Body**:
 
-Spawn ALL relevant reviewers in parallel. Each reviewer is briefed against the scope of the corresponding builder.
-
-**Mandatory reviewer pairings**:
-- **If BE engineer was involved**: always include observability-engineer and security-engineer alongside the be-reviewer.
-- **If FE engineer was involved**: always include security-engineer alongside the fe-reviewer.
+Spawn ALL relevant reviewers in parallel per [Velo Parallelism](skills/velo-parallelism.md), including the mandatory reviewer pairings defined there. Each reviewer is briefed against the scope of the corresponding builder.
 
 **Rework loop**: after all reviewers return, check verdicts. Track cycle count starting at 1.
 
@@ -257,15 +235,7 @@ Spawn ALL relevant reviewers in parallel. Each reviewer is briefed against the s
 
 **Body**:
 
-Present the final summary (see Templates — Final report). Then use `ask-options`:
-- **Header**: `"Ready to ship"`
-- **Question**: `"All reviewers passed. Approve commit?"`
-- **Options**:
-  - `Approved, commit`
-  - `Hold, I have feedback`
-  - `Done — no commit`
-
-Per PERSONA hard rule: never commit without explicit per-action approval.
+Present the final summary (see Templates — Final report). Then apply the commit-gate pattern per [Velo Approval Gates](skills/velo-gates.md) with header `"Ready to ship"`, question `"All reviewers passed. Approve commit?"`, and options `Approved, commit` / `Hold, I have feedback` / `Done — no commit`.
 
 **Exit conditions**:
 - `Approved, commit` → (user-gate: commit) → spawn `commit` agent; on success → `PUSH_GATE`
@@ -283,14 +253,7 @@ Per PERSONA hard rule: never commit without explicit per-action approval.
 
 **Body**:
 
-Use `ask-options`:
-- **Header**: `"Push to remote?"`
-- **Question**: `"Commit done. Push?"`
-- **Options**:
-  - `Push`
-  - `Hold — do not push`
-
-Per PERSONA hard rule: past commit authorization does not extend to push. Always ask.
+Apply the push-gate pattern per [Velo Approval Gates](skills/velo-gates.md).
 
 **Exit conditions**:
 - `Push` → (user-gate: push) → run push; on success → `DONE` (terminal `delivered-and-committed-and-pushed`)
@@ -385,17 +348,9 @@ Only include rows for agents actually used.
 
 ## Failure modes
 
-Global F-table. State headers cross-reference these by ID — do not duplicate per state.
+F-code definitions and standard handling are in [Velo Failure Modes](skills/velo-failure-modes.md). This command can trigger F1–F7. State headers cross-reference by ID; failures that fire from a state appear on that state's `Failure modes` line.
 
-| ID | Trigger | Handling |
-|---|---|---|
-| F1 | Agent spawn unavailable or fails | Halt and report the blocker per ADAPTER.md. Do not role-play agents. |
-| F2 | Reviewer rejects ≥3 cycles on the same agent OR same phase | Use `ask-options`: `Cut scope`, `Abandon`, `Push through with explicit override`. F2 firing also triggers PERSONA's descope ritual (pause, summarize done vs left, ask the user). The two are the same event in this design. |
-| F3 | Builder flags scope confusion | Trigger PERSONA's descope ritual: pause, summarize done vs left, then use `ask-options`: `Keep going`, `Cut scope`, `Abandon`. |
-| F4 | Build phase exceeds expected agent count | Trigger PERSONA's descope ritual: pause, summarize done vs left, then use `ask-options`: `Keep going`, `Cut scope`, `Abandon`. |
-| F5 | Cross-task dependency surfaces mid-flow | Halt and surface immediately; do not proceed (PERSONA cross-task responsibility). Use `ask-options`: `Wait for upstream`, `Abandon`. |
-| F6 | `context.md` stale (>30 days OR predates multiple completed tasks) | Flag at `VALIDATE` entry per PERSONA. Use `ask-options`: `Continue with current context`, `Pause — let me update context first`. User decides; do not auto-update. |
-| F7 | User asks Velo to write code | Decline per Hard Rule. Use `ask-options`: `Route to /velo:task agents` (when current mode is task, restate the request inline as the task brief), `Stay in current mode and rephrase`, `Abandon`. |
+**Command-specific F2 trigger**: reviewer rejects ≥3 cycles on the same agent OR same phase. When F2 fires, this command uses simplified options: `Cut scope`, `Abandon`, `Push through with explicit override` (instead of the standard phase-based set). F2 firing still triggers the descope ritual ([Velo Descope Ritual](skills/velo-descope-ritual.md)) — the two are the same event.
 
 ---
 

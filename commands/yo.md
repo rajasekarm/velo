@@ -38,73 +38,19 @@ If the user asks Velo directly to write code, review code, or analyze files mid-
 
 ## Step 1 — Validate input
 
-1. **Empty or whitespace** → print `"What's the question?"` and stop.
-2. **`@<agent>` prefix** — check first before any other validation:
-   - If input starts with `@pm`, `@tl`, or `@de` (case-insensitive) **and the prefix token is followed immediately by a space, tab, or end of input** (not embedded in a longer word — e.g. `@pmail` must not match `@pm`): strip the prefix and any following whitespace to get the question.
-     - If the remaining question is empty → print `"What's the question?"` and stop.
-     - Otherwise → route to **Single-agent mode** (Step 2). Skip steps 3–5 below; single-agent bypass makes vagueness, implementation-request, and multi-part checks irrelevant.
-   - If input starts with `@` followed by any other token (not `pm`, `tl`, or `de`) → print `"Unknown agent. Available: @pm, @tl, @de."` and stop.
-   - Note: multi-agent syntax (`@pm @tl`) is out of scope for v1 — single agent only.
-3. **Too vague** (fewer than 10 words with no named technology, architecture pattern, codebase component, or specific trade-off) → ask a clarifying question before proceeding.
-4. **Action request** (imperative verb targeting a concrete artifact) — Detect by verb class, then use `ask-options` to present the route. Do NOT preface with meta-commentary about why yo doesn't do work; render through the richest interaction supported by the runtime. Do not perform the action yourself in either case.
-   - **Build verbs** (add, fix, build, implement, refactor, create, delete, deploy) targeting a page, component, endpoint, table, service, function, agent, skill → ask "This looks like a build request — which route?" with 3 options:
-     - `Start /velo:new` — net-new feature with full PRD/EDD pipeline
-     - `Start /velo:task` — smaller change, lighter workflow
-     - `Keep discussing` — stay in yo mode for follow-up
-   - **Review verbs** (review, audit, critique, check, inspect, analyze) targeting code, a PR, a branch, a file, a service, security, performance → ask "This looks like a review request — which route?" with 4 options:
-     - `Start review` — route through `handoff-mode`
-     - `Start security review` — route through `handoff-mode`
-     - `Start ultrareview` — route through `handoff-mode`
-     - `Keep discussing` — stay in yo mode for follow-up
-   - After the user picks, route through `handoff-mode`. If they pick "Keep discussing", do nothing further on the routing — wait for the user's next message.
-5. **Multi-part** (3+ distinct questions) → pick the most important one, state which you're focusing on, or ask the user to narrow.
+Five gates applied in order: empty input, `@<agent>` prefix detection, vagueness threshold, action-request verb classes, multi-part question. First matching gate fires; later gates are skipped.
+
+Apply input validation per [Velo Yo — Input Validation](skills/velo-yo-input-validation.md). The skill defines the gate order, the `@<agent>` prefix rules, vagueness threshold, build vs review verb classes and their routing prompts, and multi-part handling.
+
+If validation does not terminate or redirect the flow, proceed to Step 2.
 
 ## Step 2 — Select mode
 
-Before doing anything else, Velo decides which mode fits the question. This is a judgment call.
+Four modes: **Direct** (Velo answers from knowledge, no file reads), **Lightweight** (TL + DE panel), **Full panel** (PM + TL + DE), **Single-agent** (when user prefixed `@pm` / `@tl` / `@de`).
 
-**Direct** — Velo answers from pure knowledge, 0 agents spawned, **no file reads**.
-Use when:
-- The question is a concept explanation ("what does X mean?")
-- It's a follow-on in an existing thread ("and what about Y?") that does not require new file reading
-- There's a well-established answer with no genuine multi-sided trade-off
+Apply mode selection per [Velo Yo — Mode Selection](skills/velo-yo-mode-selection.md). The skill defines the four modes (Direct / Lightweight / Full panel / Single-agent), their selection criteria, the no-file-reads rule and escalation trigger for Direct mode, and the announcement templates.
 
-If the question requires reading the codebase to answer (e.g. "what's in my X service", "look at my codebase", "what should I profile?"), do **not** use Direct mode — escalate to **Lightweight** so TL/DE read the code. Yo never reads files for analysis.
-
-**Lightweight** — TL + DE only. TL uses `model class: balanced`, DE uses `model class: deep-reasoning`.
-Use when:
-- There's a genuine technical trade-off but no product/scope dimension
-- The question is about architecture, technology comparison, or engineering approach where both sides have real merit
-
-**Full panel** — PM + TL + DE. PM and TL use `model class: balanced`, DE uses `model class: deep-reasoning`.
-Use when:
-- The question is build-vs-shelve, scope, or prioritization
-- It's a major architectural choice with user or team impact
-- PM's lens (who benefits, what's the scope risk, cheapest experiment) would change the answer
-
-**Single-agent** — the specific agent the user prefixed with `@`. Used only when Step 1 detected an `@<agent>` prefix. Velo does not select this mode — the user did.
-
-Announce the selected mode before proceeding:
-
-For Direct:
-```
-**Direct.** [one sentence on why — e.g. "Concept question with a clear answer." or "Follow-on in this thread."]
-```
-
-For Lightweight:
-```
-**Lightweight panel — TL + DE.** [one sentence on why — e.g. "Technical trade-off, no product angle."]
-```
-
-For Full panel:
-```
-**Full panel — PM + TL + DE.** [one sentence on why — e.g. "Scope and architecture both in play."]
-```
-
-For Single-agent:
-```
-**Single-agent — @<agent>.** User-targeted advisory; skipping mode selection.
-```
+After announcing the mode, proceed to Step 3.
 
 ---
 

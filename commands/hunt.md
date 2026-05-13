@@ -52,23 +52,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 ## Telemetry
 
-Log every state transition. Mandatory — without transition logs there is no way to tune the soft caps.
+Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:new` and `/velo:task`).
 
-**Minimum payload per event**: `{state_from, state_to, trigger, timestamp}`.
+**Cap names used by this command**: `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
 
-**Trigger taxonomy**:
-- `auto` — non-gated transition (entry conditions met)
-- `user-gate:<choice>` — user-gated transition, with the chosen option recorded
-- `failure:<F-code>` — transition fired by a failure mode (e.g. `failure:F1`)
-- `cap:<name>` — transition fired by a counter cap (e.g. `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`)
-
-Events to emit:
-0. **Precondition check result** — fired before entering `VALIDATE`. Payload includes `trigger=preconditions:ok` or `trigger=preconditions:fail:<name>`. Logged regardless of outcome; on failure this is the last event before the skill halts.
-1. **State entry** — entry into each state (`state_from` = previous, `state_to` = entered). When the entry was triggered by a counter cap, the entry event carries `trigger=cap:<name>` (e.g. `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`); cap firings are not logged as a separate event. When the entry was triggered by a failure mode, `trigger=failure:<F-code>` (see event 3 — failure events still fire for the F-code itself).
-2. **Option resolution** — every `ask-options` resolution (record the chosen option in `trigger`).
-3. **Failure firing** — every failure-mode firing (F1–F12), even if the F-code re-enters the same state.
-4. (reserved — counter-cap firings are folded into event 1 via `trigger=cap:<name>` to avoid double logging.)
-5. **Skill termination** — fired when the workflow exits via `[exit]` (successful hunt complete) or reaches the `ABANDON` terminal. Payload includes `trigger=terminal:<reason>` where `<reason>` names the exit path: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-new`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
+**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-new`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
 
 ---
 

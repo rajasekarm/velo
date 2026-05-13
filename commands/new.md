@@ -58,26 +58,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 ## Telemetry
 
-Log every state transition. Mandatory — without transition logs there is no way to tune the soft caps.
+Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F8 per [Velo Failure Modes](skills/velo-failure-modes.md).
 
-**Minimum payload per event**: `{state_from, state_to, trigger, timestamp}`.
+**Cap names used by this command**: `cap:edd-cycles` (F2-edd at `EDD_REVIEW`), `cap:spec-cycles` (F2-spec at `SPEC_CHECK`), `cap:review-cycles` (F2-review at `REVIEW_PHASE`).
 
-**Trigger taxonomy**:
-- `auto` — non-gated transition (entry conditions met)
-- `user-gate:<choice>` — user-gated transition, with the chosen option recorded
-- `failure:<F-code>` — transition fired by a failure mode (e.g. `failure:F2`)
-- `cap:<name>` — transition fired by a counter cap (e.g. `cap:edd-cycles`, `cap:spec-cycles`, `cap:review-cycles`)
-
-Events to emit:
-0. **Precondition check result** — fired before entering `VALIDATE`. Payload includes `trigger=preconditions:ok` or `trigger=preconditions:fail:<name>`. Logged regardless of outcome; on failure this is the last event before the skill halts.
-1. **State entry** — entry into each state (`state_from` = previous, `state_to` = entered). When the entry was triggered by a counter cap, the entry event carries `trigger=cap:<name>`; cap firings are not logged as a separate event. When the entry was triggered by a failure mode, `trigger=failure:<F-code>` (see event 3 — failure events still fire for the F-code itself).
-2. **Option resolution** — every `ask-options` resolution (record the chosen option in `trigger`).
-3. **Failure firing** — every failure-mode firing (F1–F8), even if the F-code re-enters the same state.
-4. (reserved — counter-cap firings are folded into event 1 via `trigger=cap:<name>` to avoid double logging.)
-
-**Dual emission on F2 cap**: when F2 fires due to a per-phase cap, two events emit: state-entry into the destination with `trigger=cap:<phase>-cycles`, AND a failure event with `trigger=failure:F2`.
-
-5. **Skill termination** — fired when the workflow exits via `[exit]` (successful build complete) or reaches the `ABANDON` terminal. Payload includes `trigger=terminal:<reason>` where `<reason>` names the exit path: `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-spec-check`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
+**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-spec-check`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
 
 ---
 
@@ -350,9 +335,7 @@ Read the task breakdown and planning artifacts to determine execution order and 
 - Read `.velo/tasks/<slug>/prd.md`
 - Read `.velo/tasks/<slug>/engineering-design-doc.md`
 
-Execute tasks in the order defined by `task-breakdown.md` — directly. Do not hand off to `/velo:task`. Tasks with no dependencies run in parallel via `spawn-agent` in one runtime turn. Tasks with dependencies run only after their dependencies complete.
-
-**Lifecycle tracking**: register builders as todo items via `track-tasks` before spawning. Mark each item `in_progress` when its agent starts, `completed` when it returns. Only one item `in_progress` per parallel batch boundary (parallel spawns mark multiple items `in_progress` simultaneously; sequential spawns mark one at a time). Same lifecycle rules apply in `SPEC_CHECK` and `REVIEW_PHASE`.
+Execute tasks in the order defined by `task-breakdown.md` — directly. Do not hand off to `/velo:task`. Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Parallelism](skills/velo-parallelism.md). Same lifecycle rules apply in `SPEC_CHECK` and `REVIEW_PHASE`.
 
 Each builder receives (all embedded directly in the prompt — do not ask them to read files):
 - The task folder path: `.velo/tasks/<slug>/`
@@ -363,7 +346,7 @@ Each builder receives (all embedded directly in the prompt — do not ask them t
 
 **Token tracking**: after each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
 
-**Descope monitoring (per PERSONA)**: if the build phase exceeds the expected agent count, OR a builder flags scope confusion, fire F3 / F4 as appropriate.
+**Descope monitoring**: triggers and procedure per [Velo Descope Ritual](skills/velo-descope-ritual.md). Fire F3 / F4 as appropriate.
 
 **Exit conditions**:
 - All tasks in `task-breakdown.md` complete → (auto) → `SPEC_CHECK`
@@ -421,13 +404,9 @@ Before spawning reviewers, read both planning artifacts so you can pass contents
 - Read `.velo/tasks/<slug>/prd.md`
 - Read `.velo/tasks/<slug>/engineering-design-doc.md`
 
-Spawn ALL relevant reviewers **in parallel**. Each reviewer receives (embedded directly in the prompt — do not ask them to read files):
+Spawn ALL relevant reviewers **in parallel** per [Velo Parallelism](skills/velo-parallelism.md), including the mandatory reviewer pairings defined there. Each reviewer receives (embedded directly in the prompt — do not ask them to read files):
 - The full contents of `prd.md` and `engineering-design-doc.md` inline
 - Their specific domain scope (what files/changes to review)
-
-**Mandatory reviewer pairings**:
-- **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses.
-- **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage.
 
 **Rework loop**: after all reviewers return, check verdicts. Track cycle count starting at 1. Maintain a running list of unresolved findings across cycles.
 
@@ -461,13 +440,7 @@ Spawn ALL relevant reviewers **in parallel**. Each reviewer receives (embedded d
 
 **Body**:
 
-Use `ask-options` to present the review results before committing:
-- **Header**: `"Ship approval"`
-- **Question**: `"All reviewers passed. [Summary of what was built and review cycles taken.] Approve commit?"`
-- **Options**:
-  - `Approved, commit`
-  - `Hold, I have feedback`
-  - `Abandon`
+Use the commit-gate pattern per [Velo Approval Gates](skills/velo-gates.md), with header `"Ship approval"` and question `"All reviewers passed. [Summary of what was built and review cycles taken.] Approve commit?"`. Options: `Approved, commit` / `Hold, I have feedback` / `Abandon`.
 
 If the user has feedback: treat it as rework input — spawn the relevant builder(s) with the feedback inline, re-run affected reviewers, then re-present this gate.
 
@@ -488,9 +461,7 @@ If the user has feedback: treat it as rework input — spawn the relevant builde
 
 **Body**:
 
-Spawn the `commit` agent.
-
-Per PERSONA hard rule: never commit without explicit per-action approval. The `SHIP_GATE` provides that authorization for this specific action.
+Spawn the `commit` agent. The `SHIP_GATE` provides the per-action authorization required by [Velo Approval Gates](skills/velo-gates.md).
 
 **Token tracking**: after the commit agent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
 
@@ -508,14 +479,7 @@ Per PERSONA hard rule: never commit without explicit per-action approval. The `S
 
 **Body**:
 
-Use `ask-options`:
-- **Header**: `"Push to remote?"`
-- **Question**: `"Commit done. Push?"`
-- **Options**:
-  - `Push`
-  - `Hold — do not push`
-
-Per PERSONA hard rule: past commit authorization does not extend to push. Always ask.
+Apply the push-gate pattern per [Velo Approval Gates](skills/velo-gates.md).
 
 **Exit conditions**:
 - `Push` → (user-gate: push) → run push; on success → `DONE` (terminal `delivered-and-committed-and-pushed`)
@@ -644,21 +608,13 @@ Only include rows for agents actually used.
 
 ## Failure modes
 
-Global F-table. State headers cross-reference these by ID — do not duplicate per state.
+F-code definitions and standard handling are in [Velo Failure Modes](skills/velo-failure-modes.md). This command can trigger F1–F8. State headers cross-reference by ID; failures that fire from a state appear on that state's `Failure modes` line.
 
-F2 is parameterized by phase. The per-phase cycle cap is set in each state's Body. When F2 fires, the variant in the `ask-options` header names the phase.
+**Command-specific F2 parameterization**: F2 fires at cycle 3 of the per-phase rework counter. Per-phase caps: `EDD_REVIEW` = 3 (F2-edd), `SPEC_CHECK` = 3 (F2-spec), `REVIEW_PHASE` = 3 (F2-review). Cycles 1 and 2 are automatic rework attempts; cycle 3 fires F2. When F2 fires, the `ask-options` header names the phase (e.g. `"EDD review cap reached"`); `Accept as-is and proceed` routes to the next-phase state: `EDD_REVIEW` → `EDD_APPROVAL`, `SPEC_CHECK` → `REVIEW_PHASE`, `REVIEW_PHASE` → `SHIP_GATE`.
 
-| ID | Trigger | Handling |
-|---|---|---|
-| F1 | Agent spawn unavailable or fails | Halt and report the blocker per ADAPTER.md. Do not role-play agents. |
-| F2 | F2 fires at cycle 3 of the per-phase rework counter. Per-phase caps: `EDD_REVIEW` = 3 (F2-edd), `SPEC_CHECK` = 3 (F2-spec), `REVIEW_PHASE` = 3 (F2-review). Cycles 1 and 2 are automatic rework attempts; cycle 3 fires F2. | Use `ask-options` with header `"<Phase> cap reached"` and the unresolved findings inline. Options: `Continue (extend cap)` → re-enter source state (counter advances to cycle 4, etc.); `Accept as-is and proceed` → next-phase state: `EDD_REVIEW` → `EDD_APPROVAL`, `SPEC_CHECK` → `REVIEW_PHASE`, `REVIEW_PHASE` → `SHIP_GATE`; `Abandon` → `ABANDON`. F2 firing also triggers PERSONA's descope ritual (pause, summarize what's done vs left, ask the user). The two are the same event in this design. |
-| F3 | Builder flags scope confusion | Trigger PERSONA's descope ritual: pause, summarize done vs left, then use `ask-options`: `Keep going`, `Cut scope`, `Abandon`. |
-| F4 | Build phase exceeds expected agent count | Trigger PERSONA's descope ritual: pause, summarize done vs left, then use `ask-options`: `Keep going`, `Cut scope`, `Abandon`. |
-| F5 | Cross-task dependency surfaces mid-flow | Halt and surface immediately; do not proceed (PERSONA cross-task responsibility). Use `ask-options`: `Wait for upstream`, `Abandon`. |
-| F6 | `context.md` stale (>30 days OR predates multiple completed tasks) | Flag at `VALIDATE` entry per PERSONA. Use `ask-options`: `Continue with current context`, `Pause — let me update context first`. User decides; do not auto-update. |
-| F7 | User asks Velo to write code | Decline per Hard Rule. Use `ask-options`: `Route to /velo:new agents` (when current mode is new, restate the request inline as the new brief), `Stay in current mode and rephrase`, `Abandon`. |
-| F8 (from PM_PHASE) | PM revises or rejects a Velo-announced Assumption | PRD is authoritative; note divergence in `prd.md`'s Assumptions section; continue to `PRD_REVIEW`. |
-| F8 (from TL_PHASE) | EDD discovers a PRD assumption is wrong | STOP; loop back to `PM_PHASE` with the contradiction inline; the PRD must be revised first. The cycle counter for PRD revisions does not reset. Do not silently override PRD assumptions in the EDD. |
+**F8 variants used here**:
+- From `PM_PHASE`: PM revises or rejects a Velo-announced Assumption → PRD is authoritative; note divergence in `prd.md`'s Assumptions section; continue to `PRD_REVIEW`.
+- From `TL_PHASE`: EDD discovers a PRD assumption is wrong → STOP; loop back to `PM_PHASE` with the contradiction inline; PRD must be revised first. PRD-revision cycle counter does not reset. Do not silently override PRD assumptions in the EDD.
 
 ---
 
