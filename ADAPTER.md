@@ -13,7 +13,6 @@ Use these canonical concept names in shared playbooks and prompts.
 | `resolve-model` | Selecting model behavior from a provider-neutral model class |
 | `ask-options` | Asking the user to choose from a small set of options or approve a gate |
 | `spawn-agent` | Delegating work to a Velo team member |
-| `run-external-review` | Running an independent outside-model review |
 | `track-tasks` | Creating or updating visible workflow todo state |
 | `load-tool` | Loading a runtime tool that may not be available yet |
 | `read-files` | Reading or searching repository files |
@@ -29,7 +28,6 @@ Model classes describe the reasoning budget Velo needs from a role.
 |---|---|---|---|
 | balanced | Routine planning, build, verification, and review work | `sonnet` | inherited model, or medium reasoning when selectable |
 | deep-reasoning | Architecture, high-risk design review, and second-order trade-offs | `opus` | high or xhigh reasoning when selectable |
-| external-review | Independent outside-model review for design documents | external reviewer prompt from `agents/gpt-reviewer.md` | latest suitable GPT model through Codex CLI or available GitHub/Codex tooling |
 
 Use `resolve-model` with the model class from `TEAM.md` as routing intent. Resolve it through the active runtime before spawning an agent. If the runtime cannot select a model directly, omit the model override and preserve the requested reasoning budget in the prompt.
 
@@ -61,18 +59,6 @@ Use `spawn-agent` whenever a playbook delegates work to a team member.
 | Agent unavailable | Stop and report the blocker | Stop and report that the active runtime cannot run workflows requiring independent agents |
 
 Do not role-play a delegated team member when the active workflow requires an independent agent.
-
-## External Review
-
-Use `run-external-review` whenever a playbook asks for an independent outside-model review.
-
-| Need | Claude Code | Codex |
-|---|---|---|
-| Independent review execution | Invoke the configured external reviewer prompt through the available external model runner | Run the configured external reviewer prompt through the latest suitable GPT model via Codex CLI or available GitHub/Codex tooling |
-| Output artifact | Write the requested review file if the playbook requires one | Write the requested review file if the playbook requires one |
-| Runner unavailable | Stop and report the blocker | Stop and report the blocker |
-
-Agent prompts should build the review prompt and invoke `run-external-review`. They should not hard-code runner commands or provider model names.
 
 ## Todo State
 

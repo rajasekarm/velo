@@ -75,7 +75,7 @@ States:
 - `PM_PHASE` — spawn Product Manager, produce `prd.md`
 - `PRD_REVIEW` — user reviews PRD; approve or revise loop
 - `TL_PHASE` — spawn Tech Lead, produce `engineering-design-doc.md` + `task-breakdown.md`
-- `EDD_REVIEW` — Distinguished Engineer + External reviewer in parallel; ≤3 cycle cap (F2-edd)
+- `EDD_REVIEW` — Distinguished Engineer reviews engineering design doc; ≤3 cycle cap (F2-edd)
 - `EDD_APPROVAL` — user approves EDD + task breakdown before build
 - `BUILD_PHASE` — direct spawning per task breakdown; parallel where independent
 - `SPEC_CHECK` — spec-checker validates against PRD; ≤2 cycle cap (F2-spec); BLOCKED loops back to PM
@@ -272,24 +272,22 @@ Re-spawn Tech Lead, wait for both files, then re-validate before continuing.
 
 1. Read `.velo/tasks/<slug>/prd.md` — you will pass the contents inline.
 2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — you will pass the contents inline.
-3. Spawn **both reviewers in parallel**:
-   - Read `agents/distinguished-engineer.md` → spawn Distinguished Engineer with both file contents embedded directly in the prompt (do not ask it to read files — provide contents inline).
-   - Read `agents/gpt-reviewer.md` → spawn External Distinguished Engineer with the task folder path only — it reads files itself before using `run-external-review`.
+3. Read `agents/distinguished-engineer.md` → spawn Distinguished Engineer with both file contents embedded directly in the prompt (do not ask it to read files — provide contents inline).
 
-Wait for both to return. Track cycle count starting at 1.
+Wait for the reviewer to return. Track cycle count starting at 1.
 
 **Cycle counter on re-entry**: when `EDD_REVIEW` is re-entered from `EDD_APPROVAL` (user requested changes), the cycle counter resets to 1.
 
-- If **both** return **APPROVE** → proceed to `EDD_APPROVAL`.
-- If **either** returns **REVISE** and cycle < 3 → collect all critique from both reviewers. Spawn Tech Lead with combined feedback and what was already attempted in previous cycles. Wait for revised `engineering-design-doc.md` and `task-breakdown.md`. Re-validate both files exist. Increment cycle count and re-run both reviewers in parallel.
-- If **either** returns **REVISE** and cycle == 3 → fire F2-edd (per-phase cap == 3 for `EDD_REVIEW`).
+- If DE returns **APPROVE** → proceed to `EDD_APPROVAL`.
+- If DE returns **REVISE** and cycle < 3 → collect the critique. Spawn Tech Lead with the feedback and what was already attempted in previous cycles. Wait for revised `engineering-design-doc.md` and `task-breakdown.md`. Re-validate both files exist. Increment cycle count and re-run the Distinguished Engineer.
+- If DE returns **REVISE** and cycle == 3 → fire F2-edd (per-phase cap == 3 for `EDD_REVIEW`).
 
 **Token tracking**: after each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
 
 **Exit conditions**:
-- Both reviewers APPROVE → (auto) → `EDD_APPROVAL`
-- Cycle < 3 with any REVISE → (auto) → loop within `EDD_REVIEW` (re-spawn TL + both reviewers)
-- Cycle == 3 with any REVISE → (failure:F2) → F2-edd: see F2 handling
+- DE returns APPROVE → (auto) → `EDD_APPROVAL`
+- Cycle < 3 with REVISE → (auto) → loop within `EDD_REVIEW` (re-spawn TL + DE)
+- Cycle == 3 with REVISE → (failure:F2) → F2-edd: see F2 handling
 - Spawn unavailable or fails → (failure:F1) → halt and report blocker
 
 **Failure modes**: can trigger F1, F2 (per-phase cap = 3), F7.
@@ -298,7 +296,7 @@ Wait for both to return. Track cycle count starting at 1.
 
 ## State: EDD_APPROVAL
 
-**Entry condition**: `EDD_REVIEW` reported both reviewers APPROVE (or user accepted F2-edd override).
+**Entry condition**: `EDD_REVIEW` reported DE APPROVE (or user accepted F2-edd override).
 
 **Body**:
 
@@ -312,7 +310,7 @@ Use `ask-options` to present the engineering design doc and task breakdown for a
   - `I have changes`
   - `Abandon`
 
-If the user has changes: convey them to the Tech Lead for revision, re-run both reviewers in parallel, then re-present.
+If the user has changes: convey them to the Tech Lead for revision, re-run the Distinguished Engineer, then re-present.
 
 **Do not proceed to build until both the engineering design doc and task breakdown are explicitly approved.**
 

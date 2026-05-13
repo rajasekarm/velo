@@ -30,12 +30,10 @@ assert_file_contains "${adapter_file}" '| `load-tool` |'
 assert_file_contains "${adapter_file}" '| `read-files` |'
 assert_file_contains "${adapter_file}" '| `run-shell` |'
 assert_file_contains "${adapter_file}" '| `handoff-mode` |'
-assert_file_contains "${adapter_file}" '| `run-external-review` |'
 assert_file_contains "${adapter_file}" '| `report-cost` |'
 assert_file_contains "${adapter_file}" "## Model Classes"
 assert_file_contains "${adapter_file}" "| balanced |"
 assert_file_contains "${adapter_file}" "| deep-reasoning |"
-assert_file_contains "${adapter_file}" "| external-review |"
 assert_file_contains "${adapter_file}" "## Interaction Prompts"
 assert_file_contains "${adapter_file}" "## Agent Spawning"
 assert_file_contains "${adapter_file}" "## Todo State"

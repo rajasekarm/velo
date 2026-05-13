@@ -12,7 +12,6 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 - **Explicit task ordering**: Tech Lead produces a `task-breakdown.md` alongside the engineering design doc — who does what, in what order, what can run in parallel. Build phase executes it directly, no guessing.
 - **Bounded rework loop**: Reviewers that fail send builders back with findings inline. Cycle 1 fixes Critical + Significant, cycle 2 fixes remaining Critical only. Capped at 3 cycles — if issues remain, you decide: extend, accept as-is, or abandon.
 - **Spec-check before review**: Every build is verified against the PRD before reviewers run. Acceptance criteria are mapped to diff evidence; unmet criteria trigger rework. Capped at 2 automatic cycles — on the 3rd, you decide: extend, accept-with-FYI, or abandon. Ambiguous PRDs route back to the PM, not the builder.
-- **Dual independent review**: Engineering design docs are reviewed by both the Distinguished Engineer (`deep-reasoning`) and an External Reviewer (`external-review`) in parallel — two independent perspectives before build starts.
 - **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
 - **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. PM, builders, and reviewers use `balanced`. `ADAPTER.md` maps these classes to the active runtime.
 
@@ -24,7 +23,6 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 |---|---|---|
 | **Velo** (Engineering Manager) | — | Orchestrates the team, owns delivery, never implements |
 | **Distinguished Engineer** | deep-reasoning | Peer to EM — sets technical bar, reviews architecture |
-| **External Distinguished Engineer** | external-review | Independent review of engineering design doc through `run-external-review`, runs parallel to Distinguished Engineer |
 
 ### Planners
 
@@ -78,7 +76,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 See [WORKFLOW.md](WORKFLOW.md) for detailed flow diagrams.
 
 ### `/velo:new` — New features
-Structured workflow: PM → Tech Lead → Dual review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
+Structured workflow: PM → Tech Lead → DE review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
 
 ### `/velo:task` — Day-to-day tasks
 Lightweight path for bug fixes, refactors, and small changes. No planning phase — straight to build and review.

@@ -5,7 +5,6 @@
 | Agent | File | Role | Model Class |
 |---|---|---|---|
 | **distinguished-engineer** | `agents/distinguished-engineer.md` | Technical bar, architecture review — peer to EM | deep-reasoning |
-| **gpt-reviewer** | `agents/gpt-reviewer.md` | Distinguished Engineer from outside the team — independent review of engineering design doc, runs parallel to Distinguished Engineer | external-review |
 
 ---
 

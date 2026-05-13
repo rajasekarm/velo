@@ -12,12 +12,12 @@ flowchart TD
     A1 -->|approved| TL[Tech Lead\nwrites engineering-design-doc.md\n+ task-breakdown.md]
     TL --> TLV{task-breakdown.md\nexists?}
     TLV -->|missing| TL
-    TLV -->|ok| REV[Distinguished Engineer\n+ GPT Reviewer in parallel]
+    TLV -->|ok| REV[Distinguished Engineer\nreviews EDD]
     REV -->|REVISE cycle 1-2| TL
     REV -->|cycle 3| A2C{Your call}
     A2C -->|extend| TL
     A2C -->|accept| A2{Your approval}
-    REV -->|both APPROVE| A2{Your approval}
+    REV -->|APPROVE| A2{Your approval}
     A2 -->|changes| TL
     A2 -->|approved| BUILD
 

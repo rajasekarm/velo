@@ -30,10 +30,8 @@ assert_file_contains "${adapter_file}" "## Model Classes"
 assert_file_contains "${team_file}" "Model classes are defined in \`ADAPTER.md\`."
 assert_file_contains "${team_file}" "| balanced |"
 assert_file_contains "${team_file}" "| deep-reasoning |"
-assert_file_contains "${team_file}" "| external-review |"
 assert_file_contains "${adapter_file}" "| balanced |"
 assert_file_contains "${adapter_file}" "| deep-reasoning |"
-assert_file_contains "${adapter_file}" "| external-review |"
 
 python3 - "${team_file}" "${adapter_file}" <<'PY'
 import re
@@ -51,7 +49,7 @@ for line in adapter_file.read_text().splitlines():
     if len(cols) >= 1 and re.fullmatch(r"[a-z][a-z-]+", cols[0]):
         adapter_classes.add(cols[0])
 
-required = {"balanced", "deep-reasoning", "external-review"}
+required = {"balanced", "deep-reasoning"}
 if not required.issubset(adapter_classes):
     missing = ", ".join(sorted(required - adapter_classes))
     raise SystemExit(f"FAIL: ADAPTER.md missing model classes: {missing}")

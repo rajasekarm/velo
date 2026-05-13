@@ -20,7 +20,6 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 AGENTS_WITHOUT_SKILLS=(
   "commit"
   "distinguished-engineer"
-  "gpt-reviewer"
   "learnings-agent"
   "spec-checker"
   "tech-lead"
