@@ -62,7 +62,7 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Cap names used by this command**: `cap:edd-cycles` (F2-edd at `EDD_REVIEW`), `cap:spec-cycles` (F2-spec at `SPEC_CHECK`), `cap:review-cycles` (F2-review at `REVIEW_PHASE`).
 
-**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-spec-check`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
+**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-spec-check`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
 
 ---
 
@@ -83,6 +83,7 @@ States:
 - `SHIP_GATE` — user approves shipping the change after reviewers pass
 - `COMMIT_GATE` — ask "Commit?" via `ask-options`
 - `PUSH_GATE` — ask "Push?" via `ask-options` (after commit succeeds)
+- `PR_GATE` — ask "Open PR?" via `ask-options` (after push succeeds, unless on base branch)
 - `DONE` — terminal; emit final report
 - `ABANDON` — terminal; emit abandon summary
 
@@ -482,7 +483,7 @@ Spawn the `commit` agent. The `SHIP_GATE` provides the per-action authorization 
 Apply the push-gate pattern per [Velo Approval Gates](skills/velo-gates.md).
 
 **Exit conditions**:
-- `Push` → (user-gate: push) → run push; on success → `DONE` (terminal `delivered-and-committed-and-pushed`)
+- `Push` → (user-gate: push) → run push; on success: resolve the default branch per [Velo Approval Gates — Base-branch detection](skills/velo-gates.md); if the current branch equals the default branch → `DONE` (terminal `delivered-and-committed-and-pushed`); otherwise → `PR_GATE`
 - `Hold — do not push` → (user-gate: skip-push) → `DONE` (terminal `delivered-and-committed`)
 - Push fails → (failure:F1) → halt and report blocker
 
@@ -490,9 +491,30 @@ Apply the push-gate pattern per [Velo Approval Gates](skills/velo-gates.md).
 
 ---
 
+## State: PR_GATE
+
+**Entry condition**: `PUSH_GATE` ran push successfully AND the current branch is not the repo's default branch (a PR from base → base is meaningless). See [Velo Approval Gates — Base-branch detection](skills/velo-gates.md) for the resolution order.
+
+**Body**:
+
+Apply the PR-gate pattern per [Velo Approval Gates](skills/velo-gates.md). Per PERSONA's per-action approval rule, PR creation is a distinct visible action and requires its own gate even though push already happened.
+
+On `Open PR`: spawn the `commit` agent in PR mode (pass `mode: pr` in `$ARGUMENTS` along with the current branch name and the repo's default branch as the base). The agent analyzes commits since the base branch, drafts a PR title and body, runs `gh pr create`, and returns the PR URL.
+
+**Token tracking**: after the commit agent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
+
+**Exit conditions**:
+- `Open PR` → (user-gate: open-pr) → spawn commit agent in PR mode; on success → `DONE` (terminal `delivered-and-committed-and-pushed-and-pr-opened`)
+- `Skip — no PR` → (user-gate: skip-pr) → `DONE` (terminal `delivered-and-committed-and-pushed`)
+- PR creation fails → (failure:F1) → halt and report blocker (user can retry manually with `gh pr create`)
+
+**Failure modes**: can trigger F1, F7.
+
+---
+
 ## State: DONE
 
-**Entry condition**: `PUSH_GATE` resolved cleanly.
+**Entry condition**: `PUSH_GATE` resolved with skip-push, OR `PUSH_GATE` pushed to the repo's default branch (PR_GATE bypassed), OR `PR_GATE` resolved cleanly.
 
 **Body**:
 
