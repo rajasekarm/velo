@@ -57,9 +57,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F7 per [Velo Failure Modes](skills/velo-failure-modes.md). F8 does not apply to `/velo:task` (no PRD/EDD phase).
 
-**Cap names used by this command**: `cap:review-cycles` (F2 at `REVIEW`).
+**Cap names used by this command**: `cap:spec-audit-cycles` (F2-spec-audit at `SPEC_AUDIT`), `cap:review-cycles` (F2 at `REVIEW`).
 
-**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-validate`, `preflight-failed`.
+**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-spec-audit`, `abandoned-spec-approval`, `abandoned-review-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-validate`, `preflight-failed`.
+
+**Terminal-reason convention**: F2 abandons are phase-named for telemetry clarity. SPEC_AUDIT F2 abandon → `abandoned-spec-audit`. REVIEW F2 abandon → `abandoned-review-f2`. Other phase-cap abandons follow the same `abandoned-<phase>` pattern.
 
 ---
 
@@ -70,6 +72,8 @@ States:
 - `VALIDATE` — read request, classify, apply requirement-interpretation, fail-fast on preconditions
 - `PLAN` — domain partition + Assumptions ledger
 - `ANNOUNCE` — print plan; if user objects → back to `PLAN`
+- `SPEC_AUDIT` — TL audits the task-spec via spec-quality-check skill; loops back to PM on blocking findings; ≤3 cycle cap
+- `SPEC_APPROVAL` — user reviews the audited task-spec and explicitly approves, revises, or abandons before any builder is spawned
 - `BUILD` — spawn builders (parallel where independent, sequential where dependent); includes tests phase
 - `REVIEW` — spawn all relevant reviewers in parallel; rework loop with F2 cap at ≥3 cycles
 - `COMMIT_GATE` — ask "Commit?" via `ask-options`
@@ -159,10 +163,10 @@ Plan:
 Execution: <parallel vs sequential, and why>
 ```
 
-Per the PERSONA hard rule "Always ask before delegating", wait for the user. If the user approves, proceed to `BUILD`. If the user objects, re-enter `PLAN`. If the user cancels, exit to `ABANDON`. Require explicit approval.
+Per the PERSONA hard rule "Always ask before delegating", wait for the user. If the user approves, proceed to `SPEC_AUDIT`. If the user objects, re-enter `PLAN`. If the user cancels, exit to `ABANDON`. Require explicit approval.
 
 **Exit conditions**:
-- User approves plan → (user-gate: approve) → `BUILD`
+- User approves plan → (user-gate: approve) → `SPEC_AUDIT`
 - User has changes → (user-gate: revise) → `PLAN`
 - User cancels → (user-gate: cancel) → `ABANDON` (terminal `cancelled-validate`)
 
@@ -170,9 +174,73 @@ Per the PERSONA hard rule "Always ask before delegating", wait for the user. If 
 
 ---
 
-## State: BUILD
+## State: SPEC_AUDIT
 
 **Entry condition**: `ANNOUNCE` plan approved by user.
+
+**Body**:
+
+The task-spec is **transient** — it is produced inline by PM, audited inline by TL, and carried forward to `BUILD` in memory. Nothing is written to `.velo/tasks/` or `.velo/products/` in this state.
+
+1. **Spawn `product-manager`** with `Mode: task-spec` and the user's brief inline (plus any assumptions/clarifications captured at `PLAN`). PM returns a 5-section task-spec inline as a fenced markdown block: Goal, Acceptance criteria, Out of scope, Open questions, Constraints. Do NOT write the task-spec to disk.
+
+2. **Spawn `tech-lead`** with the task-spec inline. Instruct TL to run the [Spec Quality Check](skills/spec-quality-check.md) skill (TL's Workflow Step 0) on the inline task-spec — not on a PRD file. TL returns either:
+   - `STATUS: SPEC_OK` (clean or only advisory findings) → carry the audited task-spec forward (the fenced markdown block from PM) along with any TL advisory findings (completeness / accepted-scenario / rejected-scenario) into `SPEC_APPROVAL` for user review. Do not print the spec or advisories in this state — `SPEC_APPROVAL` is responsible for surfacing both.
+   - `STATUS: SPEC_REWORK_NEEDED` (one or more blocking findings — conflict or ambiguity) → see step 3.
+
+3. **Rework loop on blocking findings**: present each finding to the user via `ask-options`. For each finding, the options are:
+   - `Keep the requirement as-is` — finding is dismissed for this cycle; carry the original requirement forward.
+   - `Revise with this proposal` — option label is TL's `Proposed revision:` text **verbatim** from the finding; accepted revisions replace the original requirement.
+
+   Collect decisions across all findings, then re-spawn `product-manager` with `Mode: task-spec` and the original task-spec + the user's decisions inline. PM produces a revised task-spec inline. Re-spawn TL on the revised task-spec for re-audit.
+
+4. **Cycle counter** starts at 1. Each TL re-audit increments. The auto-loop runs cycles 1, 2; cycle 3 fires F2-spec-audit.
+
+**Token tracking**: after each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
+
+**Exit conditions**:
+- TL returns `STATUS: SPEC_OK` (clean or only advisory) → (auto) → `SPEC_APPROVAL`
+- TL returns `STATUS: SPEC_REWORK_NEEDED`, cycle < 3 → (auto) → present findings to user, re-spawn PM with decisions, re-spawn TL → loop within `SPEC_AUDIT`
+- TL returns `STATUS: SPEC_REWORK_NEEDED`, cycle == 3 → (failure:F2) → F2-spec-audit: see F2 handling
+- User abandons mid-loop → (user-gate: abandon) → `ABANDON` (terminal `abandoned-spec-audit`)
+- Spawn unavailable or fails → (failure:F1) → halt and report blocker
+
+**Failure modes**: can trigger F1, F2 (cap = 3), F7.
+
+---
+
+## State: SPEC_APPROVAL
+
+**Entry condition**: `SPEC_AUDIT` returned `STATUS: SPEC_OK` (or user accepted F2-spec-audit override at cycle 3), carrying the audited task-spec and any advisory findings forward.
+
+**Body**:
+
+The audited task-spec is still **transient** — this state displays it for user review, captures the gate decision, and either hands it forward to `BUILD` in memory or loops back through `SPEC_AUDIT` for revision. Nothing is written to disk.
+
+1. **Print the audited task-spec verbatim** — the fenced markdown block originally returned by `product-manager` and carried forward through `SPEC_AUDIT`.
+
+2. **Print advisory findings (if any)** — one concise line per advisory finding returned by TL, each prefixed `Advisory:`. If TL returned no advisories, skip this step entirely.
+
+3. **Apply `ask-options`** with header `"Approve task-spec?"` and exactly three options:
+   - `Approve, proceed to build`
+   - `Revise (which section?)`
+   - `Abandon`
+
+4. **On `Revise (which section?)`**: apply `ask-options` again with header `"Which section needs revision?"` and options: `Goal` / `Acceptance criteria` / `Out of scope` / `Open questions` / `Constraints`. After the user picks a section, prompt the user in the next conversational turn for the specific change they want (free-text reply — no adapter primitive needed). Then re-spawn `product-manager` with `Mode: task-spec` and the original task-spec + the user's section + revision text inline. Transition to `SPEC_AUDIT` with the cycle counter reset to 1.
+
+**Exit conditions**:
+- `Approve, proceed to build` → (user-gate: approve-spec) → `BUILD`
+- `Revise (which section?)` → (user-gate: revise-spec) → re-spawn PM with section + revision text → `SPEC_AUDIT` (cycle counter resets to 1)
+- `Abandon` → (user-gate: abandon) → `ABANDON` (terminal `abandoned-spec-approval`)
+- Spawn unavailable or fails on Revise path → (failure:F1) → halt and report blocker
+
+**Failure modes**: can trigger F1, F7.
+
+---
+
+## State: BUILD
+
+**Entry condition**: `SPEC_APPROVAL` returned `Approve, proceed to build` (or user accepted F2-spec-audit override at `SPEC_AUDIT` cycle 3, which advances through `SPEC_APPROVAL`).
 
 **Body**:
 
@@ -305,6 +373,7 @@ Print the final-report template (see Templates). Skill ends.
 **Entry condition**: any of:
 - User selects "Abandon" or "Cancel" at any interaction prompt
 - User types "abandon", "stop", or "cancel" mid-task
+- User selects "Abandon" at the SPEC_APPROVAL gate
 - F2 cap reached and user chose "Abandon"
 - F3 / F4 descope ritual resolved with "Abandon"
 - F5 cross-task dependency surfaced and user chose to halt
@@ -372,7 +441,10 @@ Only include rows for agents actually used.
 
 F-code definitions and standard handling are in [Velo Failure Modes](skills/velo-failure-modes.md). This command can trigger F1–F7. State headers cross-reference by ID; failures that fire from a state appear on that state's `Failure modes` line.
 
-**Command-specific F2 trigger**: reviewer rejects ≥3 cycles on the same agent OR same phase. When F2 fires, this command uses simplified options: `Cut scope`, `Abandon`, `Push through with explicit override` (instead of the standard phase-based set). F2 firing still triggers the descope ritual ([Velo Descope Ritual](skills/velo-descope-ritual.md)) — the two are the same event.
+**Command-specific F2 trigger**: F2 fires in two places.
+
+- At `REVIEW`: reviewer rejects ≥3 cycles on the same agent OR same phase. When F2 fires, this command uses simplified options: `Cut scope`, `Abandon`, `Push through with explicit override` (instead of the standard phase-based set). `Abandon` → `ABANDON` (terminal `abandoned-review-f2`). F2 firing still triggers the descope ritual ([Velo Descope Ritual](skills/velo-descope-ritual.md)) — the two are the same event.
+- At `SPEC_AUDIT`: TL returns `STATUS: SPEC_REWORK_NEEDED` for a third consecutive cycle. Cap = 3. Use `ask-options` with header `"Spec audit cap reached"` and simplified options: `Ship with known gaps and proceed to build`, `Cut scope`, `Abandon`. `Ship with known gaps and proceed to build` advances to `SPEC_APPROVAL` (so the new approval gate is not bypassed by the override path) carrying the current task-spec and unresolved findings forward as advisories. `Cut scope` re-enters `PLAN` with the unresolved findings inline. `Abandon` → `ABANDON` (terminal `abandoned-spec-audit`). The descope ritual does NOT fire here — no builders have run yet, so there's nothing to descope.
 
 ---
 
