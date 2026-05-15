@@ -60,9 +60,9 @@ The following must be true before the workflow starts. If any precondition fails
 
 Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F8 per [Velo Failure Modes](skills/velo-failure-modes.md).
 
-**Cap names used by this command**: `cap:edd-cycles` (F2-edd at `EDD_REVIEW`), `cap:spec-cycles` (F2-spec at `SPEC_CHECK`), `cap:review-cycles` (F2-review at `REVIEW_PHASE`).
+**Cap names used by this command**: `cap:edd-cycles` (F2-edd at `EDD_REVIEW`), `cap:review-cycles` (F2-review at `REVIEW_PHASE`).
 
-**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-spec-check`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
+**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
 
 ---
 
@@ -78,7 +78,6 @@ States:
 - `EDD_REVIEW` — Distinguished Engineer reviews engineering design doc; ≤3 cycle cap (F2-edd)
 - `EDD_APPROVAL` — user approves EDD + task breakdown before build
 - `BUILD_PHASE` — direct spawning per task breakdown; parallel where independent
-- `SPEC_CHECK` — spec-checker validates against PRD; ≤2 cycle cap (F2-spec); BLOCKED loops back to PM
 - `REVIEW_PHASE` — builder reviewers in parallel; ≤3 cycle cap (F2-review)
 - `SHIP_GATE` — user approves shipping the change after reviewers pass
 - `COMMIT_GATE` — ask "Commit?" via `ask-options`
@@ -153,7 +152,7 @@ Plan:
 - FE Engineer: <UI to build against engineering design doc> (parallel with backend)
 - ...
 
-Execution: PM → Tech Lead (approval gate) → Build (backend stream + FE stream in parallel) → Spec Check → Review
+Execution: PM → Tech Lead (spec audit + EDD, approval gate) → Build (backend stream + FE stream in parallel) → Review
 ```
 
 Per the PERSONA hard rule "Always ask before delegating", wait for the user. If the user revises, re-render. If the user approves, proceed to `PM_PHASE`.
@@ -238,6 +237,7 @@ If the user has changes: convey them to the PM for revision, wait for the update
    - The task folder path: `.velo/tasks/<slug>/`
    - The full contents of `prd.md` embedded directly in the prompt (do not ask the agent to read it — provide it inline)
    - Instruction to read the existing codebase for conventions and constraints
+   - **Explicit reminder to run TL's Step 0 — spec-quality-check** on `prd.md` BEFORE any EDD work. If TL returns `STATUS: SPEC_REWORK_NEEDED`, TL stops without writing any files and returns the findings list inline. This is the spec-quality F8 variant — see Exit conditions.
    - Explicit instruction that `engineering-design-doc.md` MUST include an `## Assumptions (flag if wrong)` section. Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every technical interpretation made when translating the PRD into design — terms whose meaning could change which code path runs, which data gets touched, or which contract the team commits to. Each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term resolves to exactly one obvious signal. If the EDD discovers a PRD assumption is wrong (e.g. the technical reality contradicts a product-level interpretation), STOP and notify Velo before continuing — the PRD must be revised first. Do not silently override PRD assumptions in the EDD.
 4. Outputs: `.velo/tasks/<slug>/engineering-design-doc.md` (with Assumptions section included) and `.velo/tasks/<slug>/task-breakdown.md`.
 
@@ -256,6 +256,7 @@ Re-spawn Tech Lead, wait for both files, then re-validate before continuing.
 
 **Exit conditions**:
 - Both files exist → (auto) → `EDD_REVIEW`
+- TL returns `STATUS: SPEC_REWORK_NEEDED` from Step 0 spec-quality-check → (failure:F8) → loop back to `PM_PHASE` with findings inline; PM revises `prd.md`; on return → `PRD_REVIEW` → `TL_PHASE`. No files written this cycle.
 - TL flagged PRD assumption wrong → (failure:F8) → loop back to `PM_PHASE` with the contradiction inline; on PM revision → `PRD_REVIEW` → `TL_PHASE`
 - Spawn unavailable or fails → (failure:F1) → halt and report blocker
 - User aborts → (user-gate: abandon) → `ABANDON` (terminal `abandoned-user`)
@@ -334,7 +335,7 @@ Read the task breakdown and planning artifacts to determine execution order and 
 - Read `.velo/tasks/<slug>/prd.md`
 - Read `.velo/tasks/<slug>/engineering-design-doc.md`
 
-Execute tasks in the order defined by `task-breakdown.md` — directly. Do not hand off to `/velo:task`. Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Parallelism](skills/velo-parallelism.md). Same lifecycle rules apply in `SPEC_CHECK` and `REVIEW_PHASE`.
+Execute tasks in the order defined by `task-breakdown.md` — directly. Do not hand off to `/velo:task`. Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Parallelism](skills/velo-parallelism.md). Same lifecycle rules apply in `REVIEW_PHASE`.
 
 Each builder receives (all embedded directly in the prompt — do not ask them to read files):
 - The task folder path: `.velo/tasks/<slug>/`
@@ -348,7 +349,7 @@ Each builder receives (all embedded directly in the prompt — do not ask them t
 **Descope monitoring**: triggers and procedure per [Velo Descope Ritual](skills/velo-descope-ritual.md). Fire F3 / F4 as appropriate.
 
 **Exit conditions**:
-- All tasks in `task-breakdown.md` complete → (auto) → `SPEC_CHECK`
+- All tasks in `task-breakdown.md` complete → (auto) → `REVIEW_PHASE`
 - Builder flags scope confusion → (failure:F3) → see F3 handling
 - Agent count exceeds expected → (failure:F4) → see F4 handling
 - Spawn unavailable or fails → (failure:F1) → halt and report blocker
@@ -358,44 +359,9 @@ Each builder receives (all embedded directly in the prompt — do not ask them t
 
 ---
 
-## State: SPEC_CHECK
-
-**Entry condition**: `BUILD_PHASE` reports all tasks complete. No reviewers have been spawned yet.
-
-**Body**:
-
-1. Read `agents/spec-checker.md`.
-2. Spawn the spec-checker with the task folder path (`.velo/tasks/<slug>/`) as its argument.
-
-The spec-checker reads `prd.md`, the engineering design doc, and the full diff, then classifies every acceptance criterion as Met / Partially Met / Unmet / Cannot Determine / PRD Ambiguous.
-
-Track cycle count starting at 1.
-
-- **If verdict is PASS** → proceed to `REVIEW_PHASE`.
-- **If verdict is FAIL**: collect the `## Rework guidance` section from the spec-checker output. Send each Unmet or Partially Met criterion back to the responsible builder(s) with the criterion text and file evidence inline. Wait for builders to finish rework, then re-run the spec-checker.
-  - **Cycle 1**: standard rework — fix all Unmet and Partially Met criteria.
-  - **Cycle 2**: final automatic cycle — rework with explicit note to builders. Same scope as cycle 1.
-  - **Cycle 3**: fire F2-spec (per-phase cap == 3 for `SPEC_CHECK` — cycle 3 is the cycle at which F2 fires).
-- **If verdict is BLOCKED** (PRD ambiguity): spec-checker has flagged that one or more criteria are unclear in the PRD itself, not the diff. Do not send to builders. Read the spec-checker's `## PRD ambiguity` section, then spawn the Product Manager (`agents/product-manager.md`) with the ambiguous criteria inline as the task: *"Resolve the following PRD ambiguities and update `prd.md`."* After PM updates the PRD, re-run the spec-checker. Repeat until verdict is PASS or FAIL (BLOCKED loops back to PM, never to builders).
-
-Do not spawn any reviewer until spec-checker returns PASS.
-
-**Token tracking**: after each subagent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
-
-**Exit conditions**:
-- Verdict PASS → (auto) → `REVIEW_PHASE`
-- Verdict FAIL, cycle < 3 → (auto) → loop within `SPEC_CHECK` (rework builders + re-run spec-checker; cycles 1 and 2 are automatic rework)
-- Verdict FAIL, cycle == 3 → (failure:F2) → F2-spec: see F2 handling
-- Verdict BLOCKED → (auto) → re-spawn PM with ambiguities inline → loop back through `SPEC_CHECK` (never back to builders)
-- Spawn unavailable or fails → (failure:F1) → halt and report blocker
-
-**Failure modes**: can trigger F1, F2 (per-phase cap = 3; cycle 3 fires F2-spec), F7.
-
----
-
 ## State: REVIEW_PHASE
 
-**Entry condition**: `SPEC_CHECK` returned PASS.
+**Entry condition**: `BUILD_PHASE` reports all tasks complete.
 
 **Body**:
 
@@ -566,7 +532,7 @@ Plan:
 - FE Engineer: <UI to build against engineering design doc> (parallel with backend)
 - ...
 
-Execution: PM → Tech Lead (approval gate) → Build (backend stream + FE stream in parallel) → Spec Check → Review
+Execution: PM → Tech Lead (spec audit + EDD, approval gate) → Build (backend stream + FE stream in parallel) → Review
 ```
 
 ### Final report (DONE)
@@ -595,11 +561,6 @@ Velo — Summary
 | Infra Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 | FE Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
 | Automation Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-
-## Spec Check
-| Cycle | Verdict | Criteria Met | Tokens | Time |
-|---|---|---|---|---|
-| 1 | pass/fail | <N>/<total> | <tokens> | <duration> |
 
 ## Review findings
 | Cycle | Reviewer | Verdict | Tokens | Time |
@@ -630,11 +591,12 @@ Only include rows for agents actually used.
 
 F-code definitions and standard handling are in [Velo Failure Modes](skills/velo-failure-modes.md). This command can trigger F1–F8. State headers cross-reference by ID; failures that fire from a state appear on that state's `Failure modes` line.
 
-**Command-specific F2 parameterization**: F2 fires at cycle 3 of the per-phase rework counter. Per-phase caps: `EDD_REVIEW` = 3 (F2-edd), `SPEC_CHECK` = 3 (F2-spec), `REVIEW_PHASE` = 3 (F2-review). Cycles 1 and 2 are automatic rework attempts; cycle 3 fires F2. When F2 fires, the `ask-options` header names the phase (e.g. `"EDD review cap reached"`); `Accept as-is and proceed` routes to the next-phase state: `EDD_REVIEW` → `EDD_APPROVAL`, `SPEC_CHECK` → `REVIEW_PHASE`, `REVIEW_PHASE` → `SHIP_GATE`.
+**Command-specific F2 parameterization**: F2 fires at cycle 3 of the per-phase rework counter. Per-phase caps: `EDD_REVIEW` = 3 (F2-edd), `REVIEW_PHASE` = 3 (F2-review). Cycles 1 and 2 are automatic rework attempts; cycle 3 fires F2. When F2 fires, the `ask-options` header names the phase (e.g. `"EDD review cap reached"`); `Accept as-is and proceed` routes to the next-phase state: `EDD_REVIEW` → `EDD_APPROVAL`, `REVIEW_PHASE` → `SHIP_GATE`.
 
 **F8 variants used here**:
 - From `PM_PHASE`: PM revises or rejects a Velo-announced Assumption → PRD is authoritative; note divergence in `prd.md`'s Assumptions section; continue to `PRD_REVIEW`.
-- From `TL_PHASE`: EDD discovers a PRD assumption is wrong → STOP; loop back to `PM_PHASE` with the contradiction inline; PRD must be revised first. PRD-revision cycle counter does not reset. Do not silently override PRD assumptions in the EDD.
+- From `TL_PHASE` (assumption divergence): EDD discovers a PRD assumption is wrong → STOP; loop back to `PM_PHASE` with the contradiction inline; PRD must be revised first. PRD-revision cycle counter does not reset. Do not silently override PRD assumptions in the EDD.
+- From `TL_PHASE` (spec quality): TL's Step 0 spec-quality-check returns blocking findings (`STATUS: SPEC_REWORK_NEEDED`) → STOP; loop back to `PM_PHASE` with findings inline; PM revises `prd.md`. Same loop semantics as the assumption-divergence variant — on PM revision → `PRD_REVIEW` → `TL_PHASE`.
 
 ---
 

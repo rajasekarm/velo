@@ -42,7 +42,7 @@ Register all builders / reviewers as todo items via `track-tasks` **before spawn
 
 A "batch boundary" is a parallel spawn group. Within a batch, multiple items can be `in_progress`. Between batches, items must be `completed` before the next batch's items go `in_progress`.
 
-Same lifecycle rules apply across `BUILD_PHASE`, `SPEC_CHECK`, and `REVIEW_PHASE` (`/velo:new`) and across `BUILD` and `REVIEW` (`/velo:task`).
+Same lifecycle rules apply across `BUILD_PHASE` and `REVIEW_PHASE` (`/velo:new`) and across `SPEC_AUDIT`, `BUILD`, and `REVIEW` (`/velo:task`).
 
 ## Mandatory reviewer pairings
 

@@ -13,7 +13,7 @@ Log every state transition. Mandatory — without transition logs there is no wa
 - `auto` — non-gated transition (entry conditions met)
 - `user-gate:<choice>` — user-gated transition; `<choice>` is the resolved `ask-options` option label
 - `failure:<F-code>` — transition fired by a failure mode (e.g. `failure:F2`)
-- `cap:<name>` — transition fired by a counter cap. Names are command-specific; see each command's state machine. Examples: `cap:edd-cycles`, `cap:spec-cycles`, `cap:review-cycles`, `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
+- `cap:<name>` — transition fired by a counter cap. Names are command-specific; see each command's state machine. Examples: `cap:edd-cycles`, `cap:spec-audit-cycles`, `cap:review-cycles`, `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
 - `preconditions:ok` / `preconditions:fail:<name>` — precondition check result (event 0)
 - `terminal:<reason>` — skill termination event 5; reasons are command-specific (each command enumerates its terminal reasons)
 

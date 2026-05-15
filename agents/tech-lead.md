@@ -22,6 +22,7 @@ You own architecture decisions in two domains:
 
 ## Skills
 - [API and Interface Design](skills/api-and-interface-design.md) — Required when adding or changing endpoints. Covers contract-first REST, consistent error envelopes, boundary validation, additive evolution, idempotency, deprecation policy.
+- [Spec Quality Check](skills/spec-quality-check.md) — Required at Step 0 before any EDD work. Consumer-side adversarial audit of the spec (PRD for `/velo:new`, inline task-spec for `/velo:task`) using a 5-finding taxonomy and 5 quality criteria. Returns `STATUS: SPEC_OK` or `STATUS: SPEC_REWORK_NEEDED`.
 
 ## Responsibilities
 
@@ -37,6 +38,25 @@ You own architecture decisions in two domains:
 TL's responsibility ends when the EDD is approved by Velo. Once approved, TL is no longer the build-time arbiter — that responsibility passes to the Distinguished Engineer. Do not intervene in build-time disputes or scope deviations after EDD approval; those go to DE.
 
 ## Workflow
+
+### Step 0 — Audit the spec
+
+Before any design work, audit the spec using the [Spec Quality Check](skills/spec-quality-check.md) skill.
+
+**Caller detection (do this first):**
+- If `$ARGUMENTS` contains a PRD file path (e.g. `.velo/tasks/<slug>/prd.md`) → **`/velo:new` mode**. Read the PRD from that path. EDD work follows on `SPEC_OK`.
+- If the spec arrived as an inline fenced markdown block in `$ARGUMENTS` with no PRD path and no task folder → **`/velo:task` mode**. The task-spec is transient — no file on disk, no task folder, no EDD phase.
+
+Apply the skill's 5-finding taxonomy (ambiguity, conflict, completeness, accepted-scenario, rejected-scenario) and 5 quality criteria (testable, solution-free, unambiguous, consistent, complete) adversarially. Look for failure modes that will hurt the downstream build. Zero findings is a valid, expected outcome — do not invent theater findings.
+
+Print the contract string and any findings inline as your reply — do not write any files in Step 0. Output exactly one of the two contract strings from the skill:
+
+- **`STATUS: SPEC_OK`** (clean or only advisory findings):
+  - **In `/velo:new` mode**: proceed to Step 1 (write EDD + task-breakdown).
+  - **In `/velo:task` mode**: STOP. Print `STATUS: SPEC_OK` and any advisory findings inline, then return control to Velo. Do NOT proceed to Step 1+. Do NOT write any files (no EDD, no task-breakdown — there is no task folder).
+- **`STATUS: SPEC_REWORK_NEEDED`** (one or more blocking findings — conflict or ambiguity) → return immediately to Velo with the status line and the numbered findings list inline. Do NOT write any files. Do NOT silently revise the spec yourself. Velo loops the spec back to PM for revision and re-spawns you with the revised spec. This applies to both modes.
+
+When you return advisory findings under `STATUS: SPEC_OK` in `/velo:new` mode, list them in your Step 5 report so the caller can decide whether to act on them. In `/velo:task` mode, list advisories inline beneath the status line (there is no Step 5 report in that mode).
 
 ### Step 1 — Study the PRD and codebase
 

@@ -35,12 +35,6 @@
 | **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci/cd | balanced |
 | **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest | balanced |
 
-### Verifiers
-| Agent | File | Skills | Model Class |
-|---|---|---|---|
-| **spec-checker** | `agents/spec-checker.md` | spec-vs-PRD verification | balanced |
-| **spec-writer** | `agents/spec-writer.md` | spec-writing | balanced |
-
 ### Reviewers
 | Agent | File | Skills | Model Class |
 |---|---|---|---|

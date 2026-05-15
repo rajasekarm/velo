@@ -9,7 +9,8 @@ flowchart TD
     A([Start]) --> PM[Product Manager\nwrites prd.md]
     PM --> A1{Your approval}
     A1 -->|changes| PM
-    A1 -->|approved| TL[Tech Lead\nwrites engineering-design-doc.md\n+ task-breakdown.md]
+    A1 -->|approved| TL[Tech Lead\nStep 0 spec audit\n+ writes engineering-design-doc.md\n+ task-breakdown.md]
+    TL -->|SPEC_REWORK_NEEDED| PM
     TL --> TLV{task-breakdown.md\nexists?}
     TLV -->|missing| TL
     TLV -->|ok| REV[Distinguished Engineer\nreviews EDD]
@@ -29,16 +30,7 @@ flowchart TD
     end
 
     BUILD --> TEST[Automation Engineer\nTests]
-    TEST --> SPEC[Spec Checker\nverifies acceptance criteria]
-    SPEC -->|FAIL cycle 1-2| SREWORK[Rework\nrelevant builders]
-    SREWORK --> SPEC
-    SPEC -->|BLOCKED — PRD ambiguity| PMR[PM revises prd.md]
-    PMR --> SPEC
-    SPEC -->|FAIL cycle 3| A2S{Your call}
-    A2S -->|extend| SREWORK
-    A2S -->|accept-with-FYI| REVIEW
-    A2S -->|abandon| END1([Abandon])
-    SPEC -->|PASS| REVIEW[All reviewers\nin parallel]
+    TEST --> REVIEW[All reviewers\nin parallel]
     REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
     REWORK --> REVIEW
     REVIEW -->|cycle 3| A3C{Your call}
@@ -58,7 +50,14 @@ Lightweight path for bug fixes, refactors, and small changes. No planning phase.
 
 ```mermaid
 flowchart TD
-    A([Start]) --> BUILD[Relevant builders]
+    A([Start]) --> ANN[Announce plan\nuser approval]
+    ANN --> SA[SPEC_AUDIT\nPM Mode: task-spec\n+ TL Step 0 audit]
+    SA -->|SPEC_REWORK_NEEDED cycle 1-2| SA
+    SA -->|SPEC_REWORK_NEEDED cycle 3| A0S{Your call}
+    A0S -->|ship-with-gaps| BUILD
+    A0S -->|cut scope| ANN
+    A0S -->|abandon| ENDS([Abandon])
+    SA -->|SPEC_OK| BUILD[Relevant builders]
     BUILD --> TEST[Automation Engineer\nTests]
     TEST --> REVIEW[All reviewers\nin parallel]
     REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
