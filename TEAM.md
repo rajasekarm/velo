@@ -4,7 +4,7 @@
 
 | Agent | File | Role | Model Class |
 |---|---|---|---|
-| **distinguished-engineer** | `agents/distinguished-engineer.md` | Technical bar, architecture review — peer to EM | deep-reasoning |
+| **distinguished-engineer** | `agents/distinguished-engineer.md` | Technical bar, architecture review — peer to EM. Also: `Mode: task-spec audit` on `/velo:task` pure-tech tier (audits TL-authored task-specs via spec-quality-check) | deep-reasoning |
 
 ---
 
@@ -18,7 +18,7 @@
 ### Engineering Lead
 | Agent | File | Skills | Model Class |
 |---|---|---|---|
-| **tech-lead** | `agents/tech-lead.md` | engineering design doc, API design, Velo system architecture (agents, commands, skills) | deep-reasoning |
+| **tech-lead** | `agents/tech-lead.md` | engineering design doc, API design, Velo system architecture (agents, commands, skills); `Mode: task-spec` author on `/velo:task` pure-tech tier (authors task-specs for dep bumps, internal schema, infra config, build tooling, observability internals — DE audits) | deep-reasoning |
 
 ### Specialists
 | Agent | File | Skills | Model Class |
