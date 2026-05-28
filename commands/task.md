@@ -9,7 +9,7 @@ argument-hint: Describe the task to execute
 
 # Velo — Task
 
-For day-to-day work: bug fixes, refactors, small enhancements, single-domain changes. No planning phase, no contract gate. Assess, delegate, review, done.
+For day-to-day work: bug fixes, refactors, small enhancements, single-domain changes. Uses a lightweight delegated flow: validate scope, announce the plan, optionally create and approve an inline transient task-spec, delegate build/test work, review, and ship.
 
 ---
 
@@ -27,7 +27,7 @@ This rule applies to every state, every failure mode, and every branch of the sk
 - New features or capabilities that don't exist yet (→ `/velo:new`)
 - Debug investigation without a known fix (→ `/velo:hunt`)
 - Architecture discussions or design exploration (→ `/velo:yo`)
-- Planning artifacts (PRDs, EDDs, task breakdowns) — task mode skips the planning gate
+- Durable planning artifacts such as PRDs and EDDs — task mode uses only a lightweight plan plus an inline transient task-spec when the normal workflow requires it
 - Multi-product cross-cutting refactors that span more than one product slug
 - Skipping the F2 rework cap (use the descope ritual instead)
 
