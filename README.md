@@ -79,7 +79,7 @@ See [WORKFLOW.md](WORKFLOW.md) for detailed flow diagrams.
 Structured workflow: PM → Tech Lead → DE review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
 
 ### `/velo:task` — Day-to-day tasks
-Lightweight path for bug fixes, refactors, and small changes. No planning phase — straight to build and review.
+Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan, use an inline transient task-spec when needed, then build, review, and ship.
 
 ### `/velo:yo` — Advisory
 Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.
