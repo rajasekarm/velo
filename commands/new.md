@@ -62,7 +62,7 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Cap names used by this command**: `cap:edd-cycles` (F2-edd at `EDD_REVIEW`), `cap:review-cycles` (F2-review at `REVIEW_PHASE`).
 
-**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
+**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-prd-review`, `abandoned-edd-review`, `abandoned-review`, `abandoned-ship-gate`, `abandoned-user`, `abandoned-f2-<phase>`, `abandoned-f5`, `abandoned-f6`, `abandoned-f7`, `abandoned-f8`, `cancelled-validate`, `preflight-failed`. F5, F6, F7, F8 abandons fold into `abandoned-user` if user-gated; otherwise emit explicit `abandoned-f<N>`.
 
 ---
 
@@ -79,10 +79,7 @@ States:
 - `EDD_APPROVAL` — user approves EDD + task breakdown before build
 - `BUILD_PHASE` — direct spawning per task breakdown; parallel where independent
 - `REVIEW_PHASE` — builder reviewers in parallel; ≤3 cycle cap (F2-review)
-- `SHIP_GATE` — user approves shipping the change after reviewers pass
-- `COMMIT_GATE` — ask "Commit?" via `ask-options`
-- `PUSH_GATE` — ask "Push?" via `ask-options` (after commit succeeds)
-- `PR_GATE` — ask "Open PR?" via `ask-options` (after push succeeds, unless on base branch)
+- `SHIP_GATE` — single ship gate via `ask-options`; presents up to five verbatim options (`Commit + push + open PR` / `Commit + push` / `Commit only` / `Hold feedback` / `Done — no commit`). The first option is conditional on the current branch not being the repo's default branch; when it would be a PR from base → base, the option is omitted and the remaining four are shown in order
 - `DONE` — terminal; emit final report
 - `ABANDON` — terminal; emit abandon summary
 
@@ -405,72 +402,38 @@ Spawn ALL relevant reviewers **in parallel** per [Velo Parallelism](skills/velo-
 
 **Body**:
 
-Use the commit-gate pattern per [Velo Approval Gates](skills/velo-gates.md), with header `"Ship approval"` and question `"All reviewers passed. [Summary of what was built and review cycles taken.] Approve commit?"`. Options: `Approved, commit` / `Hold, I have feedback` / `Abandon`.
+Apply the single ship-gate pattern per [Velo Approval Gates](skills/velo-gates.md#ship-gate-commit--optional-push--optional-pr) with header `"Ship approval"` and question `"All reviewers passed. [Summary of what was built and review cycles taken.] How do you want to ship?"`.
 
-If the user has feedback: treat it as rework input — spawn the relevant builder(s) with the feedback inline, re-run affected reviewers, then re-present this gate.
+Resolve the repo's default branch at gate time per [Velo Approval Gates — Base-branch detection](skills/velo-gates.md). Compare against the current branch:
+- If the current branch is NOT the default branch, present all five verbatim options in this order: `Commit + push + open PR` / `Commit + push` / `Commit only` / `Hold feedback` / `Done — no commit`.
+- If the current branch IS the default branch, omit `Commit + push + open PR` (a PR from base → base is meaningless) and present the remaining four in order: `Commit + push` / `Commit only` / `Hold feedback` / `Done — no commit`.
 
-**Do not commit until explicitly approved.**
+Each option label names every action it triggers, satisfying PERSONA's per-action approval rule for the bundled sequence.
 
-**Exit conditions**:
-- `Approved, commit` → (user-gate: approve) → `COMMIT_GATE`
-- `Hold, I have feedback` → (user-gate: feedback) → spawn relevant builder(s) with feedback inline → `REVIEW_PHASE`
-- `Abandon` → (user-gate: abandon) → `ABANDON` (terminal `abandoned-ship-gate`)
+On `Commit + push + open PR`: run strictly ordered commit → push → PR.
+1. Spawn the `commit` agent (default mode).
+2. On commit success, run `git push`.
+3. On push success, spawn the `commit` agent in PR mode (pass `mode: pr` in `$ARGUMENTS` along with the current branch name and the repo's default branch as the base). The agent analyzes commits since the base branch, drafts a PR title and body, runs `gh pr create`, and returns the PR URL. The commit agent's PR-mode workflow delegates to [PR Protocol](skills/pr-protocol.md) for title derivation, body templates, idempotency, and `gh pr create` invocation; this state does not duplicate PR-protocol logic inline.
+4. On full success → `DONE` (terminal `delivered-and-committed-and-pushed-and-pr-opened`).
 
-**Failure modes**: can trigger F7.
+On `Commit + push`: spawn the `commit` agent (default mode); on commit success, run `git push`; on push success → `DONE` (terminal `delivered-and-committed-and-pushed`).
 
----
+On `Commit only`: spawn the `commit` agent (default mode); on success → `DONE` (terminal `delivered-and-committed`).
 
-## State: COMMIT_GATE
+**Do not commit until an option that names commit is explicitly chosen.**
 
-**Entry condition**: `SHIP_GATE` approved commit.
-
-**Body**:
-
-Spawn the `commit` agent. The `SHIP_GATE` provides the per-action authorization required by [Velo Approval Gates](skills/velo-gates.md).
-
-**Token tracking**: after the commit agent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
+**Token tracking**: after the commit agent returns (for any path that spawns it), note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
 
 **Exit conditions**:
-- Commit succeeds → (auto) → `PUSH_GATE`
-- Commit agent fails → (failure:F1) → use `ask-options`: `Retry commit` / `Route to /velo:hunt to investigate` / `Abandon`. F1 still fires for telemetry; the option choice drives the next transition. `Retry commit` re-runs the commit agent with the same arguments; on subsequent success → `PUSH_GATE`. `Route to /velo:hunt to investigate` hands off via `handoff-mode` to `/velo:hunt` with the commit failure inline as the brief. `Abandon` → `ABANDON` (terminal `abandoned-user`).
-
-**Failure modes**: can trigger F1.
-
----
-
-## State: PUSH_GATE
-
-**Entry condition**: `COMMIT_GATE` commit succeeded.
-
-**Body**:
-
-Apply the push-gate pattern per [Velo Approval Gates](skills/velo-gates.md).
-
-**Exit conditions**:
-- `Push` → (user-gate: push) → run push; on success: resolve the default branch per [Velo Approval Gates — Base-branch detection](skills/velo-gates.md); if the current branch equals the default branch → `DONE` (terminal `delivered-and-committed-and-pushed`); otherwise → `PR_GATE`
-- `Hold — do not push` → (user-gate: skip-push) → `DONE` (terminal `delivered-and-committed`)
-- Push fails → (failure:F1) → halt and report blocker
-
-**Failure modes**: can trigger F1.
-
----
-
-## State: PR_GATE
-
-**Entry condition**: `PUSH_GATE` ran push successfully AND the current branch is not the repo's default branch (a PR from base → base is meaningless). See [Velo Approval Gates — Base-branch detection](skills/velo-gates.md) for the resolution order.
-
-**Body**:
-
-Apply the PR-gate pattern per [Velo Approval Gates](skills/velo-gates.md). Per PERSONA's per-action approval rule, PR creation is a distinct visible action and requires its own gate even though push already happened.
-
-On `Open PR`: spawn the `commit` agent in PR mode (pass `mode: pr` in `$ARGUMENTS` along with the current branch name and the repo's default branch as the base). The agent analyzes commits since the base branch, drafts a PR title and body, runs `gh pr create`, and returns the PR URL.
-
-**Token tracking**: after the commit agent returns, note `total_tokens`, `tool_uses`, `duration_ms` and compute approximate cost through `report-cost`.
-
-**Exit conditions**:
-- `Open PR` → (user-gate: open-pr) → spawn commit agent in PR mode; on success → `DONE` (terminal `delivered-and-committed-and-pushed-and-pr-opened`)
-- `Skip — no PR` → (user-gate: skip-pr) → `DONE` (terminal `delivered-and-committed-and-pushed`)
-- PR creation fails → (failure:F1) → halt and report blocker (user can retry manually with `gh pr create`)
+- `Commit + push + open PR` → (user-gate: commit-push-pr) → spawn `commit` agent; on success run push; on push success spawn `commit` agent in PR mode; on PR success → `DONE` (terminal `delivered-and-committed-and-pushed-and-pr-opened`)
+- `Commit + push` → (user-gate: commit-push) → spawn `commit` agent; on success run push; on push success → `DONE` (terminal `delivered-and-committed-and-pushed`)
+- `Commit only` → (user-gate: commit) → spawn `commit` agent; on success → `DONE` (terminal `delivered-and-committed`)
+- `Hold feedback` → (user-gate: feedback) → treat it as rework input: spawn the relevant builder(s) with the feedback inline, re-run affected reviewers → `REVIEW_PHASE` (cycle counter resets to 1)
+- `Done — no commit` → (user-gate: skip-commit) → `DONE` (terminal `delivered-no-commit`)
+- Commit agent fails (any path) → (failure:F1) → use `ask-options`: `Retry commit` / `Route to /velo:hunt to investigate` / `Abandon`. F1 still fires for telemetry; the option choice drives the next transition. `Retry commit` re-runs the commit agent with the same arguments; on subsequent success the chosen path continues (push, then PR if applicable). `Route to /velo:hunt to investigate` hands off via `handoff-mode` to `/velo:hunt` with the commit failure inline as the brief. `Abandon` → `ABANDON` (terminal `abandoned-ship-gate`).
+- Push fails (on `Commit + push` or `Commit + push + open PR`) → (failure:F1) → halt. **The F1 report MUST surface "local commit landed — push failed, retry manually or revert" so the user knows the side effect.**
+- PR step fails on `Commit + push + open PR` after commit AND push both succeeded → (failure:F1) → halt and surface that the commit and push landed and that the PR can be retried manually with `gh pr create`.
+- User selects `Abandon` (e.g. on a commit-failure re-prompt) → (user-gate: abandon) → `ABANDON` (terminal `abandoned-ship-gate`)
 
 **Failure modes**: can trigger F1, F7.
 
@@ -478,11 +441,15 @@ On `Open PR`: spawn the `commit` agent in PR mode (pass `mode: pr` in `$ARGUMENT
 
 ## State: DONE
 
-**Entry condition**: `PUSH_GATE` resolved with skip-push, OR `PUSH_GATE` pushed to the repo's default branch (PR_GATE bypassed), OR `PR_GATE` resolved cleanly.
+**Entry condition**: any of four arrival paths from `SHIP_GATE`:
+- `Done — no commit` (terminal `delivered-no-commit`)
+- `Commit only` and commit succeeded (terminal `delivered-and-committed`)
+- `Commit + push` and push succeeded (terminal `delivered-and-committed-and-pushed`)
+- `Commit + push + open PR` and commit + push + PR creation all succeeded (terminal `delivered-and-committed-and-pushed-and-pr-opened`)
 
 **Body**:
 
-Print the final-report template (see Templates). Skill ends.
+Print the final-report template from [Velo Final Report](skills/velo-final-report.md). Skill ends.
 
 **Exit conditions**: terminal.
 
@@ -537,53 +504,7 @@ Execution: PM → Tech Lead (spec audit + EDD, approval gate) → Build (backend
 
 ### Final report (DONE)
 
-```
-Velo — Summary
-
-## Feature
-<one-line description>
-
-## Planning
-| Agent | Delivered | Tokens | ~Cost | Tools | Time |
-|---|---|---|---|---|---|
-| Product Manager | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-
-## Engineering Design Doc
-| Agent | Artifact | Tokens | ~Cost | Tools | Time |
-|---|---|---|---|---|---|
-| Tech Lead | `engineering-design-doc.md` — <N endpoints, key decisions> + `task-breakdown.md` — <N tasks> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-
-## What was built
-| Agent | Delivered | Tokens | ~Cost | Tools | Time |
-|---|---|---|---|---|---|
-| DB Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-| BE Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-| Infra Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-| FE Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-| Automation Engineer | <summary> | <tokens> | ~$<cost> | <tool_uses> | <duration> |
-
-## Review findings
-| Cycle | Reviewer | Verdict | Tokens | Time |
-|---|---|---|---|---|
-| 1 | FE Reviewer | pass/fail <key issues> | <tokens> | <duration> |
-| 1 | BE Reviewer | pass/fail <key issues> | <tokens> | <duration> |
-
-## Commit
-| Agent | Commit | Tokens | Time |
-|---|---|---|---|
-| Commit Agent | <commit hash + message> | <tokens> | <duration> |
-
-## Files changed
-- <list all files created or modified>
-
-## Cost breakdown
-Planners total: <sum> tokens | ~$<cost>
-Builders total: <sum> tokens | ~$<cost>
-Reviewers total: <sum> tokens | ~$<cost>
-Grand total: <sum all> tokens | ~$<total cost> | <tool uses> tool calls | <wall time> elapsed
-```
-
-Only include rows for agents actually used.
+The final-report template lives in [Velo Final Report](skills/velo-final-report.md). This command consumes that skill in place of an inlined template; do not duplicate the template body here.
 
 ---
 
