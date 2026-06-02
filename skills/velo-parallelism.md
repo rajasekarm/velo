@@ -47,8 +47,7 @@ Same lifecycle rules apply across `BUILD_PHASE` and `REVIEW_PHASE` (`/velo:new`)
 ## Mandatory reviewer pairings
 
 In review states:
-- **If BE engineer was involved**: always spawn the observability-engineer and security-engineer alongside the be-reviewer — same BE changes, different lenses.
-- **If FE engineer was involved**: always spawn the security-engineer alongside the fe-reviewer — reviews for XSS, sensitive data exposure, insecure token storage.
+- **If BE engineer was involved**: always spawn the observability-engineer alongside the be-reviewer — same BE changes, different lens.
 
 All reviewers in a state spawn in one parallel batch.
 

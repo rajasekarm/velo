@@ -12,7 +12,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 - **Explicit task ordering**: Tech Lead produces a `task-breakdown.md` alongside the engineering design doc — who does what, in what order, what can run in parallel. Build phase executes it directly, no guessing.
 - **Bounded rework loop**: Reviewers that fail send builders back with findings inline. Cycle 1 fixes Critical + Significant, cycle 2 fixes remaining Critical only. Capped at 3 cycles — if issues remain, you decide: extend, accept as-is, or abandon.
 - **Spec-check before review**: Every build is verified against the PRD before reviewers run. Acceptance criteria are mapped to diff evidence; unmet criteria trigger rework. Capped at 2 automatic cycles — on the 3rd, you decide: extend, accept-with-FYI, or abandon. Ambiguous PRDs route back to the PM, not the builder.
-- **Security and observability baked in**: Every BE task is reviewed by BE Reviewer, Security Engineer, and Observability Engineer. Every FE task gets Security review. Non-optional.
+- **Observability baked in**: Every BE task is reviewed by BE Reviewer and Observability Engineer — non-optional. Security review is available on-demand via `/security-review`.
 - **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. PM, builders, and reviewers use `balanced`. `ADAPTER.md` maps these classes to the active runtime.
 
 ## The team
@@ -41,7 +41,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 | Agent | Model Class | Responsibility |
 |---|---|---|
 | **Observability Engineer** | balanced | Implements observability infra — reviews all BE tasks for metrics, logging, tracing gaps |
-| **Security Engineer** | balanced | Reviews all BE and FE tasks for vulnerabilities |
+| **Security Engineer** | balanced | On-demand vulnerability review (via `/security-review`); not auto-attached to BE/FE reviews |
 
 ### Builders
 

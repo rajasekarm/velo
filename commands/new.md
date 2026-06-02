@@ -366,7 +366,7 @@ Before spawning reviewers, read both planning artifacts so you can pass contents
 - Read `.velo/tasks/<slug>/prd.md`
 - Read `.velo/tasks/<slug>/engineering-design-doc.md`
 
-Spawn ALL relevant reviewers **in parallel** per [Velo Parallelism](skills/velo-parallelism.md), including the mandatory reviewer pairings defined there. Each reviewer receives (embedded directly in the prompt — do not ask them to read files):
+Spawn ALL relevant reviewers **in parallel** per [Velo Parallelism](skills/velo-parallelism.md), including the mandatory reviewer pairing defined there. Each reviewer receives (embedded directly in the prompt — do not ask them to read files):
 - The full contents of `prd.md` and `engineering-design-doc.md` inline
 - Their specific domain scope (what files/changes to review)
 

@@ -44,7 +44,7 @@
 | **infra-reviewer** | `agents/infra-reviewer.md` | kafka, docker, kubernetes, aws, ci/cd | balanced |
 | **automation-reviewer** | `agents/automation-reviewer.md` | playwright, vitest | balanced |
 | **observability-engineer** | `agents/observability-engineer.md` | reviews all BE tasks for metrics, logging, tracing gaps | balanced |
-| **security-engineer** | `agents/security-engineer.md` | reviews all BE and FE tasks for vulnerabilities | balanced |
+| **security-engineer** | `agents/security-engineer.md` | on-demand vulnerability review (via `/security-review`); not auto-attached to BE/FE reviews | balanced |
 
 ### Utilities
 | Agent | File | Skills | Model Class |
