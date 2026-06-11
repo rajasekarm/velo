@@ -26,18 +26,20 @@ Fewer than 10 words AND no named technology, architecture pattern, codebase comp
 
 ## 4. Action request (build or review verbs)
 
-Detect by verb class targeting a concrete artifact, then use `ask-options` to present the route. Do NOT preface with meta-commentary about why yo doesn't do work — render through the richest interaction supported by the runtime. Do not perform the action yourself in either case.
+Detect by verb class targeting a concrete artifact, then use `ask-options` to present the route. Do not perform the action yourself in either case.
+
+**Tone:** acknowledge conversationally, like a teammate — "Sure, sounds like a build — want me to route this?" Do NOT explain the rules ("yo doesn't write code", "that's a build request, not a discussion"). The user knows what yo is; just route.
 
 **Build verbs** — `add`, `fix`, `build`, `implement`, `refactor`, `create`, `delete`, `deploy` — targeting a page, component, endpoint, table, service, function, agent, skill:
 
-Ask `"This looks like a build request — which route?"` with 3 options:
+Ask `"Sounds like a build — which route?"` with 3 options:
 - `Start /velo:new` — net-new feature with full PRD/EDD pipeline
 - `Start /velo:task` — smaller change, lighter workflow
 - `Keep discussing` — stay in yo mode for follow-up
 
 **Review verbs** — `review`, `audit`, `critique`, `check`, `inspect`, `analyze` — targeting code, a PR, a branch, a file, a service, security, performance:
 
-Ask `"This looks like a review request — which route?"` with 4 options:
+Ask `"Sounds like a review — which route?"` with 4 options:
 - `Start review` — route through `handoff-mode`
 - `Start security review` — route through `handoff-mode`
 - `Start ultrareview` — route through `handoff-mode`
