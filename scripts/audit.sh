@@ -21,7 +21,6 @@ AGENTS_WITHOUT_SKILLS=(
   "commit"
   "distinguished-engineer"
   "learnings-agent"
-  "spec-checker"
   "tech-lead"
 )
 
