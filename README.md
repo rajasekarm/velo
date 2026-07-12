@@ -11,7 +11,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 - **Approval-gated**: PRD before technical design. Engineering design doc before code. Review results before commit. Nothing ships without your sign-off.
 - **Explicit task ordering**: Tech Lead produces a `task-breakdown.md` alongside the engineering design doc — who does what, in what order, what can run in parallel. Build phase executes it directly, no guessing.
 - **Bounded rework loop**: Reviewers that fail send builders back with findings inline. Cycle 1 fixes Critical + Significant, cycle 2 fixes remaining Critical only. Capped at 3 cycles — if issues remain, you decide: extend, accept as-is, or abandon.
-- **Spec-check before review**: Every build is verified against the PRD before reviewers run. Acceptance criteria are mapped to diff evidence; unmet criteria trigger rework. Capped at 2 automatic cycles — on the 3rd, you decide: extend, accept-with-FYI, or abandon. Ambiguous PRDs route back to the PM, not the builder.
+- **Spec audited before design**: Every PRD passes an adversarial spec-quality audit (Tech Lead, Step 0) before any design or code begins. Blocking ambiguities and conflicts route back to the PM with proposed revisions — never silently guessed by a builder.
 - **Observability baked in**: Every BE task is reviewed by BE Reviewer and Observability Engineer — non-optional. Security review is available on-demand via `/security-review`.
 - **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. PM, builders, and reviewers use `balanced`. `ADAPTER.md` maps these classes to the active runtime.
 
@@ -68,7 +68,6 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 | Agent | Model Class | Responsibility |
 |---|---|---|
 | **Commit** | balanced | Analyse diff, generate commit message, create git commit |
-| **Spec Writer** | balanced | Write technical specifications from PRDs when needed |
 | **Learnings Agent** | balanced | Extract codebase-specific learnings after rework cycles |
 
 ## How it works
@@ -79,7 +78,7 @@ See [WORKFLOW.md](WORKFLOW.md) for detailed flow diagrams.
 Structured workflow: PM → Tech Lead → DE review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
 
 ### `/velo:task` — Day-to-day tasks
-Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan, use an inline transient task-spec when needed, then build, review, and ship.
+Single adaptive delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan with an inline assumptions ledger, then build, review, and ship. Underspecified or net-new work escalates to `/velo:new`.
 
 ### `/velo:yo` — Advisory
 Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.

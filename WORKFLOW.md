@@ -35,48 +35,44 @@ flowchart TD
     REWORK --> REVIEW
     REVIEW -->|cycle 3| A3C{Your call}
     A3C -->|extend| REWORK
-    A3C -->|accept| A3{Your approval}
-    REVIEW -->|all pass| A3{Your approval}
-    A3 -->|approved| COMMIT[Commit Agent]
-    A3 -->|hold| REWORK
-    COMMIT --> A4{Push?}
-    A4 -->|approved| PUSH([Push to remote])
-    A4 -->|hold| DONE1([Done — local commit only])
+    A3C -->|accept| SHIPG
+    REVIEW -->|all pass| SHIPG{SHIP_GATE\ncommit / push / PR /\nhold / no commit}
+    SHIPG -->|hold feedback| REWORK
+    SHIPG -->|ship option| COMMIT[Commit Agent\nexecutes chosen option]
+    SHIPG -->|no commit| DONE1([Done])
+    COMMIT --> DONE1
 ```
 
 ## `/velo:task` — Day-to-day tasks
 
-Lightweight path for bug fixes, refactors, and small changes. No planning phase.
+Single adaptive delegated flow for bug fixes, refactors, and small changes. No durable planning artifacts — an inline assumptions ledger does the spec's job. Briefs that cannot be reduced to a confirmable assumptions ledger (or that are net-new feature scope) escalate to `/velo:new`.
 
 ```mermaid
 flowchart TD
-    A([Start]) --> ANN[Announce plan\nuser approval]
-    ANN --> SA[SPEC_AUDIT\nPM Mode: task-spec\n+ TL Step 0 audit]
-    SA -->|SPEC_REWORK_NEEDED cycle 1-2| SA
-    SA -->|SPEC_REWORK_NEEDED cycle 3| A0S{Your call}
-    A0S -->|ship-with-gaps| BUILD
-    A0S -->|cut scope| ANN
-    A0S -->|abandon| ENDS([Abandon])
-    SA -->|SPEC_OK| BUILD[Relevant builders]
+    A([Start]) --> VAL[VALIDATE\ninterpret terms\nclassify pairing]
+    VAL -->|underspecified or\nnet-new scope| ESC([Escalate → /velo:new])
+    VAL --> PLAN[PLAN_AND_ANNOUNCE\npartition + assumptions ledger]
+    PLAN --> G1{Your approval}
+    G1 -->|corrections| PLAN
+    G1 -->|cancel| ENDC([Abandon])
+    G1 -->|approved| BUILD[Relevant builders]
     BUILD --> TEST[Automation Engineer\nTests]
-    TEST --> REVIEW[All reviewers\nin parallel]
+    TEST --> REVIEW[Reviewers in parallel\nrouted by pairing]
     REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
     REWORK --> REVIEW
     REVIEW -->|cycle 3| A0C{Your call}
-    A0C -->|extend| REWORK
-    A0C -->|accept| A1{Your approval}
+    A0C -->|cut scope / override| REWORK
     A0C -->|abandon| END0([Abandon])
-    REVIEW -->|all pass| A1{Your approval}
-    A1 -->|approved| COMMIT[Commit Agent]
-    A1 -->|hold| REWORK
-    COMMIT --> A2{Push?}
-    A2 -->|approved| PUSH([Push to remote])
-    A2 -->|hold| DONE0([Done — local commit only])
+    REVIEW -->|all pass| SHIP{SHIP_GATE\ncommit / push / PR /\nhold / no commit}
+    SHIP -->|hold feedback| REWORK
+    SHIP -->|ship option| COMMIT[Commit Agent\nexecutes chosen option]
+    SHIP -->|no commit| DONE0([Done])
+    COMMIT --> DONE0
 ```
 
 ## `/velo:hunt` — Structured debug loop
 
-Symptom → hypothesis → root cause → handoff. No planning phase, no code written. Hunt ends with a confirmed root cause and a prose handoff brief, then routes to `/velo:task` (or `/velo:new` for infra/schema fixes).
+Symptom → hypothesis → root cause → handoff. Investigation only — no code written. Hunt ends with a confirmed root cause and a prose handoff brief, then routes to `/velo:task` (or `/velo:new` for infra/schema fixes).
 
 > **Operator note**: Hunt reads source files and git history. Bash is constrained to `git log`/`git blame` — verify your `settings.json` allowlist before use on sensitive repos.
 

@@ -18,11 +18,8 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Allow-list: agents that legitimately have no skill file references.
 # Utility/verifier agents whose work doesn't depend on a skill manual.
 AGENTS_WITHOUT_SKILLS=(
-  "commit"
   "distinguished-engineer"
   "learnings-agent"
-  "spec-checker"
-  "tech-lead"
 )
 
 # Allow-list: commands that legitimately have no agent file references.
@@ -39,6 +36,22 @@ warnings=0
 umask 0077
 REFERENCED_SKILLS_TMP="$(mktemp)"
 trap 'rm -f "${REFERENCED_SKILLS_TMP}"' EXIT
+
+# Extract repo-relative path references with the given prefix (agents|skills)
+# from a markdown file. Handles both reference styles used in this repo:
+#   backticks:      `skills/foo.md`
+#   markdown links: [Foo](skills/foo.md) and [Foo](skills/foo.md#anchor)
+# Glob patterns (*, ?, [) are descriptive, not literal refs — filtered out.
+extract_path_refs() {
+  local file="$1"
+  local prefix="$2"
+
+  {
+    grep -oE '`'"${prefix}"'/[^` ]+\.[^` /]+`' "${file}" | tr -d '\`' || true
+    grep -oE '\]\('"${prefix}"'/[^) ]+\)' "${file}" \
+      | sed -E 's/^\]\(//; s/\)$//; s/#[^#]*$//' || true
+  } | { grep -v '[][*?]' || true; } | sort -u
+}
 
 echo "=== Velo Agent Audit ==="
 echo ""
@@ -98,12 +111,7 @@ else
     agent_rel="agents/$(basename "${agent_file}")"
     agent_name="$(basename "${agent_file}" .md)"
 
-    # Extract backtick-wrapped paths matching skills/... that point to a file
-    # (last component must contain a dot — filters out bare directory references).
-    # Handles `skills/foo.md` and nested forms like `skills/dir/file.md`.
-    # Filter out glob patterns (*, ?, [) — these are descriptive, not literal refs.
-    # || true: grep exits 1 on no match; we handle the empty-string case below.
-    skill_refs="$(grep -oE '`skills/[^` ]+\.[^` /]+`' "${agent_file}" | tr -d '`' | grep -v '[][*?]' || true)"
+    skill_refs="$(extract_path_refs "${agent_file}" "skills")"
 
     if [[ -z "${skill_refs}" ]]; then
       # Allow-list check: skip warning for utility/verifier agents
@@ -164,9 +172,7 @@ else
     cmd_rel="commands/$(basename "${cmd_file}")"
     cmd_name="$(basename "${cmd_file}" .md)"
 
-    # Filter out glob patterns (*, ?, [) — these are descriptive, not literal refs.
-    # || true: grep exits 1 on no match; we handle the empty-string case below.
-    agent_refs="$(grep -oE '`agents/[^`]+\.md`' "${cmd_file}" | tr -d '`' | grep -v '[][*?]' | sort -u || true)"
+    agent_refs="$(extract_path_refs "${cmd_file}" "agents")"
 
     if [[ -z "${agent_refs}" ]]; then
       # Allow-list check: skip warning for generic-router commands
@@ -210,9 +216,52 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# CHECK 4 — Dead skill files (warning only)
+# CHECK 4 — Command files → skill files
 # ---------------------------------------------------------------------------
-echo "[CHECK 4] Dead skill files (warning only)"
+echo "[CHECK 4] Command files → skill files"
+
+if [[ ! -d "${commands_dir}" ]]; then
+  echo "  (commands/ directory not found — skipping)"
+else
+  found_any_cmd_skill_ref=0
+
+  while IFS= read -r cmd_file; do
+    cmd_rel="commands/$(basename "${cmd_file}")"
+
+    skill_refs="$(extract_path_refs "${cmd_file}" "skills")"
+    [[ -z "${skill_refs}" ]] && continue
+
+    while IFS= read -r skill_path; do
+      found_any_cmd_skill_ref=1
+      # Reject paths containing .. to prevent path traversal
+      if [[ "${skill_path}" == *".."* ]]; then
+        echo "  ✗ ${cmd_rel} → ${skill_path} — REJECTED (path traversal)"
+        errors=$((errors + 1))
+        continue
+      fi
+      # Record for check 5
+      echo "${skill_path}" >> "${REFERENCED_SKILLS_TMP}"
+      full_path="${REPO_ROOT}/${skill_path}"
+      if [[ -f "${full_path}" ]]; then
+        echo "  ✓ ${cmd_rel} → ${skill_path}"
+      else
+        echo "  ✗ ${cmd_rel} → ${skill_path} — NOT FOUND"
+        errors=$((errors + 1))
+      fi
+    done <<< "${skill_refs}"
+  done < <(find "${commands_dir}" -name '*.md' | sort)
+
+  if [[ ${found_any_cmd_skill_ref} -eq 0 ]]; then
+    echo "  (no skill file references found in any command file)"
+  fi
+fi
+
+echo ""
+
+# ---------------------------------------------------------------------------
+# CHECK 5 — Dead skill files (warning only)
+# ---------------------------------------------------------------------------
+echo "[CHECK 5] Dead skill files (warning only)"
 
 skills_dir="${REPO_ROOT}/skills"
 
@@ -225,6 +274,7 @@ else
     skill_rel="${skill_file/${REPO_ROOT}\//}"
 
     # Check whether this path appears in the referenced skills list
+    # (accumulated from agent files in check 2 and command files in check 4)
     if grep -qxF "${skill_rel}" "${REFERENCED_SKILLS_TMP}" 2>/dev/null; then
       continue
     fi
@@ -258,9 +308,9 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# CHECK 5 — Codex layer tests
+# CHECK 6 — Codex layer tests
 # ---------------------------------------------------------------------------
-echo "[CHECK 5] Codex layer tests"
+echo "[CHECK 6] Codex layer tests"
 
 tests_dir="${REPO_ROOT}/tests"
 

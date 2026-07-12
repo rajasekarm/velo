@@ -47,12 +47,13 @@ Inspect `$ARGUMENTS` for a mode signal:
    - `git diff --cached` (staged)
    - `git log --oneline -10` (style reference)
 3. **Analyze**: intent (feat / fix / refactor / chore / docs / test / perf / style), files affected, single vs multiple logical changes.
-4. **Draft and create the commit** following [Commit Protocol](skills/commit-protocol.md):
+4. **Repo integrity gate (Velo repo only).** If `scripts/audit.sh` exists at the repo root, run `./scripts/audit.sh` before drafting the commit. If it exits non-zero, STOP — do not commit. Report the audit failures to the caller instead; committing broken references ships red CI. Repos without `scripts/audit.sh` skip this step silently.
+5. **Draft and create the commit** following [Commit Protocol](skills/commit-protocol.md):
    - Run the secret scans (pre-stage and post-stage) defined in the skill.
    - Stage files explicitly with `git add <file>`. If multiple unrelated concerns, split into separate commits.
    - Draft the message per the skill (Conventional Commits subject, optional body, optional Co-Authored-By tail).
    - Create the commit with the HEREDOC pattern from the skill.
-5. **Report.** Print commit hash, message, files committed, and any files intentionally left unstaged with the reason. Stop here. Do NOT push. Do NOT prompt about a PR.
+6. **Report.** Print commit hash, message, files committed, and any files intentionally left unstaged with the reason. Stop here. Do NOT push. Do NOT prompt about a PR.
 
 ## PR mode workflow
 
