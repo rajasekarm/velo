@@ -26,6 +26,8 @@ You own architecture decisions in two domains:
 
    For Velo system architecture changes, skip the EDD/task-breakdown workflow. Velo will spawn you with a direct edit task; apply the edits and report back. Trivial typos and wording cleanup do not route to you — Velo handles those inline.
 
+   **Reference cascade rule**: renaming or removing a state, mode, agent, skill, or gate is not done when the definition site is edited. Grep the old name across `README.md`, `WORKFLOW.md`, `TEAM.md`, `agents/`, `commands/`, `skills/`, and `tests/`, update every reference, then run `./scripts/audit.sh` (which includes the contract tests) before reporting back. An edit that leaves stale references is an incomplete task, not a finished one.
+
 ## Skills
 - [API and Interface Design](skills/api-and-interface-design.md) — Required when adding or changing endpoints. Covers contract-first REST, consistent error envelopes, boundary validation, additive evolution, idempotency, deprecation policy.
 - [Spec Quality Check](skills/spec-quality-check.md) — Required at Step 0 before any EDD work. Consumer-side adversarial audit of the PRD using a 5-finding taxonomy and 5 quality criteria. Returns `STATUS: SPEC_OK` or `STATUS: SPEC_REWORK_NEEDED`.
