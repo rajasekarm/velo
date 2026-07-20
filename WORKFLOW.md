@@ -74,6 +74,48 @@ flowchart TD
     A2 -->|hold| DONE0([Done — local commit only])
 ```
 
+## `/velo:plan` — Unified planning front-end
+
+Adaptive planning that hands off to `/velo:task` for execution. Depth is gated: when the work is net-new, conflicted, or can't be reduced to a confirmable assumptions ledger (the three triggers shared with task.md's escalation rule), the heavy path fires — the PM writes user stories first, then the Tech Lead authors an engineering design doc that the Distinguished Engineer reviews (≤3 cycles) before you sign off on the design; otherwise the light path goes straight to the Tech Lead's breakdown (no PM, no EDD). The DE-reviewed EDD is a heavy-path artifact only — the light path carries no EDD. The TL breakdown runs **always** and becomes the plan-DAG (with skills composed per `velo-skill-composition`), frozen at your plan sign-off and carried in a plan package (`velo-plan-package`). No build — execution is `/velo:task`'s job.
+
+> **Transition note (increment 1)**: `/velo:plan` coexists with `/velo:new` and `/velo:task`. Stock `/velo:task` does not yet consume the plan package as binding — it will re-announce the plan with its own gate. Executor-side consumption (and descope-as-reentry back into plan mode) lands in increment 2.
+
+```mermaid
+flowchart TD
+    A([Start]) --> V[Scope check\nresolve terms + depth gate\n+ pairing classification]
+    V --> ANN{Kickoff\ndepth call + assumptions}
+    ANN -->|cancel| ABANDON([Abandon])
+    ANN -->|approved · heavy| PM[Product Manager\nMode: prd — user stories]
+    ANN -->|approved · light| TL[Tech Lead\nMode: plan-dag\nwrites task-breakdown.md]
+    PM --> PR{Your approval}
+    PR -->|changes| PM
+    PR -->|approved| DP[Tech Lead — DESIGN_PHASE\ndefault/new-work mode:\nStep 0 spec audit + EDD + breakdown]
+    DP -->|SPEC_REWORK_NEEDED\ncycle 1-2| PM
+    DP -->|spec cap: cycle 3| SCAP{Your call\nspec rework cap}
+    SCAP -->|extend| PM
+    SCAP -->|accept as-is| TLO[Tech Lead — Step 0 override\nskip audit → EDD + breakdown best-effort]
+    SCAP -->|abandon| ABANDON
+    TLO --> DR
+    DP --> DR[Distinguished Engineer — DESIGN_REVIEW\nreviews EDD · ≤3 / cap:edd-cycles]
+    DR -->|REVISE\ncycle 1-2| DP
+    DR -->|edd cap: cycle 3| ECAP{Your call\ndesign review cap}
+    ECAP -->|extend| DP
+    ECAP -->|accept as-is| DA
+    ECAP -->|abandon| ABANDON
+    DR -->|APPROVE| DA{Design sign-off}
+    DA -->|changes| DP
+    DA -->|abandon| ABANDON
+    DA -->|approved| DAG
+    TL -->|DEPTH_FLAG\nactually net-new| ANN
+    TL --> DAG[Velo transforms table → plan-DAG\n+ composes skills per node]
+    DAG --> PA{Plan sign-off\nfreezes DAG + skills}
+    PA -->|changes| TLR[Tech Lead re-spawn\nwith changes\nsame input variant]
+    TLR --> DAG
+    PA -->|save plan, stop| DONE([Done — plan saved])
+    PA -->|approved| HAND[Assemble plan package\nhandoff-mode → /velo:task]
+    HAND --> DONE2([Done — handed off])
+```
+
 ## `/velo:hunt` — Structured debug loop
 
 Symptom → hypothesis → root cause → handoff. No planning phase, no code written. Hunt ends with a confirmed root cause and a prose handoff brief, then routes to `/velo:task` (or `/velo:new` for infra/schema fixes).

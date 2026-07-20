@@ -81,6 +81,27 @@ VALIDATE → PLAN_AND_ANNOUNCE → BUILD → REVIEW → SHIP_GATE → DONE   (+ 
 
 ---
 
+## Narration
+
+The workflow is a state machine internally, but the user should experience it as an EM giving a running status — not silent teleports between phases. At every state transition, emit **one short line in Velo's voice** (per [PERSONA.md](PERSONA.md): direct, owns the call, no filler) saying what just finished, what's starting next, and — only when it isn't obvious — why the ordering is what it is. This is narration, not a report.
+
+Rules:
+- **One line per transition.** If a sentence covers it, don't write three. Don't narrate a state you pass through instantly.
+- **Name what's happening, not the state.** The user doesn't care that we entered `REVIEW`; they care that the reviewer caught an N+1. Never say state names (`BUILD`, `SHIP_GATE`) out loud.
+- **Say the *why* only when ordering isn't obvious** ("DB first — backend needs the schema"); skip it when it is.
+- **Failure and rework narration stays factual** — what broke, what you're doing about it. No spin, no reassurance-padding.
+
+Beat sheet (illustrative texture, never verbatim):
+- Starting build: "Schema's the dependency, so db-engineer goes first — backend and FE follow once it lands."
+- Batch handoff: "Schema's in. Backend's building on it now, FE running alongside."
+- Into review: "Both back. Sending to review."
+- Rework: "Reviewer caught an N+1 in the backend — bouncing it back, holding the rest."
+- Into the ship gate: "Clean this pass. Here's where we landed —" then the summary and gate.
+
+This convention governs the narration at `BUILD`, `REVIEW`, and `SHIP_GATE` transitions. It does not replace any gate, template, or `ask-options` prompt — it wraps them in voice.
+
+---
+
 ## Pairing — reviewer routing
 
 Pairing classification's sole purpose is selecting which reviewers to spawn at `REVIEW`. It does NOT route spec authorship — there is no spec. It is a single classification, used once, to pick the reviewer set.
@@ -160,10 +181,11 @@ This state does the internal planning and the announcement together. **Internal 
 
 **Body — Part 1: internal work (do this first)**:
 
-1. **Domain partition** — which agents are involved, parallel vs sequential. DB before BE (schema dependency). Independent domains (FE + Infra) parallelize. Builders before reviewers.
-2. **Assumptions ledger** — every term in the request whose interpretation was resolved at `VALIDATE`. Each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term in the request resolves to exactly one obvious signal. **This ledger does the spec's job** — it states, inline, every interpretation the user needs to confirm.
-3. **Register todos** through `track-tasks`:
-   - **One independent sub-task = one todo item = one agent.** Do not bundle independent work into a single agent.
+1. **Domain partition (plan DAG)** — build the plan DAG per [Velo Plan DAG](skills/velo-plan-dag.md): which agents are involved, as nodes with `needs` edges; batches derive from the edges. The node-granularity rule governs decomposition — a node earns independence only if it fans out (has a parallel sibling) or exposes a clean interface seam; same-file sequential work stays one node. Standard edge constraints: DB before BE (schema dependency). Independent domains (FE + Infra) parallelize. Builders before reviewers — reviewers are never DAG nodes.
+2. **Skill composition** — for each DAG node, resolve the composed skill set per [Velo Skill Composition](skills/velo-skill-composition.md): default bundle + validated additions from the `skills/` catalog. The composed set is frozen at plan approval.
+3. **Assumptions ledger** — every term in the request whose interpretation was resolved at `VALIDATE`. Each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term in the request resolves to exactly one obvious signal. **This ledger does the spec's job** — it states, inline, every interpretation the user needs to confirm.
+4. **Register todos** through `track-tasks`:
+   - **One DAG node = one todo item = one agent.** Do not bundle independent work into a single node.
    - At minimum, one item per planned agent spawn.
    - Add lifecycle items: "Review findings", "Present summary for approval", "Commit" when relevant.
    - Register the full list upfront, every item `pending`.
@@ -176,7 +198,7 @@ The pairing value resolved at `VALIDATE` carries through unchanged (it is not re
 
 Print the announcement using the template in [Templates — Plan announcement](#plan-announcement-plan_and_announce). Per the PERSONA hard rule "Always ask before delegating", wait for the user.
 
-The user corrects assumptions at this gate. **An assumption flip re-renders the plan**: re-run Part 1 with the corrected assumption(s), then re-render the announcement before any agent is spawned. A pairing flip likewise re-runs Part 1 (it changes the reviewer set at `REVIEW`). Flips compose; last-confirmed value wins.
+The user corrects assumptions at this gate. **An assumption flip re-renders the plan**: re-run Part 1 with the corrected assumption(s) — including DAG re-partition and skill re-composition — then re-render the announcement before any agent is spawned. A pairing flip likewise re-runs Part 1 (it changes the reviewer set at `REVIEW`). Flips compose; last-confirmed value wins.
 
 **Exit conditions**:
 - User approves → (user-gate: approve) → `BUILD`
@@ -196,11 +218,15 @@ The user corrects assumptions at this gate. **An assumption flip re-renders the 
 
 **Use `spawn-agent` for every team member. Do not role-play agents.**
 
+**Narrate the handoffs** per [Narration](#narration): one line as the first builders start (why this ordering), and one at each batch handoff as dependencies clear and the next batch spawns.
+
+Spawn each DAG node with its composed skill set injected per `inject-skills` (`ADAPTER.md`) — the set was frozen at the approved announcement; do not recompose at spawn time. Rework re-spawns inherit the node's frozen composition.
+
 Update the todo list when transitioning between sub-phases — mark the completed sub-phase item `completed` and the next sub-phase item `in_progress` before spawning agents for it.
 
 **Sub-phases (skip any that doesn't apply)**:
 
-1. **Builders**: spawn relevant builders. DB → BE if schema changes involved.
+1. **Builders**: spawn builder nodes per DAG batches (`needs: —` nodes first, in one runtime turn; later batches as their dependencies complete). DB → BE if schema changes involved.
 2. **Tests**: spawn automation-engineer after builders, if tests are needed.
 
 Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Parallelism](skills/velo-parallelism.md).
@@ -226,6 +252,8 @@ Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Paral
 **Entry condition**: `BUILD` produced builder + test output for all in-scope agents.
 
 **Body**:
+
+**Narrate** per [Narration](#narration): one line handing the work into review as builders come back. On rework, name what the reviewer actually caught and what's bouncing back to whom — don't just say "review failed".
 
 Spawn the reviewer set selected by the pairing classification — see [Pairing — reviewer routing](#pairing--reviewer-routing). Spawn them in parallel per [Velo Parallelism](skills/velo-parallelism.md), including the mandatory observability pairing defined there if a BE builder actually ran. Each reviewer is briefed against the scope of the corresponding builder.
 
@@ -254,6 +282,8 @@ Spawn the reviewer set selected by the pairing classification — see [Pairing �
 **Entry condition**: `REVIEW` reported all reviewers passing.
 
 **Body**:
+
+**Narrate** per [Narration](#narration): one short line closing out the review ("Clean this pass — here's where we landed") before the summary and the gate. Lead into the report; don't drop the table cold.
 
 Present the final summary per [Velo Final Report](skills/velo-final-report.md). Then apply the single ship-gate pattern per [Velo Approval Gates](skills/velo-gates.md#ship-gate-commit--optional-push--optional-pr) with header `"Ready to ship"` and question `"All reviewers passed. How do you want to ship?"`. Resolve the repo's default branch at gate time per the skill's Base-branch detection; omit the `Commit + push + open PR` option when the current branch is the default branch.
 
@@ -325,24 +355,25 @@ Print a short abandon summary: what was attempted, what completed (if anything),
 
 ### Plan announcement (PLAN_AND_ANNOUNCE)
 
+The announcement is voiced, not a form. Velo talks through the read, then lays out the plan. Lead with the pairing call folded into a plain clause, surface the load-bearing assumptions as a short list the user can correct, then the DAG. Keep every scannable element — the ledger, the `needs` edges, the skills field, the batch/execution info — but say them like an EM, not a template.
+
 ```
-Velo here. Assessing the task...
+Looked at this — <one clause: what kind of change it is + the pairing call in plain voice, e.g. "it's a product change (touches a request path), so review pulls in observability" or "pure-tech — just the domain reviewer">. Flag me if that read's off.
 
-Pairing: <product | pure-tech>  (reviewer routing only)
-- product → full reviewer set (domain reviewers + mandatory BE observability pairing)
-- pure-tech → narrower set (domain reviewers for the builders that run)
-(flag if the pairing is wrong)
-
-Assumptions (flag if wrong):
+<If any terms were resolved — how I'm reading the ambiguous bits:>
 - <term from request> → <interpretation/signal>
-- (write "(none)" only if every term in the request resolves to exactly one obvious signal)
+<tell me if I've got any backwards. If nothing was ambiguous, say so in one line instead — "Nothing ambiguous in the brief, reading it straight" — never print "(none)".>
 
-Plan:
-- <agent>: <what they'll do>
-- <agent>: <what they'll do>
+Plan — <N> agent(s)<, one clause on ordering rationale only if there's a dependency, e.g. "DB goes first since the backend needs the schema">:
+- T1 · <agent> — <what it produces> · skills: <slug>, <slug>, +<addition> · needs: —
+- T2 · <agent> — <what it produces> (waits on T1) · skills: <slug> · needs: T1
 
-Execution: <parallel vs sequential, and why>
+<Execution line only when there's real batching to call out — "T2 and T3 run together once T1 lands." For a single node, say nothing.>
+
+Good to go?
 ```
+
+> Render the announcement as plain markdown — never wrap the plan list or any other part of the announcement in a fenced code block (the fence above is only to show the template shape). This is Velo speaking, per [PERSONA.md](PERSONA.md) — direct, owns the call, no filler; do not read the template back as labelled fields. Node/edge semantics, batch derivation, and the node-granularity rule per [Velo Plan DAG](skills/velo-plan-dag.md); the skills field (default slugs plain, additions prefixed `+`) per [Velo Skill Composition](skills/velo-skill-composition.md).
 
 > If the brief cannot be reduced to a confirmable assumptions ledger, do not reach this template — escalate to `/velo:new` from `VALIDATE` instead (see the escalation Hard Rule).
 
