@@ -6,7 +6,7 @@ description: Node/edge schema for /velo:task and /velo:plan plan announcements. 
 
 ## Purpose
 
-Replaces the coarse "Execution: parallel vs sequential" line in the `/velo:task` announcement with an explicit node/edge plan. Built during `PLAN_AND_ANNOUNCE` Part 1; consumed by `BUILD` for spawn batching. Also consumed by `/velo:plan`: `DAG_PHASE` transforms the Tech Lead's task-breakdown table into this node schema, and `PLAN_APPROVAL` renders it per the rules below (user-facing heading `Plan:` — plan mode does not surface the DAG acronym to the user).
+Replaces the coarse "Execution: parallel vs sequential" line in the `/velo:task` announcement with an explicit node/edge plan. Built during `PLAN_AND_ANNOUNCE` Part 1; consumed by `BUILD` for spawn batching. Also consumed by `/velo:plan`: `DAG_PHASE` transforms the Tech Lead's task-breakdown table into this node schema, and `PLAN_APPROVAL` renders it per the rules below (the DAG acronym never surfaces to the user — see the heading rule under Rendering).
 
 ## Node schema
 
@@ -30,9 +30,9 @@ A node earns independence only if it (a) **fans out** — has a parallel sibling
 
 ## Rendering in the announcement
 
-Plain markdown list — never a fenced code block:
+Plain markdown list — never a fenced code block. **Heading rule (canonical)**: render the heading as `Plan:` — never `Plan (DAG):`, never any graph jargon in front of the user; the `needs` fields and the Execution line carry the structure. This is the single canonical render for every consumer — consumers do not override or restate it.
 
-Plan (DAG):
+Plan:
 - T1 · \<agent\> — \<does\> · skills: \<slug\>, \<slug\>, +\<addition\> · needs: —
 - T2 · \<agent\> — \<does\> · skills: \<slug\> · needs: T1
 
@@ -41,7 +41,7 @@ Execution: batch 1 — \<ids\> in parallel; batch 2 — \<ids\> after \<ids\>; .
 
 Worked example:
 
-Plan (DAG):
+Plan:
 - T1 · db-engineer — add `expires_at` to sessions schema · skills: postgresql, clickhouse · needs: —
 - T2 · be-engineer — expose expiry in GET /sessions · skills: nodejs, api-and-interface-design, +kafka · needs: T1
 - T3 · fe-engineer — render expiry badge (against mocks) · skills: react, react-effects, vercel-react-best-practices · needs: —

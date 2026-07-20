@@ -49,6 +49,7 @@ Rules around the gate:
 - **A single ambiguous term is NOT a heavy trigger by itself.** It is an in-place stop-and-ask per [Requirement Interpretation](skills/requirement-interpretation.md) — resolve the ask first, then evaluate the gate with the answer folded in. Only if the answer surfaces trigger 1, 2, or 3 does the heavy path fire.
 - **User override beats the gate**, both directions, at the `ANNOUNCE` gate. A depth flip re-renders the kickoff.
 - **Late correction is light→heavy only**: if the Tech Lead discovers mid-`DAG_PHASE` that a light-path brief is actually net-new or conflicted, it returns `DEPTH_FLAG` and the flow re-enters `ANNOUNCE` with depth flipped to heavy (which now routes through the design-doc + design-review depth). There is no heavy→light late flip — once stories and a design exist, they only help the breakdown.
+- **User adjudicates a DEPTH_FLAG dispute** (mirrors the `Step 0 override: user-adjudicated` pattern at `DESIGN_PHASE`): if the user forces light at the re-entered kickoff after a `DEPTH_FLAG`, that call is final for this run — re-enter `DAG_PHASE` and re-spawn the Tech Lead with the override line `Depth override: user-adjudicated — proceed light; do not re-flag` plus the flag reason inline. The TL proceeds best-effort and must not return `DEPTH_FLAG` again; carry the flag reason into the plan package `Constraints/notes` as an advisory. This caps the flip at one round — no agent-vs-user ping-pong.
 
 ---
 
@@ -362,7 +363,7 @@ This is the Work planning step (`DAG_PHASE`) in team language — narrate it tha
 
 1. **Obtain the breakdown table** — the path depends on the tier:
    - **Heavy path**: `.velo/tasks/<slug>/task-breakdown.md` already exists — it was authored, design-reviewed, and design-approved in the design depth (`DESIGN_PHASE` → `DESIGN_REVIEW` → `DESIGN_APPROVAL`). Do NOT re-spawn the Tech Lead and do NOT re-run Step 0 — the spec audit already ran at `DESIGN_PHASE` and the design is locked. Just verify the file exists (validation below) and consume it.
-   - **Light path**: read `agents/tech-lead.md` and spawn the Tech Lead in **`Mode: plan-dag`** (input variant B — see the mode contract in the agent file) with the task folder path, the original brief, and the **user-confirmed** assumptions ledger, both inline. Step 0 is skipped — the confirmed ledger is the spec; the kickoff gate already did the audit's job. If the TL finds the brief is actually net-new or internally conflicted, it returns `DEPTH_FLAG: <one-line reason>` and writes nothing. Output: `.velo/tasks/<slug>/task-breakdown.md` (breakdown table only — **no engineering design doc on the light path**).
+   - **Light path**: read `agents/tech-lead.md` and spawn the Tech Lead in **`Mode: plan-dag`** (input variant B — see the mode contract in the agent file) with the task folder path, the original brief, and the **user-confirmed** assumptions ledger, both inline. Step 0 is skipped — the confirmed ledger is the spec; the kickoff gate already did the audit's job. If the TL finds the brief is actually net-new or internally conflicted, it returns `DEPTH_FLAG: <one-line reason>` and writes nothing (unless the spawn carries the `Depth override: user-adjudicated` line — then it proceeds without re-flagging, per the depth-gate rules). Output: `.velo/tasks/<slug>/task-breakdown.md` (breakdown table only — **no engineering design doc on the light path**).
 2. **Validate output**: verify `task-breakdown.md` exists. If missing — stop, print:
    ```
    task-breakdown.md is missing. Cannot proceed to plan sign-off.
@@ -378,7 +379,7 @@ This is the Work planning step (`DAG_PHASE`) in team language — narrate it tha
 
 **Exit conditions**:
 - `task-breakdown.md` valid, plan built, skills composed → (auto) → `PLAN_APPROVAL`
-- TL returns `DEPTH_FLAG: <reason>` (light path only) → (auto) → `ANNOUNCE` with depth flipped to heavy, reason surfaced for the user to confirm
+- TL returns `DEPTH_FLAG: <reason>` (light path only) → (auto) → `ANNOUNCE` with depth flipped to heavy, reason surfaced for the user to confirm; if the user forces light again there, re-enter `DAG_PHASE` with the `Depth override: user-adjudicated` line per the depth-gate rules (TL proceeds without re-flagging; reason carried as an advisory)
 - F5 fires → (failure:F5) → see F5 handling; on user halt → `ABANDON` (terminal `abandoned-f5`)
 - Spawn unavailable or fails (light path) → (failure:F1) → halt and report blocker
 - User aborts → (user-gate: abandon) → `ABANDON` (terminal `abandoned-user`)
@@ -397,7 +398,7 @@ This is the Work planning step (`DAG_PHASE`) in team language — narrate it tha
 
 This is the Plan sign-off step (`PLAN_APPROVAL`) in team language — the gate header below carries that name; the identifier stays internal.
 
-Render the plan per [Velo Plan DAG](skills/velo-plan-dag.md)'s rendering rules — plain markdown, never a fenced code block: one line per task (`T1 · <agent> — <does> · skills: <slug>, +<addition> · needs: —`), then a plain line on what runs together and what waits on what. **Do not surface graph jargon to the user** — render the heading as `Plan:`, not `Plan (DAG):`; the `needs` fields and the ordering line carry the structure. Surface any dropped-skill flags from composition. Use the voiced framing in [Templates — Plan sign-off](#plan-sign-off).
+Render the plan per [Velo Plan DAG](skills/velo-plan-dag.md)'s rendering rules — plain markdown, never a fenced code block: one line per task (`T1 · <agent> — <does> · skills: <slug>, +<addition> · needs: —`), then a plain line on what runs together and what waits on what. The heading is `Plan:` per the skill's canonical heading rule — graph jargon never surfaces to the user. Surface any dropped-skill flags from composition. Use the voiced framing in [Templates — Plan sign-off](#plan-sign-off).
 
 Use `ask-options`:
 - **Header**: `"Plan sign-off"`
@@ -410,11 +411,13 @@ Use `ask-options`:
 
 **Sign-off is the skill-composition freeze point** per [Velo Skill Composition](skills/velo-skill-composition.md) — the approved task set, ordering, and composed skills are frozen into the plan package. `I have changes` is pre-freeze, user-driven, uncapped; its routing depends on the tier and what changed (see Exit conditions).
 
+**Persist the package at the freeze**: on either freezing exit (`Approve — hand off to /velo:task` or `Save plan — stop here`), before leaving this state, write `.velo/tasks/<slug>/plan-package.md` containing the full plan package per [Velo Plan Package](skills/velo-plan-package.md): the header keys (`Planned-via`, `Task-folder`, `Depth`, `Pairing`), the brief verbatim, the **user-confirmed Assumptions ledger**, the frozen plan (composed skills + `needs` edges + execution batches), `Artifacts`, and `Constraints/notes`. This file is the durable copy of the approved plan — a saved plan is executable from it, and a new-session light-path resume or re-entry reconstructs the confirmed ledger from it (on the light path it is the only place the confirmed ledger persists).
+
 **Exit conditions**:
 - `Approve — hand off to /velo:task` → (user-gate: approve) → `HANDOFF`
 - `I have changes`, **light path** → (user-gate: revise) → convey to TL, re-spawn → `DAG_PHASE`; on return → `PLAN_APPROVAL`
 - `I have changes`, **heavy path** → (user-gate: revise) → if the change touches the breakdown or the design, re-open the design depth → `DESIGN_PHASE` (TL revises the EDD + breakdown), on return → `DESIGN_REVIEW` → `DESIGN_APPROVAL` → `DAG_PHASE` → `PLAN_APPROVAL`; if the change is only to skill composition or task ordering, Velo re-runs `DAG_PHASE` steps 3–4 in place → `PLAN_APPROVAL` (no TL/DE re-spawn)
-- `Save plan — stop here` → (user-gate: save) → `DONE` (terminal `plan-saved-no-handoff`; artifacts persist in `.velo/tasks/<slug>/`)
+- `Save plan — stop here` → (user-gate: save) → `DONE` (terminal `plan-saved-no-handoff`; artifacts persist in `.velo/tasks/<slug>/`, including the executable `plan-package.md` written at the freeze)
 - `Abandon` → (user-gate: abandon) → `ABANDON` (terminal `abandoned-plan-approval`)
 
 **Failure modes**: can trigger F7.
@@ -429,9 +432,9 @@ Use `ask-options`:
 
 This is the Hand to the builders step (`HANDOFF`) in team language — narrate it that way ("handing this to the builders"); the identifier stays internal.
 
-Assemble the plan package per [Velo Plan Package](skills/velo-plan-package.md) — header keys, frozen plan with composed skills, confirmed ledger, pairing label, artifact paths, constraints. Then invoke `/velo:task` via `handoff-mode`, carrying the full package as the argument (per `ADAPTER.md`: always carry the generated brief forward — the user retypes nothing).
+The plan package was persisted at the `PLAN_APPROVAL` freeze as `.velo/tasks/<slug>/plan-package.md` per [Velo Plan Package](skills/velo-plan-package.md). Invoke `/velo:task` via `handoff-mode`, carrying the full package contents — headers included, verbatim — as the argument (per `ADAPTER.md`: always carry the generated brief forward — the user retypes nothing). **Never strip or summarize the package headers**: the `Planned-via: /velo:plan` key is what suppresses task mode's escalate-to-plan rule; a stripped header makes a heavy-path brief read as net-new and bounce straight back to `/velo:plan`.
 
-**Transition friction warning (increment 1 — mandatory)**: before invoking, print one line: `Note: /velo:task will re-validate and re-announce this plan with its own gate — approve it there too. Until the executor rewrite lands, task mode does not yet honor the package header as binding.` On a **heavy-path** package, add: `Task mode may read net-new work as out of its scope and offer to reroute to /velo:plan — decline that; planning is already done.`
+**Transition friction warning (increment 1 — mandatory)**: before invoking, print one line: `Note: /velo:task will re-validate and re-announce this plan with its own gate — approve it there too. Until the executor rewrite lands, task mode does not yet honor the frozen plan as binding — it re-plans over the package text, but the Planned-via header keeps it from re-escalating to /velo:plan.`
 
 **Exit conditions**:
 - Handoff invoked → `DONE` (terminal `handed-off-to-task`)
@@ -449,7 +452,13 @@ Assemble the plan package per [Velo Plan Package](skills/velo-plan-package.md) �
 
 **Body**:
 
-Print a short plan summary — NOT the [Velo Final Report](skills/velo-final-report.md) table (that is a ship report; plan mode ships nothing): depth taken (+ trigger id), artifacts written (paths), task count and what runs in parallel, and — on `plan-saved-no-handoff` — how to execute later (`/velo:task` with the package, or re-open via `/velo:plan`). Update `status.md` to `Phase: DONE (Done — <terminal reason>)` per [Velo Task Status](skills/velo-task-status.md); the `index.md` row stays `in-progress` on both terminal reasons — the index tracks the work item, which is live until `/velo:task` delivers it — only its Updated date advances. Skill ends.
+Print a short plan summary — NOT the [Velo Final Report](skills/velo-final-report.md) table (that is a ship report; plan mode ships nothing): depth taken (+ trigger id), artifacts written (paths, including `plan-package.md`), task count and what runs in parallel, and — on `plan-saved-no-handoff` — how to execute later (`/velo:task` with the persisted `.velo/tasks/<slug>/plan-package.md`, or re-open via `/velo:plan`).
+
+**Status stamp — split by terminal reason** (per [Velo Task Status](skills/velo-task-status.md)):
+- `plan-saved-no-handoff` → update `status.md` to `Phase: DONE (Done — plan-saved-no-handoff)`.
+- `handed-off-to-task` → do NOT stamp a terminal phase. Leave `status.md` at `Phase: HANDOFF (Hand to the builders)` — the package-bearing `/velo:task` invocation must find a non-terminal breadcrumb; its first write takes ownership of the folder (flipping `Mode:` to `task`). Stamping `DONE` here would make the executor's reuse-folder path read the task as finished.
+
+The `index.md` row stays `in-progress` on both terminal reasons — the index tracks the work item, which is live until `/velo:task` delivers it — only its Updated date advances. Skill ends.
 
 **Exit conditions**: terminal.
 
@@ -532,7 +541,7 @@ Pairing: <product|pure-tech> — <one clause why; drives /velo:task's reviewer s
 <Any dropped-skill flags or unresolved-finding carryovers, one line each.>
 ```
 
-Then the `ask-options` gate. Task and ordering semantics per [Velo Plan DAG](skills/velo-plan-dag.md) — the DAG is internal plumbing; never surface the acronym to the user. The skills field per [Velo Skill Composition](skills/velo-skill-composition.md).
+Then the `ask-options` gate. Task and ordering semantics — including the canonical `Plan:` heading rule — per [Velo Plan DAG](skills/velo-plan-dag.md). The skills field per [Velo Skill Composition](skills/velo-skill-composition.md).
 
 ---
 

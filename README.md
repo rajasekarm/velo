@@ -82,7 +82,7 @@ Unified planning front-end. Depth adapts to the work: the **light tier** goes st
 `/velo:new`'s full depth — PM → engineering design doc → DE review → build — now lives in `/velo:plan`'s heavy tier (design) plus `/velo:task` (build). Invoking `/velo:new` prints a short notice and routes to `/velo:plan`, carrying your brief forward verbatim. The unified flow is Plan → Task → Ship.
 
 ### `/velo:task` — Day-to-day tasks
-Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan, use an inline transient task-spec when needed, then build, review, and ship.
+Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan — a task DAG with an inline assumptions ledger — then build, review, and ship.
 
 ### `/velo:yo` — Advisory
 Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.

@@ -35,6 +35,8 @@ Task mode has no inline spec branch. The guardrail is this: **when the brief is 
 
 If the trigger fires, do NOT proceed to `PLAN_AND_ANNOUNCE`. Use `handoff-mode` to route to `/velo:plan`, carrying the original brief forward verbatim as the new-work brief. Surface a one-line reason (which trigger fired) so the user understands the redirect. This is a redirect, not an abandon — telemetry terminal reason `escalated-to-plan`.
 
+**Exception — already-planned work**: an invocation carrying the `Planned-via: /velo:plan` dispatch key (the plan-package header per [Velo Plan Package](skills/velo-plan-package.md)) SUPPRESSES this escalation entirely — the work was already planned in `/velo:plan`, and a heavy-path brief is net-new by construction, so re-escalating would bounce it straight back in a loop. On a package-bearing invocation, do not evaluate the triggers; proceed with the workflow.
+
 The adaptive path is for work that **can** be reduced to a confirmable assumptions ledger. Everything past that bar runs the single path below; everything under it goes to `/velo:plan`.
 
 ---
@@ -147,7 +149,7 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Body**:
 
-**Resume check (per [Velo Task Status](skills/velo-task-status.md))**: if the invocation references an existing task — an explicit `.velo/tasks/<slug>/` path or a brief that maps unambiguously to a row in `.velo/tasks/index.md` — and that folder's `status.md` is non-terminal, run the skill's resume protocol (`ask-options`: `Resume from <team name>` / `Start fresh`) before fresh interpretation. Resume re-enters the recorded state; nodes already marked `done` are never re-run (same semantics as the plan package's `done:` annotations). A plan-package-bearing invocation is NOT a resume prompt — it is the expected continuation; reuse its `Task-folder` silently. If `status.md` is missing, unparseable, or terminal, proceed as new work.
+**Resume check (per [Velo Task Status](skills/velo-task-status.md))**: if the invocation references an existing task — an explicit `.velo/tasks/<slug>/` path or a brief that maps unambiguously to a row in `.velo/tasks/index.md` — and that folder's `status.md` is non-terminal, run the skill's resume protocol (`ask-options`: `Resume from <team name>` / `Start fresh`) before fresh interpretation. Resume re-enters the recorded state; nodes already marked `done` are never re-run (same semantics as the plan package's `done:` annotations). A plan-package-bearing invocation is NOT a resume prompt — it is the expected continuation; reuse its `Task-folder` silently. Its `status.md` arrives non-terminal by design (plan mode leaves it at `Phase: HANDOFF` rather than stamping a terminal phase — per [Velo Task Status](skills/velo-task-status.md)); task mode's first write at `PLAN_AND_ANNOUNCE` takes ownership, flipping `Mode:` to `task`. If `status.md` is missing, unparseable, or terminal, proceed as new work — that rule governs the resume check only; a package-bearing invocation is not a resume and reuses its named `Task-folder` regardless.
 
 Read the request. Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every term in the request whose interpretation could change which user sees what, which code path runs, or which data gets touched. Resolve each term per the rule for later capture in the Assumptions ledger (built in `PLAN_AND_ANNOUNCE`).
 
@@ -160,7 +162,7 @@ Read the request. Apply the [Requirement Interpretation](skills/requirement-inte
 
 The seam between them: a zero-signal term on an in-scope change is mechanism 1 (ask in-place, then ride the confirmed answer into the ledger) — *unless* asking reveals the work is actually net-new scope or carries an unresolvable conflict, at which point escalation trigger 1 or 2 fires and mechanism 2 takes over. Resolve the in-place ask first; escalate only if the answer surfaces a trigger.
 
-**Escalation check**: after any in-place stop-and-ask resolves, evaluate the [Escalate Underspecification UP](#hard-rule--escalate-underspecification-up-never-sideways) trigger. If it fires, redirect to `/velo:plan` via `handoff-mode` — do not continue.
+**Escalation check**: after any in-place stop-and-ask resolves, evaluate the [Escalate Underspecification UP](#hard-rule--escalate-underspecification-up-never-sideways) trigger. If it fires, redirect to `/velo:plan` via `handoff-mode` — do not continue. Skip this check entirely on a `Planned-via: /velo:plan` invocation — see the Hard Rule's exception clause.
 
 **Pairing classification**: apply the rule in [Pairing — reviewer routing](#pairing--reviewer-routing). Carry the resolved pairing (`product` | `pure-tech`) forward into `PLAN_AND_ANNOUNCE` as an explicit value, **for reviewer selection only**.
 

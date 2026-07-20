@@ -56,7 +56,7 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Cap names used by this command**: `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
 
-**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-new`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
+**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-plan`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
 
 ---
 

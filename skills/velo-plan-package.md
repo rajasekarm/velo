@@ -6,7 +6,7 @@ description: The Plan→Task handoff contract. Package format /velo:plan hands t
 
 ## Purpose
 
-The single contract between planning (`/velo:plan`) and execution (`/velo:task`). Plan mode assembles this package at `HANDOFF`; task mode receives it as its argument via `handoff-mode`. The same format, extended with re-entry fields, is what task mode hands back when a descope resolves to a re-plan.
+The single contract between planning (`/velo:plan`) and execution (`/velo:task`). Plan mode assembles the package and **persists it to `.velo/tasks/<slug>/plan-package.md` at the `PLAN_APPROVAL` freeze** (on both the handoff and save-plan exits); `HANDOFF` carries the same content inline as task mode's argument via `handoff-mode`. The same format, extended with re-entry fields, is what task mode hands back when a descope resolves to a re-plan.
 
 **Frozen contract**: the header keys — `Planned-via`, `Task-folder`, `Depth`, `Pairing`, `Re-entry`, and the `done:` node annotation — are stable from day one. The increment-2 task.md rewrite dispatches on them; do not rename or repurpose them.
 
@@ -35,10 +35,10 @@ Constraints/notes: <F5 notes, dropped-skill flags, unresolved spec findings carr
 
 Field semantics:
 
-- **`Planned-via`** — the executor's dispatch key. Increment 2: a package-bearing `/velo:task` invocation skips its own planning (no re-partition, no re-composition — the frozen DAG is authoritative) and suppresses its escalate-to-`/velo:plan` rule. Increment 1: advisory only — stock task.md re-validates and re-announces; plan mode warns the user at `HANDOFF`.
-- **`Task-folder`** — where the durable artifacts live. The inline package is self-sufficient; the folder is the disk backup and the re-entry anchor.
+- **`Planned-via`** — the executor's dispatch key. The escalation suppression is live from increment 1: a package-bearing `/velo:task` invocation never re-escalates to `/velo:plan` (task.md's escalation Hard Rule carries an explicit `Planned-via` exception — the work was already planned). Increment 2 adds binding consumption: skip task's own planning entirely (no re-partition, no re-composition — the frozen DAG is authoritative). Increment 1: the plan itself is advisory — stock task.md re-validates and re-announces over the package text; plan mode warns the user at `HANDOFF`.
+- **`Task-folder`** — where the durable artifacts live, including the package itself: plan mode writes `plan-package.md` into this folder at the `PLAN_APPROVAL` freeze, so the confirmed ledger and frozen plan survive the session (a saved plan or a new-session light-path resume reconstructs from it — on the light path it is the only persisted carrier of the confirmed ledger). The inline package handed at `HANDOFF` is a verbatim copy of that file; the folder is also the re-entry anchor.
 - **`Depth`** — which path planning took and which trigger fired. Auditability only; the executor does not branch on it.
-- **`Pairing`** — the product/pure-tech classification computed at plan mode's `VALIDATE`, carried so the executor's reviewer routing needs no re-derivation.
+- **`Pairing`** — the product/pure-tech classification computed at plan mode's `VALIDATE`. Increment 2: carried so the executor's reviewer routing needs no re-derivation. Increment 1: advisory only — stock task.md still re-classifies pairing at its own `VALIDATE`; a mismatch surfaces at task's announce gate for the user to flip.
 - **DAG node lines** — exactly the [Velo Plan DAG](velo-plan-dag.md) rendering, skills field per [Velo Skill Composition](velo-skill-composition.md), frozen at `PLAN_APPROVAL`. Rework re-spawns inherit the frozen composition.
 - **`done:`** — per-node annotation, absent/empty on first handoff. Populated only in re-entry packages; a `done:` node is complete and MUST NOT be re-run by the executor.
 - **`engineering-design-doc.md`** — present in `Artifacts` on the **heavy path only**. Plan mode's heavy tier authors it at `DESIGN_PHASE`, the Distinguished Engineer reviews it at `DESIGN_REVIEW`, and the user signs off at `DESIGN_APPROVAL`; the DAG is derived from this approved design. The light path carries no EDD (`task-breakdown.md` + confirmed ledger only). The executor reads the referenced EDD for build context; it does not re-review it.
@@ -64,4 +64,4 @@ Task-side terminal for this exit: `replanned-via-plan` (increment 2 defines it i
 
 ## Scope
 
-Producer: `/velo:plan`'s `HANDOFF` state (increment 1). Consumers: `/velo:task` (binding consumption is increment 2; until then the package is a well-formed brief that stock task.md plans over again). No other command produces or consumes this format.
+Producer: `/velo:plan` — persisted at `PLAN_APPROVAL` (as `plan-package.md`), carried inline at `HANDOFF` (increment 1). Consumers: `/velo:task` (binding consumption is increment 2; until then the package is a well-formed brief that stock task.md plans over again — though the `Planned-via` key already suppresses its escalate-to-plan rule). No other command produces or consumes this format.

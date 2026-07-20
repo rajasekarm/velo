@@ -6,25 +6,21 @@
 
 ## `/velo:task` — Day-to-day tasks
 
-Lightweight path for bug fixes, refactors, and small changes. No planning phase.
+Lightweight path for bug fixes, refactors, and small changes. Task self-plans: after validating scope, Velo announces the plan (builders, order, scope) for your approval, then builds. There is no spec sub-system — underspecified work escalates to `/velo:plan`.
 
 ```mermaid
 flowchart TD
-    A([Start]) --> ANN[Announce plan\nuser approval]
-    ANN --> SA[SPEC_AUDIT\nPM Mode: task-spec\n+ TL Step 0 audit]
-    SA -->|SPEC_REWORK_NEEDED cycle 1-2| SA
-    SA -->|SPEC_REWORK_NEEDED cycle 3| A0S{Your call}
-    A0S -->|ship-with-gaps| BUILD
-    A0S -->|cut scope| ANN
-    A0S -->|abandon| ENDS([Abandon])
-    SA -->|SPEC_OK| BUILD[Relevant builders]
+    A([Start]) --> V[Validate scope]
+    V --> ANN{Plan & announce\nyour approval}
+    ANN -->|cancel| ENDS([Abandon])
+    ANN -->|approved| BUILD[Relevant builders]
     BUILD --> TEST[Automation Engineer\nTests]
     TEST --> REVIEW[All reviewers\nin parallel]
     REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
     REWORK --> REVIEW
     REVIEW -->|cycle 3| A0C{Your call}
-    A0C -->|extend| REWORK
-    A0C -->|accept| A1{Your approval}
+    A0C -->|cut scope| REWORK
+    A0C -->|push through| A1{Your approval}
     A0C -->|abandon| END0([Abandon])
     REVIEW -->|all pass| A1{Your approval}
     A1 -->|approved| COMMIT[Commit Agent]
