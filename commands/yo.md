@@ -12,7 +12,7 @@ Fluid advisor mode. Ask Velo anything — about the codebase, a technical decisi
 
 Prefix your input with `@pm`, `@tl`, or `@de` to bypass mode selection and target a single advisory agent directly.
 
-Not for building. If you want to build, use `/velo:new` or `/velo:task`.
+Not for building. If you want to build, use `/velo:plan` or `/velo:task`.
 
 ---
 
@@ -26,7 +26,7 @@ Not for building. If you want to build, use `/velo:new` or `/velo:task`.
 **Yo only does four things:** clarify the question, route to the right skill or panel, answer conceptual questions from pure knowledge (no file reads), and synthesize panel responses (reasoning over agent output, not over code).
 
 **If work needs to happen, delegate. Always.**
-- Code to write → `/velo:new` (net-new) or `/velo:task` (smaller changes)
+- Code to write → `/velo:plan` (net-new) or `/velo:task` (smaller changes)
 - Code/security review → `/review`, `/security-review`, or `/ultrareview`
 - Codebase investigation/analysis → spawn a panel; agents read the code, not Velo
 
@@ -341,13 +341,13 @@ Based on the discussion, here's the brief:
 2. Prepare `ask-options`. If the active runtime requires deferred tool lookup, use `load-tool`.
 
 3. Ask with the following four options:
-   - `Start /velo:new` — for net-new features
+   - `Start /velo:plan` — for net-new features (plan first, then build)
    - `Start /velo:task` — for smaller changes
    - `Shelve` — drop it
    - `Keep discussing` — stay in yo mode for follow-up
 
 4. **Route on the user's selection:**
-   - `Start /velo:new` → invoke the `velo:new` skill, passing the draft brief as the argument (no retyping from the user)
+   - `Start /velo:plan` → invoke the `velo:plan` skill, passing the draft brief as the argument (no retyping from the user)
    - `Start /velo:task` → invoke the `velo:task` skill, passing the draft brief as the argument
    - `Shelve` → acknowledge briefly (one sentence) and stop
    - `Keep discussing` → do nothing; wait for the user's next message

@@ -1,28 +1,20 @@
 ---
 name: new
-description: Use when the user asks for /velo:new, wants to start new Velo work, or needs the full PRD -> engineering design -> review -> build workflow in Codex.
+description: Retired. /velo:new now redirects to /velo:plan (Plan -> Task -> Ship). Use velo:plan to start new work in Codex.
 ---
 
-# Velo New
+# Velo New (retired -> velo:plan)
 
-This is the Codex-discoverable wrapper for Velo's new-work path. In this repo namespace, it should appear as `velo:new`.
+`velo:new` is retired. Its full depth — PM user stories, a DE-reviewed engineering design doc, and design sign-off — now lives in `velo:plan`'s heavy tier, which then hands off to `velo:task` to build and ship. The unified flow is **Plan -> Task -> Ship**.
 
-Velo workflow root: resolve by walking up from this `SKILL.md` to the directory containing `AGENTS.md`, `ADAPTER.md`, `TEAM.md`, and `commands/`. When this plugin is used from another repo, read Velo workflow assets from that root and treat the current working directory as the target project.
+This wrapper is a thin redirect for backward compatibility. In this repo namespace it still appears as `velo:new`, but it does not run the old PM -> EDD -> build workflow.
 
-## Load Order
+Velo workflow root: resolve by walking up from this `SKILL.md` to the directory containing `AGENTS.md`, `ADAPTER.md`, `TEAM.md`, and `commands/`.
 
-1. Load AGENTS.md first.
-2. Read `ADAPTER.md` for runtime mappings.
-3. Read `PERSONA.md` for Velo Engineering Manager behavior.
-4. Read `TEAM.md` for the available role prompts.
-5. Read `commands/new.md` for the workflow playbook.
-6. Read only the agent and skill files needed by the playbook.
+## Behavior
 
-## Codex Adaptation
+1. Load `AGENTS.md`, then `ADAPTER.md` (for `handoff-mode`).
+2. Read `commands/new.md` — the redirect stub — and follow it: tell the user `/velo:new` is retired and route to `velo:plan` via `handoff-mode`, carrying the brief forward verbatim.
+3. Do not spawn agents or run planning here. Plan mode's heavy tier owns the PRD -> engineering design -> DE review -> design sign-off depth.
 
-- Treat this as a Codex wrapper around the existing Velo playbook.
-- Do not treat this wrapper as an automatic Codex slash command.
-- Resolve adapter concepts such as `resolve-model`, `ask-options`, `spawn-agent`, `track-tasks`, `load-tool`, `handoff-mode`, and `report-cost` through `ADAPTER.md`.
-- Preserve the PRD, engineering design, review, test, commit, and push approval gates.
-- Do not implement directly when the playbook requires delegation or review gates.
-- If a Claude-only instruction cannot be mapped cleanly, state the mismatch and choose the closest Codex-native behavior.
+> Follow-up (out of this pass): there is not yet a dedicated `.agents/skills/velo-plan/` Codex wrapper. Until one exists, resolve the redirect target through `commands/plan.md` at the workflow root.

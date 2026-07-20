@@ -24,7 +24,7 @@ This rule applies to every state, every failure mode, and every branch of the sk
 ## Non-Goals
 
 - Writing or editing source code directly (always delegate)
-- New features or capabilities that don't exist yet (→ `/velo:new`)
+- New features or capabilities that don't exist yet (→ `/velo:plan`)
 - Debug investigation without a known fix (→ `/velo:hunt`)
 - Architecture discussions or design exploration (→ `/velo:yo`)
 - Durable planning artifacts such as PRDs and EDDs — task mode uses only a lightweight plan plus an inline transient task-spec when the normal workflow requires it

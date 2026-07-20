@@ -19,7 +19,7 @@ Velo was originally designed around Claude Code. Keep Claude compatibility expli
 - Treat `skills/*.md` as local reference material. They are not Codex skills unless converted into `SKILL.md` directories.
 - Keep Velo as the umbrella Engineering Manager concept, not as a separate Codex-discoverable skill.
 - Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.
-- Treat `.agents/skills/velo-{new,task,yo,hunt}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, and `velo:hunt`.
+- Treat `.agents/skills/velo-{new,task,yo,hunt}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, and `velo:hunt`. `velo:new` is retired — its wrapper is a thin redirect to `velo:plan` (planning now lives there); a dedicated `velo:plan` wrapper is a follow-up.
 - Treat `.codex-plugin/plugin.json` as the local Codex plugin manifest. It points Codex at `./.agents/skills/` so this repo can be symlinked as a live local plugin.
 - Treat commands/*.md as workflow playbooks, not automatic Codex slash commands.
 - Use Codex slash commands for session control only.

@@ -75,8 +75,11 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 
 See [WORKFLOW.md](WORKFLOW.md) for detailed flow diagrams.
 
-### `/velo:new` — New features
-Structured workflow: PM → Tech Lead → DE review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
+### `/velo:plan` — Plan work (Plan → Task → Ship)
+Unified planning front-end. Depth adapts to the work: the **light tier** goes straight to a Tech Lead breakdown; the **heavy tier** (net-new or underspecified work) first runs PM user stories → a Distinguished-Engineer-reviewed engineering design doc → your design sign-off. Produces an approved plan package (task breakdown + composed skills, plus the DE-reviewed EDD on the heavy path), then hands off to `/velo:task` to build and ship. Planning only — it never writes code.
+
+### `/velo:new` — Retired (redirects to `/velo:plan`)
+`/velo:new`'s full depth — PM → engineering design doc → DE review → build — now lives in `/velo:plan`'s heavy tier (design) plus `/velo:task` (build). Invoking `/velo:new` prints a short notice and routes to `/velo:plan`, carrying your brief forward verbatim. The unified flow is Plan → Task → Ship.
 
 ### `/velo:task` — Day-to-day tasks
 Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan, use an inline transient task-spec when needed, then build, review, and ship.

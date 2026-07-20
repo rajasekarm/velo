@@ -35,7 +35,7 @@ Constraints/notes: <F5 notes, dropped-skill flags, unresolved spec findings carr
 
 Field semantics:
 
-- **`Planned-via`** — the executor's dispatch key. Increment 2: a package-bearing `/velo:task` invocation skips its own planning (no re-partition, no re-composition — the frozen DAG is authoritative) and suppresses its escalate-to-`/velo:new` rule. Increment 1: advisory only — stock task.md re-validates and re-announces; plan mode warns the user at `HANDOFF`.
+- **`Planned-via`** — the executor's dispatch key. Increment 2: a package-bearing `/velo:task` invocation skips its own planning (no re-partition, no re-composition — the frozen DAG is authoritative) and suppresses its escalate-to-`/velo:plan` rule. Increment 1: advisory only — stock task.md re-validates and re-announces; plan mode warns the user at `HANDOFF`.
 - **`Task-folder`** — where the durable artifacts live. The inline package is self-sufficient; the folder is the disk backup and the re-entry anchor.
 - **`Depth`** — which path planning took and which trigger fired. Auditability only; the executor does not branch on it.
 - **`Pairing`** — the product/pure-tech classification computed at plan mode's `VALIDATE`, carried so the executor's reviewer routing needs no re-derivation.

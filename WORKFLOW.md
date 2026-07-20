@@ -1,48 +1,8 @@
 # Velo — Workflow
 
-## `/velo:new` — New features
+## `/velo:new` — Retired (redirects to `/velo:plan`)
 
-Structured workflow with mandatory planning and approval gates before any code is written.
-
-```mermaid
-flowchart TD
-    A([Start]) --> PM[Product Manager\nwrites prd.md]
-    PM --> A1{Your approval}
-    A1 -->|changes| PM
-    A1 -->|approved| TL[Tech Lead\nStep 0 spec audit\n+ writes engineering-design-doc.md\n+ task-breakdown.md]
-    TL -->|SPEC_REWORK_NEEDED| PM
-    TL --> TLV{task-breakdown.md\nexists?}
-    TLV -->|missing| TL
-    TLV -->|ok| REV[Distinguished Engineer\nreviews EDD]
-    REV -->|REVISE cycle 1-2| TL
-    REV -->|cycle 3| A2C{Your call}
-    A2C -->|extend| TL
-    A2C -->|accept| A2{Your approval}
-    REV -->|APPROVE| A2{Your approval}
-    A2 -->|changes| TL
-    A2 -->|approved| BUILD
-
-    subgraph BUILD [Build — ordered by task-breakdown.md]
-        direction LR
-        DB[DB Engineer] --> BE[BE Engineer]
-        INF[Infra Engineer\nif needed]
-        FE[FE Engineer\nbuilds against EDD]
-    end
-
-    BUILD --> TEST[Automation Engineer\nTests]
-    TEST --> REVIEW[All reviewers\nin parallel]
-    REVIEW -->|any fail cycle 1-2| REWORK[Rework\nrelevant builders]
-    REWORK --> REVIEW
-    REVIEW -->|cycle 3| A3C{Your call}
-    A3C -->|extend| REWORK
-    A3C -->|accept| A3{Your approval}
-    REVIEW -->|all pass| A3{Your approval}
-    A3 -->|approved| COMMIT[Commit Agent]
-    A3 -->|hold| REWORK
-    COMMIT --> A4{Push?}
-    A4 -->|approved| PUSH([Push to remote])
-    A4 -->|hold| DONE1([Done — local commit only])
-```
+`/velo:new` is retired. Its full depth — PM user stories → a DE-reviewed engineering design doc → design sign-off → build → review → ship — now lives in `/velo:plan`'s heavy tier (design) and `/velo:task` (build/ship). Invoking `/velo:new` prints a notice and hands off to `/velo:plan` via `handoff-mode`, carrying the brief forward. See the `/velo:plan` and `/velo:task` sections below for the unified **Plan → Task → Ship** flow.
 
 ## `/velo:task` — Day-to-day tasks
 
@@ -78,7 +38,7 @@ flowchart TD
 
 Adaptive planning that hands off to `/velo:task` for execution. Depth is gated: when the work is net-new, conflicted, or can't be reduced to a confirmable assumptions ledger (the three triggers shared with task.md's escalation rule), the heavy path fires — the PM writes user stories first, then the Tech Lead authors an engineering design doc that the Distinguished Engineer reviews (≤3 cycles) before you sign off on the design; otherwise the light path goes straight to the Tech Lead's breakdown (no PM, no EDD). The DE-reviewed EDD is a heavy-path artifact only — the light path carries no EDD. The TL breakdown runs **always** and becomes the plan-DAG (with skills composed per `velo-skill-composition`), frozen at your plan sign-off and carried in a plan package (`velo-plan-package`). No build — execution is `/velo:task`'s job.
 
-> **Transition note (increment 1)**: `/velo:plan` coexists with `/velo:new` and `/velo:task`. Stock `/velo:task` does not yet consume the plan package as binding — it will re-announce the plan with its own gate. Executor-side consumption (and descope-as-reentry back into plan mode) lands in increment 2.
+> **Transition note (increment 1)**: `/velo:plan` is the planning front-end and `/velo:new` now redirects into it. Stock `/velo:task` does not yet consume the plan package as binding — it will re-announce the plan with its own gate. Executor-side consumption (and descope-as-reentry back into plan mode) lands in increment 2.
 
 ```mermaid
 flowchart TD
@@ -118,7 +78,7 @@ flowchart TD
 
 ## `/velo:hunt` — Structured debug loop
 
-Symptom → hypothesis → root cause → handoff. No planning phase, no code written. Hunt ends with a confirmed root cause and a prose handoff brief, then routes to `/velo:task` (or `/velo:new` for infra/schema fixes).
+Symptom → hypothesis → root cause → handoff. No planning phase, no code written. Hunt ends with a confirmed root cause and a prose handoff brief, then routes to `/velo:task` (or `/velo:plan` for infra/schema fixes that need planning first).
 
 > **Operator note**: Hunt reads source files and git history. Bash is constrained to `git log`/`git blame` — verify your `settings.json` allowlist before use on sensitive repos.
 
@@ -137,6 +97,6 @@ flowchart TD
     RC --> FIX[Fix proposal + handoff brief]
     FIX --> HAND{Hand off}
     HAND -->|/velo:task| TASK2[Start /velo:task]
-    HAND -->|/velo:new| NEW[Start /velo:new]
+    HAND -->|/velo:plan| NEW[Start /velo:plan]
     HAND -->|fix myself| DONE([Done])
 ```

@@ -52,7 +52,7 @@ The following must be true before the workflow starts. If any precondition fails
 
 ## Telemetry
 
-Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:new` and `/velo:task`).
+Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:plan` and `/velo:task`).
 
 **Cap names used by this command**: `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
 
@@ -306,21 +306,21 @@ Then use `ask-options`:
 - Question: `"How do you want to proceed?"`
 - Options:
   - `Start /velo:task` — invoke `velo:task` with the handoff brief as argument (default path)
-  - `Start /velo:new` — use this option instead of `/velo:task` when fix requires schema migration or infra change (F4 substitution)
+  - `Start /velo:plan` — use this option instead of `/velo:task` when fix requires schema migration or infra change (F4 substitution)
   - `Fix myself` — print the successful-exit summary template (below) and stop
   - `Keep investigating` — return to `INVESTIGATE` with the current Hunt board
   - `Abandon` — proceed to `ABANDON`
 
-**F4 substitution rule**: if the fix approach requires a schema migration or infra change, substitute `Start /velo:new` for `Start /velo:task` in the options above. Do not offer both.
+**F4 substitution rule**: if the fix approach requires a schema migration or infra change, substitute `Start /velo:plan` for `Start /velo:task` in the options above. Do not offer both.
 
 **Exit conditions**:
 - `Start /velo:task` → (user-gate: Start /velo:task) → `[exit]` (handoff via `handoff-mode`)
-- `Start /velo:new` → (user-gate: Start /velo:new) → `[exit]` (handoff via `handoff-mode`, F4 path)
+- `Start /velo:plan` → (user-gate: Start /velo:plan) → `[exit]` (handoff via `handoff-mode`, F4 path)
 - `Fix myself` → (user-gate: Fix myself) → `[exit]` after emitting successful-exit summary
 - `Keep investigating` → (user-gate: Keep investigating) → `INVESTIGATE`
 - `Abandon` → (user-gate: Abandon) → `ABANDON`
 
-**Failure modes**: can trigger F4 (rerouting to `/velo:new`), F5 (if user requests code instead of handoff).
+**Failure modes**: can trigger F4 (rerouting to `/velo:plan`), F5 (if user requests code instead of handoff).
 
 ---
 
@@ -433,9 +433,9 @@ Note: `S2-silent` is session-spanning and not localized to any state — it appl
 | F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Transition to `STALLED` (Variant B). Options: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
 | F2 | User cannot reproduce the bug | Ask for logs or a minimal repro. If neither is available → transition to `ABANDON`. |
 | F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:yo` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
-| F4 | Fix requires schema migration / infra change | In `HANDOFF`, substitute `Start /velo:new` for `Start /velo:task` in the interaction prompt options. |
+| F4 | Fix requires schema migration / infra change | In `HANDOFF`, substitute `Start /velo:plan` for `Start /velo:task` in the interaction prompt options. |
 | F5 | User asks Velo to write code mid-hunt | Decline per Hard Rule. Use `ask-options`: `Start /velo:task`, `Keep investigating`, `Abandon`. |
-| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:yo`, `Switch to /velo:new`, `Abandon`. Do not continue hunt after flagging. |
+| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:yo`, `Switch to /velo:plan`, `Abandon`. Do not continue hunt after flagging. |
 | F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:yo`, `Abandon`. |
 | F8 | File or shell access error returns failure | Re-render Hunt board. Log the failed read in the evidence ledger as `error: <message>`. Propose an alternative read. Two consecutive tool errors → trigger F1. |
 | F9 | Shell history read blocked (permission denied for `git log` / `git blame`) | Skip the history read. Continue with file reads and search. Note in evidence ledger: `skipped: git history unavailable`. |

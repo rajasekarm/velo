@@ -33,7 +33,7 @@ Detect by verb class targeting a concrete artifact, then use `ask-options` to pr
 **Build verbs** — `add`, `fix`, `build`, `implement`, `refactor`, `create`, `delete`, `deploy` — targeting a page, component, endpoint, table, service, function, agent, skill:
 
 Ask `"Sounds like a build — which route?"` with 3 options:
-- `Start /velo:new` — net-new feature with full PRD/EDD pipeline
+- `Start /velo:plan` — net-new feature: plan (PRD + DE-reviewed EDD) first, then build via /velo:task
 - `Start /velo:task` — smaller change, lighter workflow
 - `Keep discussing` — stay in yo mode for follow-up
 

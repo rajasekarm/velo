@@ -46,4 +46,4 @@ The composed set is frozen when the user approves the plan — `/velo:task`'s an
 
 ## Scope
 
-Applies to builder and automation nodes in `/velo:task` and `/velo:plan` (`DAG_PHASE`). In plan mode, composition is done by Velo the orchestrator after the Tech Lead returns the breakdown — the TL never composes skills. Reviewers are not composed this round — they keep their static agent-file bundles, so reviewer routing (task.md Pairing + [Velo Parallelism](velo-parallelism.md) mandatory pairings) is untouched. `/velo:new`, `/velo:hunt`, `/velo:yo` do not use this skill yet.
+Applies to builder and automation nodes in `/velo:task` and `/velo:plan` (`DAG_PHASE`). In plan mode, composition is done by Velo the orchestrator after the Tech Lead returns the breakdown — the TL never composes skills. Reviewers are not composed this round — they keep their static agent-file bundles, so reviewer routing (task.md Pairing + [Velo Parallelism](velo-parallelism.md) mandatory pairings) is untouched. `/velo:hunt` and `/velo:yo` do not use this skill yet.

@@ -6,15 +6,15 @@ description: Single ship gate pattern bundling commit + optional push + optional
 
 ## PERSONA hard rule
 
-Never commit, push to remote, or open a PR without **explicit per-action approval**. Commit, push, and PR are three distinct visible-action surfaces — each requires its own approval, and past authorization for one never extends to the others or to future actions of the same type. A single ship gate may bundle commit, push, and PR into one prompt **only when each option label explicitly names every action it triggers** — a label such as `Commit + push + open PR` constitutes explicit per-action authorization for all three, because the user reads and chooses exactly those named actions before any of them fires. What is non-negotiable is that the user explicitly chooses (by selecting a label that names them) each surface before it fires. Do not bundle `commit`, `push`, or `pr` into a `/velo:task` or `/velo:new` brief unless the user explicitly authorized that specific action for that specific task.
+Never commit, push to remote, or open a PR without **explicit per-action approval**. Commit, push, and PR are three distinct visible-action surfaces — each requires its own approval, and past authorization for one never extends to the others or to future actions of the same type. A single ship gate may bundle commit, push, and PR into one prompt **only when each option label explicitly names every action it triggers** — a label such as `Commit + push + open PR` constitutes explicit per-action authorization for all three, because the user reads and chooses exactly those named actions before any of them fires. What is non-negotiable is that the user explicitly chooses (by selecting a label that names them) each surface before it fires. Do not bundle `commit`, `push`, or `pr` into a `/velo:task` or `/velo:plan` brief unless the user explicitly authorized that specific action for that specific task.
 
 ## Why this gate
 
-Commit, push, and PR are three distinct visible-action surfaces. This skill defines a single **ship gate** pattern that both `/velo:task` and `/velo:new` compose into their state machines. The gate bundles commit, push, and PR into one `ask-options` prompt whose option labels each name the full action sequence they trigger, so a single choice still satisfies PERSONA's per-action approval rule (selecting `Commit + push + open PR` authorizes all three named actions, in that order). The gate honors per-action approval precisely because no action fires that is not spelled out in the chosen label.
+Commit, push, and PR are three distinct visible-action surfaces. This skill defines a single **ship gate** pattern that `/velo:task` composes into its state machine (shipping happens in task mode; `/velo:plan` plans but never ships). The gate bundles commit, push, and PR into one `ask-options` prompt whose option labels each name the full action sequence they trigger, so a single choice still satisfies PERSONA's per-action approval rule (selecting `Commit + push + open PR` authorizes all three named actions, in that order). The gate honors per-action approval precisely because no action fires that is not spelled out in the chosen label.
 
 ## Ship gate (commit + optional push + optional PR)
 
-The single shipping gate, used by `/velo:task`'s `SHIP_GATE` and `/velo:new`'s `SHIP_GATE`. The state body names the gate, its entry condition, and its exit conditions; this skill defines the prompt mechanics.
+The single shipping gate, used by `/velo:task`'s `SHIP_GATE`. The state body names the gate, its entry condition, and its exit conditions; this skill defines the prompt mechanics.
 
 Use `ask-options`:
 - **Header**: `"Ready to ship"` or `"Ship approval"` (state-specific phrasing is fine)

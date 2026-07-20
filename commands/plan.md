@@ -73,12 +73,12 @@ Plan mode classifies pairing once, at `VALIDATE`, and carries the label in the p
 
 - Writing or editing source code directly (plan mode never builds)
 - Building, reviewing, testing, or shipping (→ `/velo:task` via the handoff)
-- The build phase of an EDD-driven flow — plan mode authors and DE-reviews the engineering design doc on the heavy path, then hands the approved design + breakdown to `/velo:task` to build; it never builds against the EDD itself (→ `/velo:new` still runs design **and** integrated build in one flow during the transition)
+- The build phase of an EDD-driven flow — plan mode authors and DE-reviews the engineering design doc on the heavy path, then hands the approved design + breakdown to `/velo:task` to build; it never builds against the EDD itself (the build runs in `/velo:task` after handoff)
 - Debug investigation (→ `/velo:hunt`)
 - Architecture discussions or open-ended design exploration (→ `/velo:yo`)
 - Editing `/velo:task`'s behavior — the executor-side consumption of the plan package is increment 2
 
-Routing hint during coexistence: want a DE-reviewed design **and** an integrated build in one uninterrupted flow → `/velo:new`. Want the DE-reviewed design as a plan you then execute (and can save/replan) → plan here, execute in `/velo:task`. Small change you'd rather have task mode plan itself → `/velo:task` directly.
+Routing hint: net-new or underspecified work → plan here (heavy tier: PM → DE-reviewed engineering design doc → design sign-off), then execute in `/velo:task`. `/velo:new` is retired and redirects into this command. Small change you'd rather have task mode plan itself → `/velo:task` directly.
 
 ---
 
@@ -117,9 +117,11 @@ VALIDATE → ANNOUNCE → [heavy] PM_PHASE → PRD_REVIEW → DESIGN_PHASE → D
 
 The heavy tier gains a design depth — `DESIGN_PHASE → DESIGN_REVIEW → DESIGN_APPROVAL` — between `PRD_REVIEW` and `DAG_PHASE`: the Tech Lead authors an engineering design doc, the Distinguished Engineer reviews it, and the user signs off on the design before the work is broken down. **The light tier does not pass through any of the design states** — it goes straight from `ANNOUNCE` to `DAG_PHASE`, exactly as before.
 
-**Reading guide**: each state's `Exit conditions` list is the authoritative source for transitions out of that state. There is no separate top-level transition table — when you need to know "where does this go next?", read the `Exit conditions` block on the current state.
+**Reading guide**: each state's `Exit conditions` list is the authoritative source for transitions out of that state. There is no separate top-level transition table — when you need to know "where does this go next?", read the `Exit conditions` block on the current state. Any state may additionally be entered via a resume per [Velo Task Status](skills/velo-task-status.md); resume re-entry does not change that state's body or exit conditions.
 
 **Narration**: adopt the narration convention from `commands/task.md` — one short line in Velo's voice per transition, name what's happening in team terms ("PM's framing the ask", "TL's designing it", "design's reviewed, let's sign off"), say the *why* only when it isn't obvious, keep failure narration factual. **Never say state names (`PM_PHASE`, `DESIGN_PHASE`, `DAG_PHASE`) out loud** — in the conversation the steps go by their team names: `VALIDATE` is the "Scope check", `ANNOUNCE` the "Kickoff", `PM_PHASE` the "Product framing", `PRD_REVIEW` the "Framing review", `DESIGN_PHASE` the "Design doc", `DESIGN_REVIEW` the "Design review", `DESIGN_APPROVAL` the "Design sign-off", `DAG_PHASE` the "Work planning", `PLAN_APPROVAL` the "Plan sign-off", `HANDOFF` the "Hand to the builders". Structure and telemetry use the technical names; everything the user reads uses the team names.
+
+**Status breadcrumbs**: per [Velo Task Status](skills/velo-task-status.md) — plain-markdown breadcrumbs, no engine. Velo creates `.velo/tasks/<slug>/status.md` and inserts the task's `.velo/tasks/index.md` row when the task folder is created at `ANNOUNCE`, rewrites `status.md` at EVERY state transition (phase ID + team name, node checklist, last gate passed, rework counters, `date`-sourced timestamp), and updates both files at the terminal states. Agents never write these files.
 
 ---
 
@@ -132,6 +134,8 @@ The heavy tier gains a design depth — `DESIGN_PHASE → DESIGN_REVIEW → DESI
 **Body**:
 
 This is the Scope check step (`VALIDATE`) in team language — anything the user reads calls it that; the identifier stays internal.
+
+**Resume check (per [Velo Task Status](skills/velo-task-status.md))**: if the invocation references an existing task — an explicit `.velo/tasks/<slug>/` path or a brief that maps unambiguously to a row in `.velo/tasks/index.md` — and that folder's `status.md` is non-terminal, run the skill's resume protocol (`ask-options`: `Resume from <team name>` / `Start fresh`) before fresh interpretation. Resume re-enters the recorded state; nodes already marked `done` are never re-run (same semantics as the plan package's `done:` annotations). **Carve-out**: a `Re-entry:`-bearing invocation (descope re-entry) is the expected continuation, NOT a resume prompt — reuse its `Task-folder` silently (flip the breadcrumb's `Mode:` back to `plan`) and proceed directly to the delta re-plan per [Re-entry](#re-entry--descope-from-velotask). If `status.md` is missing, unparseable, or terminal, proceed as new work.
 
 Read the request. Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every term in the request whose interpretation could change which user sees what, which code path runs, or which data gets touched. Resolve each term per the rule for later capture in the Assumptions ledger (state `ANNOUNCE`).
 
@@ -149,6 +153,7 @@ Read the request. Apply the [Requirement Interpretation](skills/requirement-inte
 **Context decay check (per PERSONA)**: if the request maps to an existing product slug, check `.velo/products/<slug>/context.md`. If it is older than 30 days OR predates multiple completed tasks, fire F6.
 
 **Exit conditions**:
+- Resume check matches a non-terminal task and user picks `Resume from <team name>` → (user-gate: resume) → re-enter the recorded state per [Velo Task Status](skills/velo-task-status.md)
 - Term has zero / multiple competing signals → (stop-and-ask) → ask the user in-place; on the answer, loop within `VALIDATE` (re-evaluate interpretation + depth gate with the answer folded in)
 - Preconditions pass, interpretation resolved, depth + pairing resolved → (auto) → `ANNOUNCE`
 - Precondition fails → (failure:preconditions) → halt (terminal `preflight-failed`)
@@ -167,12 +172,14 @@ Read the request. Apply the [Requirement Interpretation](skills/requirement-inte
 
 This is the Kickoff step (`ANNOUNCE`) in team language — the template the user reads is the Kickoff; the identifier stays internal.
 
-**Derive task slug**: from the work's name — lowercase, spaces and special characters replaced with hyphens, trimmed. If `.velo/tasks/<slug>/` already exists (e.g. from an earlier `/velo:new` run on the same feature), suffix `-2`, `-3`, ... rather than overwrite.
+**Derive task slug**: from the work's name — lowercase, spaces and special characters replaced with hyphens, trimmed. If `.velo/tasks/<slug>/` already exists (e.g. from an earlier `/velo:plan` run on the same feature), suffix `-2`, `-3`, ... rather than overwrite.
 
 **Create task folder** before spawning any agent:
 ```
 mkdir -p .velo/tasks/<slug>
 ```
+
+Then create the status breadcrumb and index row per [Velo Task Status](skills/velo-task-status.md): write `.velo/tasks/<slug>/status.md` (Mode `plan`, Depth + trigger, Pairing, Phase `ANNOUNCE (Kickoff)`, Nodes `(no plan yet)`, timestamp via `date`) and insert the task's row into `.velo/tasks/index.md` (status `in-progress`).
 
 Print the kickoff using the template in [Templates — Kickoff](#kickoff): the depth call **with its trigger id and one-line reason**, the assumptions ledger, and who's doing what (heavy: PM frames the ask, then TL designs it and the DE reviews the design, then TL breaks down the work — light: TL only). Per the PERSONA hard rule "Always ask before delegating", wait for the user.
 
@@ -254,7 +261,7 @@ If the user has changes: convey them to the PM for revision, wait for the update
 
 **Body**:
 
-This is the Design doc step (`DESIGN_PHASE`) in team language — narrate it that way ("TL's designing it"); the identifier stays internal. Lifted faithfully from `commands/new.md`'s `TL_PHASE`: the Tech Lead runs its Step 0 spec-quality-check on the PRD, then authors the engineering design doc and the task breakdown together.
+This is the Design doc step (`DESIGN_PHASE`) in team language — narrate it that way ("TL's designing it"); the identifier stays internal. Lifted from `/velo:new`'s former `TL_PHASE` (retired; see git history): the Tech Lead runs its Step 0 spec-quality-check on the PRD, then authors the engineering design doc and the task breakdown together.
 
 1. Read `agents/tech-lead.md`.
 2. Read `.velo/tasks/<slug>/prd.md` — you will pass the contents inline.
@@ -292,7 +299,7 @@ If either is missing — **stop**, print a one-line blocker naming the missing f
 
 **Body**:
 
-This is the Design review step (`DESIGN_REVIEW`) in team language — narrate it that way ("DE's reviewing the design"); the identifier stays internal. Lifted faithfully from `commands/new.md`'s `EDD_REVIEW`: the Distinguished Engineer reviews the engineering design doc under a ≤3-cycle rework cap.
+This is the Design review step (`DESIGN_REVIEW`) in team language — narrate it that way ("DE's reviewing the design"); the identifier stays internal. Lifted from `/velo:new`'s former `EDD_REVIEW` (retired; see git history): the Distinguished Engineer reviews the engineering design doc under a ≤3-cycle rework cap.
 
 1. Read `.velo/tasks/<slug>/prd.md` — you will pass the contents inline.
 2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — you will pass the contents inline.
@@ -424,7 +431,7 @@ This is the Hand to the builders step (`HANDOFF`) in team language — narrate i
 
 Assemble the plan package per [Velo Plan Package](skills/velo-plan-package.md) — header keys, frozen plan with composed skills, confirmed ledger, pairing label, artifact paths, constraints. Then invoke `/velo:task` via `handoff-mode`, carrying the full package as the argument (per `ADAPTER.md`: always carry the generated brief forward — the user retypes nothing).
 
-**Transition friction warning (increment 1 — mandatory)**: before invoking, print one line: `Note: /velo:task will re-validate and re-announce this plan with its own gate — approve it there too. Until the executor rewrite lands, task mode does not yet honor the package header as binding.` On a **heavy-path** package, add: `Task mode may read net-new work as out of its scope and offer to reroute to /velo:new — decline that; planning is already done.`
+**Transition friction warning (increment 1 — mandatory)**: before invoking, print one line: `Note: /velo:task will re-validate and re-announce this plan with its own gate — approve it there too. Until the executor rewrite lands, task mode does not yet honor the package header as binding.` On a **heavy-path** package, add: `Task mode may read net-new work as out of its scope and offer to reroute to /velo:plan — decline that; planning is already done.`
 
 **Exit conditions**:
 - Handoff invoked → `DONE` (terminal `handed-off-to-task`)
@@ -442,7 +449,7 @@ Assemble the plan package per [Velo Plan Package](skills/velo-plan-package.md) �
 
 **Body**:
 
-Print a short plan summary — NOT the [Velo Final Report](skills/velo-final-report.md) table (that is a ship report; plan mode ships nothing): depth taken (+ trigger id), artifacts written (paths), task count and what runs in parallel, and — on `plan-saved-no-handoff` — how to execute later (`/velo:task` with the package, or re-open via `/velo:plan`). Skill ends.
+Print a short plan summary — NOT the [Velo Final Report](skills/velo-final-report.md) table (that is a ship report; plan mode ships nothing): depth taken (+ trigger id), artifacts written (paths), task count and what runs in parallel, and — on `plan-saved-no-handoff` — how to execute later (`/velo:task` with the package, or re-open via `/velo:plan`). Update `status.md` to `Phase: DONE (Done — <terminal reason>)` per [Velo Task Status](skills/velo-task-status.md); the `index.md` row stays `in-progress` on both terminal reasons — the index tracks the work item, which is live until `/velo:task` delivers it — only its Updated date advances. Skill ends.
 
 **Exit conditions**: terminal.
 
@@ -463,7 +470,7 @@ Print a short plan summary — NOT the [Velo Final Report](skills/velo-final-rep
 
 **Body**:
 
-Print a short abandon summary: state reached (by its team name), artifacts produced (prd.md, engineering-design-doc.md, task-breakdown.md — whichever exist; they persist on disk), what was attempted, what was left. No file written.
+Print a short abandon summary: state reached (by its team name), artifacts produced (prd.md, engineering-design-doc.md, task-breakdown.md — whichever exist; they persist on disk), what was attempted, what was left. No report file written; if the task folder exists, set `status.md` to `Phase: ABANDON (Abandoned — <terminal reason>)` and flip the task's `index.md` row to `abandoned` per [Velo Task Status](skills/velo-task-status.md).
 
 **Exit conditions**: terminal. Skill ends.
 
@@ -535,7 +542,7 @@ F-code definitions and standard handling are in [Velo Failure Modes](skills/velo
 
 **Command-specific F2 parameterization** (both heavy path only): F2 fires at cycle 3 of a per-phase rework counter. Two parameterizations:
 - **F2-spec** at `DESIGN_PHASE` (`cap:spec-cycles`) — the TL's Step 0 spec-quality-check rejecting `prd.md`. Options: `Continue (extend cap)` / `Accept as-is and proceed` (re-spawn the TL in default mode with the `Step 0 override: user-adjudicated` line — the TL skips the audit and produces the design doc + breakdown best-effort, echoing the unresolved findings as advisories; carry them into the plan package `Constraints/notes`) / `Abandon` (terminal `abandoned-spec-f2`).
-- **F2-edd** at `DESIGN_REVIEW` (`cap:edd-cycles`) — the DE rejecting `engineering-design-doc.md` for ≥3 cycles. Options: `Continue (extend cap)` / `Accept as-is and proceed` (advance to `DESIGN_APPROVAL`; carry the unresolved DE findings into the plan package `Constraints/notes`) / `Abandon` (terminal `abandoned-edd-f2`). Lifted faithfully from `commands/new.md`'s `EDD_REVIEW` F2-edd.
+- **F2-edd** at `DESIGN_REVIEW` (`cap:edd-cycles`) — the DE rejecting `engineering-design-doc.md` for ≥3 cycles. Options: `Continue (extend cap)` / `Accept as-is and proceed` (advance to `DESIGN_APPROVAL`; carry the unresolved DE findings into the plan package `Constraints/notes`) / `Abandon` (terminal `abandoned-edd-f2`). Lifted from `/velo:new`'s former `EDD_REVIEW` F2-edd (retired; see git history).
 
 **F8 variants used here** (heavy path only):
 - From `PM_PHASE`: PM revises or rejects a Velo-flagged assumption → PRD is authoritative; note divergence in `prd.md`'s Assumptions section; continue to `PRD_REVIEW`.
