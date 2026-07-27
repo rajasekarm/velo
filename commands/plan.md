@@ -76,7 +76,7 @@ Plan mode classifies pairing once, at `VALIDATE`, and carries the label in the p
 - Building, reviewing, testing, or shipping (→ `/velo:task` via the handoff)
 - The build phase of an EDD-driven flow — plan mode authors and DE-reviews the engineering design doc on the heavy path, then hands the approved design + breakdown to `/velo:task` to build; it never builds against the EDD itself (the build runs in `/velo:task` after handoff)
 - Debug investigation (→ `/velo:hunt`)
-- Architecture discussions or open-ended design exploration (→ `/velo:yo`)
+- Architecture discussions or open-ended design exploration (→ `/velo:discuss`)
 - Editing `/velo:task`'s behavior — the executor-side consumption of the plan package is increment 2
 
 Routing hint: net-new or underspecified work → plan here (heavy tier: PM → DE-reviewed engineering design doc → design sign-off), then execute in `/velo:task`. `/velo:new` is retired and redirects into this command. Small change you'd rather have task mode plan itself → `/velo:task` directly.
@@ -95,7 +95,7 @@ The following must be true before the workflow starts. If any precondition fails
 6. **`.velo/tasks/` writable**: planning artifacts must be persistable.
 7. **`.velo/products/` readable**: product context retrieval depends on it.
 
-**Fail-fast**: if any precondition fails, print `Cannot start plan: precondition failed — <name>: <one-line reason>` and halt. If `spawn-agent` is the missing precondition, print: `/velo:plan requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo in Direct mode (concept questions answered without panel spawning).` Do not role-play agents as a fallback — `ADAPTER.md` forbids that.
+**Fail-fast**: if any precondition fails, print `Cannot start plan: precondition failed — <name>: <one-line reason>` and halt. If `spawn-agent` is the missing precondition, print: `/velo:plan requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo (concept questions answered directly from knowledge — no agents spawned).` Do not role-play agents as a fallback — `ADAPTER.md` forbids that.
 
 ---
 

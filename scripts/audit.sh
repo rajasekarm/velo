@@ -26,10 +26,12 @@ AGENTS_WITHOUT_SKILLS=(
 )
 
 # Allow-list: commands that legitimately have no agent file references.
-# Generic routers that spawn agents dynamically based on the task.
+# Generic routers that spawn agents dynamically based on the task ("hunt", "task"),
+# plus "yo", which spawns nothing at all — it triages and routes onward.
 COMMANDS_WITHOUT_AGENTS=(
   "hunt"
   "task"
+  "yo"
 )
 
 errors=0

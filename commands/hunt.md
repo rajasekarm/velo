@@ -56,7 +56,7 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Cap names used by this command**: `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
 
-**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-plan`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
+**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-plan`, `routed-to-discuss`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
 
 ---
 
@@ -113,16 +113,16 @@ Print the mode banner:
 3. **Conceptual / no observed defect** — signals: "how should…", "is X better than Y", "what's the right way to…":
    - Use `ask-options`:
      - Header: `"Sounds advisory"`
-     - Question: `"This looks like a discussion, not a debug. Switch to /velo:yo?"`
+     - Question: `"This looks like a discussion, not a debug. Switch to /velo:discuss?"`
      - Options:
-       - `Start /velo:yo` — invoke `velo:yo` with the original input (exit hunt)
+       - `Start /velo:discuss` — invoke `velo:discuss` with the original input (exit hunt)
        - `Continue hunting` — proceed to `CONTEXT`
        - `Cancel` (exit hunt)
 
 **Exit conditions**:
 - Classifier branch 1 → (auto) → `CONTEXT`
 - Classifier branch 2 → (user-gate: Start /velo:task / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
-- Classifier branch 3 → (user-gate: Start /velo:yo / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
+- Classifier branch 3 → (user-gate: Start /velo:discuss / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
 
 **Failure modes**: can trigger F5 (if user requests code mid-classification).
 
@@ -229,7 +229,7 @@ Use `ask-options`:
 - Question: matches the F1 trigger context.
 - Options:
   - `Reset and re-rank with new hypotheses` — replaces current 3, doesn't extend (D4); resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset
-  - `Switch to /velo:yo` (exit hunt)
+  - `Switch to /velo:discuss` (exit hunt)
   - `Abandon` — proceed to `ABANDON`
 
 When total steps = 15, do **not** offer "Keep going" — F1 variant only.
@@ -239,7 +239,7 @@ When total steps = 15, do **not** offer "Keep going" — F1 variant only.
 - Variant A: `Keep going` → (user-gate: Keep going) → `INVESTIGATE` (no counter change)
 - Variant A: `Abandon` → (user-gate: Abandon) → `ABANDON`
 - Variant B: `Reset and re-rank with new hypotheses` → (user-gate: Reset and re-rank) → `HYPOTHESIZE` (new 3, counters per F1 rule)
-- Variant B: `Switch to /velo:yo` → (user-gate: Switch to /velo:yo) → `[exit]`
+- Variant B: `Switch to /velo:discuss` → (user-gate: Switch to /velo:discuss) → `[exit]`
 - Variant B: `Abandon` → (user-gate: Abandon) → `ABANDON`
 
 **Failure modes**: STALLED returns to `INVESTIGATE` on "Keep going" or "Reset and re-rank"; the cap may re-trigger on the next `INVESTIGATE` step. See `INVESTIGATE` for F1 trigger conditions. STALLED itself can trigger F8 if a board re-render needs reads that fail.
@@ -430,13 +430,13 @@ Note: `S2-silent` is session-spanning and not localized to any state — it appl
 
 | ID | Trigger | Handling |
 |---|---|---|
-| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Transition to `STALLED` (Variant B). Options: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
+| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Transition to `STALLED` (Variant B). Options: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:discuss`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
 | F2 | User cannot reproduce the bug | Ask for logs or a minimal repro. If neither is available → transition to `ABANDON`. |
-| F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:yo` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
+| F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:discuss` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
 | F4 | Fix requires schema migration / infra change | In `HANDOFF`, substitute `Start /velo:plan` for `Start /velo:task` in the interaction prompt options. |
 | F5 | User asks Velo to write code mid-hunt | Decline per Hard Rule. Use `ask-options`: `Start /velo:task`, `Keep investigating`, `Abandon`. |
-| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:yo`, `Switch to /velo:plan`, `Abandon`. Do not continue hunt after flagging. |
-| F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:yo`, `Abandon`. |
+| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:discuss`, `Switch to /velo:plan`, `Abandon`. Do not continue hunt after flagging. |
+| F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:discuss`, `Abandon`. |
 | F8 | File or shell access error returns failure | Re-render Hunt board. Log the failed read in the evidence ledger as `error: <message>`. Propose an alternative read. Two consecutive tool errors → trigger F1. |
 | F9 | Shell history read blocked (permission denied for `git log` / `git blame`) | Skip the history read. Continue with file reads and search. Note in evidence ledger: `skipped: git history unavailable`. |
 | F10 | Stack trace contains only library frames (no first-party code) | Ask user for the calling code path or the entry point that triggered the trace. Do not hypothesise on library internals. |

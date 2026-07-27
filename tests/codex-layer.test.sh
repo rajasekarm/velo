@@ -26,7 +26,7 @@ assert_file_contains "${agents_file}" "Treat \`ADAPTER.md\` as the runtime compa
 assert_file_contains "${agents_file}" "Treat \`TEAM.md\` model classes as provider-neutral routing intent;"
 assert_file_contains "${agents_file}" "Treat \`model:\` frontmatter in \`agents/*.md\` as a Claude compatibility hint,"
 assert_file_contains "${agents_file}" 'Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.'
-assert_file_contains "${agents_file}" 'Treat `.agents/skills/velo-{new,task,yo,hunt}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, and `velo:hunt`.'
+assert_file_contains "${agents_file}" 'Treat `.agents/skills/velo-{new,task,yo,hunt,discuss}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, `velo:hunt`, and `velo:discuss`.'
 assert_file_contains "${agents_file}" 'Treat `.codex-plugin/plugin.json` as the local Codex plugin manifest.'
 assert_file_contains "${agents_file}" "Treat commands/*.md as workflow playbooks, not automatic Codex slash commands."
 assert_file_contains "${agents_file}" "Use Codex slash commands for session control only."

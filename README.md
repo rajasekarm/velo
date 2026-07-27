@@ -84,8 +84,11 @@ Unified planning front-end. Depth adapts to the work: the **light tier** goes st
 ### `/velo:task` — Day-to-day tasks
 Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan — a task DAG with an inline assumptions ledger — then build, review, and ship.
 
-### `/velo:yo` — Advisory
-Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.
+### `/velo:yo` — Entry point
+The front door. Bring anything — an idea, a bug, a question — and Velo triages the intent and routes it: `/velo:plan` or `/velo:task` to build, `/velo:hunt` to debug, the review skills to review, `/velo:discuss` to think a question through with the advisory panel. A question with a settled answer Velo can give from knowledge alone gets answered right there, with no file reads; anything needing evidence from the codebase routes to `/velo:discuss` instead. An answer that lands on something to do hands off into a mode with a draft brief. Yo is a front door, not a gate: every mode stays directly invokable.
+
+### `/velo:discuss` — Advisory discussion
+Bring a question, a trade-off, or a decision you're stuck on. Velo convenes the advisory panel — TL + DE for a technical trade-off, PM + TL + DE when scope and product impact are in play — synthesizes the positions, and picks a side instead of averaging. Prefix `@pm`, `@tl`, or `@de` to skip mode selection and target one agent. The panel agents read the codebase; Velo does not. Advisory only: no code, no artifacts — and a discussion that lands on a decision hands off into a mode with a draft brief.
 
 ### `/velo:hunt` — Structured debug loop
 Symptom → hypothesis → root cause → handoff. Tight, iterative debugging mode that ends with a confirmed root cause and a handoff brief to `/velo:task` — or an explicit dead-end with what was ruled out.

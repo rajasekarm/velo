@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 team_file="${repo_root}/TEAM.md"
 yo_file="${repo_root}/commands/yo.md"
+discuss_file="${repo_root}/commands/discuss.md"
 adapter_file="${repo_root}/ADAPTER.md"
 
 fail() {
@@ -22,6 +23,7 @@ assert_file_contains() {
 
 [[ -f "${team_file}" ]] || fail "TEAM.md must exist"
 [[ -f "${yo_file}" ]] || fail "commands/yo.md must exist"
+[[ -f "${discuss_file}" ]] || fail "commands/discuss.md must exist"
 [[ -f "${adapter_file}" ]] || fail "ADAPTER.md must exist"
 
 assert_file_contains "${team_file}" "| Agent | File | Role | Model Class |"
@@ -78,9 +80,16 @@ if validated_rows == 0:
     raise SystemExit("FAIL: TEAM.md must contain at least one validated agent roster row")
 PY
 
-if grep -qE 'model: (sonnet|opus|haiku|gpt)' "${yo_file}"; then
-  fail "commands/yo.md must route by provider-neutral model class, not provider-specific model names"
-fi
+# Provider-neutrality applies to every command that talks about models. discuss.md
+# is where the spawn blocks live; yo.md stays on the list as cheap insurance against
+# provider names creeping back into the front door.
+for command_file in "${yo_file}" "${discuss_file}"; do
+  if grep -qE 'model: (sonnet|opus|haiku|gpt)' "${command_file}"; then
+    fail "${command_file#${repo_root}/} must route by provider-neutral model class, not provider-specific model names"
+  fi
+done
 
-assert_file_contains "${yo_file}" "model class: balanced"
-assert_file_contains "${yo_file}" "model class: deep-reasoning"
+# Model-class routing itself is asserted against discuss.md: it owns the PM/TL/DE
+# spawns. yo.md triages and routes only — it spawns nothing and names no model class.
+assert_file_contains "${discuss_file}" "model class: balanced"
+assert_file_contains "${discuss_file}" "model class: deep-reasoning"

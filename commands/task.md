@@ -47,7 +47,7 @@ The adaptive path is for work that **can** be reduced to a confirmable assumptio
 - New features or capabilities that don't exist yet (→ `/velo:plan`)
 - Briefs that cannot be reduced to a confirmable assumptions ledger (→ `/velo:plan`, per the escalation rule above)
 - Debug investigation without a known fix (→ `/velo:hunt`)
-- Architecture discussions or design exploration (→ `/velo:yo`)
+- Architecture discussions or design exploration (→ `/velo:discuss`)
 - Durable planning artifacts such as PRDs and EDDs — task mode uses only a lightweight plan plus an inline assumptions ledger
 - Inline task-specs of any kind — task mode has no spec sub-system; underspecified work escalates to `/velo:plan`
 - Multi-product cross-cutting refactors that span more than one product slug
@@ -66,7 +66,7 @@ The following must be true before the workflow starts. If any precondition fails
 5. **Runtime capability — option prompts**: `ask-options` is available; without it, gated transitions cannot solicit user choice.
 6. **`.velo/tasks/` writable**: the status breadcrumb and task index must be persistable.
 
-**Fail-fast**: if any precondition fails, print `Cannot start task: precondition failed — <name>: <one-line reason>` and halt. If `spawn-agent` is the missing precondition, print: `/velo:task requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo in Direct mode (concept questions answered without panel spawning).` Do not role-play agents as a fallback — `ADAPTER.md` forbids that.
+**Fail-fast**: if any precondition fails, print `Cannot start task: precondition failed — <name>: <one-line reason>` and halt. If `spawn-agent` is the missing precondition, print: `/velo:task requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo (concept questions answered directly from knowledge — no agents spawned).` Do not role-play agents as a fallback — `ADAPTER.md` forbids that.
 
 ---
 

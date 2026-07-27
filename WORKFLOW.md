@@ -1,5 +1,52 @@
 # Velo — Workflow
 
+## `/velo:yo` — Entry point
+
+The front door. Yo triages the intent of any request and routes it: build requests to `/velo:plan` or `/velo:task`, bugs to `/velo:hunt`, reviews to the review skills, questions worth more than one perspective to `/velo:discuss`. A question with a settled answer Velo can give from knowledge alone is answered in place — no file reads; if answering would need the codebase, it routes to `/velo:discuss` instead so the panel agents do the reading. An answer that lands on something to do hands off into a mode with a draft brief. Yo never does the work itself; the work happens in the mode it routes to. It is a front door, not a gate — every mode remains directly invokable.
+
+```mermaid
+flowchart TD
+    A([Start]) --> T[Triage intent]
+    T -->|build| P[Route → /velo:plan\nor /velo:task]
+    T -->|bug, root cause unknown| H[Route → /velo:hunt]
+    T -->|review| R[Route → review skills]
+    T -->|question · settled answer| M[Answer in place\nfrom knowledge, no file reads]
+    T -->|question · needs code evidence\nor more than one view| DIS[Route → /velo:discuss]
+    M --> D{Answer points at work?}
+    D -->|no| DONE0([Done — answered in place])
+    D -->|yes| HB{Draft brief\n+ routing options}
+    HB -->|build-shaped| PB[Start /velo:plan\nor /velo:task]
+    HB -->|defect-shaped| HD[Start /velo:hunt\nor /velo:task]
+    HB -->|shelve| DONE([Done — shelved])
+    HB -->|keep discussing| WAIT([Wait for the user's next message])
+```
+
+## `/velo:discuss` — Advisory discussion
+
+Bring a question, a trade-off, or a decision you're stuck on. Velo convenes the advisory panel — TL + DE for a technical trade-off, PM + TL + DE when scope and product impact are in play — then synthesizes the positions, classifies the agreement pattern, and picks a side rather than averaging. Prefix `@pm`, `@tl`, or `@de` to bypass mode selection and target one agent. The panel agents read the codebase; Velo does not. Advisory only — no code written, no artifact touched — and a discussion that lands on a decision hands off into a mode with a draft brief.
+
+```mermaid
+flowchart TD
+    A([Start]) --> IN[Input handling]
+    IN -->|empty| ASK([Stop — what's the question?])
+    IN -->|@pm / @tl / @de| SA[Single-agent\ntargeted agent only]
+    IN -->|no prefix| MS{Select mode}
+    MS -->|technical trade-off| LW[Lightweight panel\nTL + DE]
+    MS -->|scope + product impact| FP[Full panel\nPM + TL + DE]
+    LW --> RC[Check response count]
+    FP --> RC
+    RC -->|none responded| FAIL([No synthesis possible])
+    RC -->|one responded| PRES[Present the one response\nno synthesis]
+    RC -->|all responded| SYN[Panel responses\n+ Velo's Take]
+    SA --> PRES
+    PRES --> HB{Draft brief\n+ routing options}
+    SYN --> HB
+    HB -->|build-shaped| P[Start /velo:plan\nor /velo:task]
+    HB -->|defect-shaped| H[Start /velo:hunt]
+    HB -->|shelve| DONE([Done — shelved])
+    HB -->|keep discussing| WAIT([Wait for the user's next message])
+```
+
 ## `/velo:new` — Retired (redirects to `/velo:plan`)
 
 `/velo:new` is retired. Its full depth — PM user stories → a DE-reviewed engineering design doc → design sign-off → build → review → ship — now lives in `/velo:plan`'s heavy tier (design) and `/velo:task` (build/ship). Invoking `/velo:new` prints a notice and hands off to `/velo:plan` via `handoff-mode`, carrying the brief forward. See the `/velo:plan` and `/velo:task` sections below for the unified **Plan → Task → Ship** flow.
@@ -83,7 +130,7 @@ flowchart TD
     A([Start]) --> CL[Classify input]
     CL -->|specific defect| CTX[Gather context\n1–3 clarifying questions]
     CL -->|root cause known| TASK[Redirect → /velo:task]
-    CL -->|conceptual| YO[Redirect → /velo:yo]
+    CL -->|conceptual| DISC[Redirect → /velo:discuss]
     CTX --> HYP[Propose hypotheses\nH1 / H2 / H3]
     HYP --> LOOP[Investigation loop\nRead → update Hunt board]
     LOOP -->|soft cap hit| ASK{Re-rank, keep going,\nor abandon?}
