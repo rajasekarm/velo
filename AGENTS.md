@@ -15,11 +15,11 @@ Velo was originally designed around Claude Code. Keep Claude compatibility expli
 - Treat `TEAM.md` as the roster of reusable role prompts.
 - Treat `TEAM.md` model classes as provider-neutral routing intent; resolve them through `ADAPTER.md` instead of reading them as provider model names.
 - Treat `agents/*.md` as role prompt templates that Codex can read when a task needs that role.
-- Treat `model:` frontmatter in `agents/*.md` as a Claude compatibility hint, not as Codex routing authority.
+- Treat `agents/*.md` as carrying no model routing information: the files declare no `model:` at all, and `tests/model-classes.test.sh` asserts they never do. Both runtimes resolve a role's `TEAM.md` model class through `ADAPTER.md` and pass the resolved result on every spawn — there is no runtime for which the agent file is the routing authority.
 - Treat `skills/*.md` as local reference material. They are not Codex skills unless converted into `SKILL.md` directories.
 - Keep Velo as the umbrella Engineering Manager concept, not as a separate Codex-discoverable skill.
 - Do not add a generic `.agents/skills/velo/SKILL.md`; the visible Codex command surface is mode-only.
-- Treat `.agents/skills/velo-{new,task,yo,hunt}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:new`, `velo:task`, `velo:yo`, and `velo:hunt`.
+- Treat `.agents/skills/velo-{task,yo,hunt,discuss}/SKILL.md` as path-specific Codex wrapper files whose skill names expose `velo:task`, `velo:yo`, `velo:hunt`, and `velo:discuss`. A dedicated `velo:plan` wrapper is a follow-up.
 - Treat `.codex-plugin/plugin.json` as the local Codex plugin manifest. It points Codex at `./.agents/skills/` so this repo can be symlinked as a live local plugin.
 - Treat commands/*.md as workflow playbooks, not automatic Codex slash commands.
 - Use Codex slash commands for session control only.

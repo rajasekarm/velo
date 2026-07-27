@@ -50,13 +50,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 ---
 
-## Telemetry
+## Failure modes and terminal reasons
 
-Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:new` and `/velo:task`).
+F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:plan` and `/velo:task`).
 
-**Cap names used by this command**: `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
-
-**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-new`, `routed-to-yo`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
+**Terminal reasons**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-plan`, `routed-to-discuss`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
 
 ---
 
@@ -83,7 +81,7 @@ States:
 
 **Entry condition**: skill invoked with `$ARGUMENTS`.
 
-**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition (e.g. `Cannot start hunt: precondition failed — <name>: <one-line reason>`). Do not proceed to the banner, the pre-gates, or the classifier. Emit the precondition-check telemetry event (see Telemetry — Event 0) with `trigger=preconditions:ok` on success or `trigger=preconditions:fail:<name>` on failure, regardless of outcome.
+**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition (e.g. `Cannot start hunt: precondition failed — <name>: <one-line reason>`). Do not proceed to the banner, the pre-gates, or the classifier.
 
 **Body**:
 
@@ -113,16 +111,16 @@ Print the mode banner:
 3. **Conceptual / no observed defect** — signals: "how should…", "is X better than Y", "what's the right way to…":
    - Use `ask-options`:
      - Header: `"Sounds advisory"`
-     - Question: `"This looks like a discussion, not a debug. Switch to /velo:yo?"`
+     - Question: `"This looks like a discussion, not a debug. Switch to /velo:discuss?"`
      - Options:
-       - `Start /velo:yo` — invoke `velo:yo` with the original input (exit hunt)
+       - `Start /velo:discuss` — invoke `velo:discuss` with the original input (exit hunt)
        - `Continue hunting` — proceed to `CONTEXT`
        - `Cancel` (exit hunt)
 
 **Exit conditions**:
 - Classifier branch 1 → (auto) → `CONTEXT`
 - Classifier branch 2 → (user-gate: Start /velo:task / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
-- Classifier branch 3 → (user-gate: Start /velo:yo / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
+- Classifier branch 3 → (user-gate: Start /velo:discuss / Continue hunting / Cancel) → `[exit]` | `CONTEXT` | `[exit]`
 
 **Failure modes**: can trigger F5 (if user requests code mid-classification).
 
@@ -229,7 +227,7 @@ Use `ask-options`:
 - Question: matches the F1 trigger context.
 - Options:
   - `Reset and re-rank with new hypotheses` — replaces current 3, doesn't extend (D4); resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset
-  - `Switch to /velo:yo` (exit hunt)
+  - `Switch to /velo:discuss` (exit hunt)
   - `Abandon` — proceed to `ABANDON`
 
 When total steps = 15, do **not** offer "Keep going" — F1 variant only.
@@ -239,7 +237,7 @@ When total steps = 15, do **not** offer "Keep going" — F1 variant only.
 - Variant A: `Keep going` → (user-gate: Keep going) → `INVESTIGATE` (no counter change)
 - Variant A: `Abandon` → (user-gate: Abandon) → `ABANDON`
 - Variant B: `Reset and re-rank with new hypotheses` → (user-gate: Reset and re-rank) → `HYPOTHESIZE` (new 3, counters per F1 rule)
-- Variant B: `Switch to /velo:yo` → (user-gate: Switch to /velo:yo) → `[exit]`
+- Variant B: `Switch to /velo:discuss` → (user-gate: Switch to /velo:discuss) → `[exit]`
 - Variant B: `Abandon` → (user-gate: Abandon) → `ABANDON`
 
 **Failure modes**: STALLED returns to `INVESTIGATE` on "Keep going" or "Reset and re-rank"; the cap may re-trigger on the next `INVESTIGATE` step. See `INVESTIGATE` for F1 trigger conditions. STALLED itself can trigger F8 if a board re-render needs reads that fail.
@@ -306,21 +304,21 @@ Then use `ask-options`:
 - Question: `"How do you want to proceed?"`
 - Options:
   - `Start /velo:task` — invoke `velo:task` with the handoff brief as argument (default path)
-  - `Start /velo:new` — use this option instead of `/velo:task` when fix requires schema migration or infra change (F4 substitution)
+  - `Start /velo:plan` — use this option instead of `/velo:task` when fix requires schema migration or infra change (F4 substitution)
   - `Fix myself` — print the successful-exit summary template (below) and stop
   - `Keep investigating` — return to `INVESTIGATE` with the current Hunt board
   - `Abandon` — proceed to `ABANDON`
 
-**F4 substitution rule**: if the fix approach requires a schema migration or infra change, substitute `Start /velo:new` for `Start /velo:task` in the options above. Do not offer both.
+**F4 substitution rule**: if the fix approach requires a schema migration or infra change, substitute `Start /velo:plan` for `Start /velo:task` in the options above. Do not offer both.
 
 **Exit conditions**:
 - `Start /velo:task` → (user-gate: Start /velo:task) → `[exit]` (handoff via `handoff-mode`)
-- `Start /velo:new` → (user-gate: Start /velo:new) → `[exit]` (handoff via `handoff-mode`, F4 path)
+- `Start /velo:plan` → (user-gate: Start /velo:plan) → `[exit]` (handoff via `handoff-mode`, F4 path)
 - `Fix myself` → (user-gate: Fix myself) → `[exit]` after emitting successful-exit summary
 - `Keep investigating` → (user-gate: Keep investigating) → `INVESTIGATE`
 - `Abandon` → (user-gate: Abandon) → `ABANDON`
 
-**Failure modes**: can trigger F4 (rerouting to `/velo:new`), F5 (if user requests code instead of handoff).
+**Failure modes**: can trigger F4 (rerouting to `/velo:plan`), F5 (if user requests code instead of handoff).
 
 ---
 
@@ -430,13 +428,13 @@ Note: `S2-silent` is session-spanning and not localized to any state — it appl
 
 | ID | Trigger | Handling |
 |---|---|---|
-| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Transition to `STALLED` (Variant B). Options: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:yo`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
+| F1 | All 3 hypotheses status `ruled-out` OR all hit the 5-step soft cap with no confirmation OR total steps reaches 15 | Transition to `STALLED` (Variant B). Options: `Reset and re-rank with new hypotheses` (replaces current 3, doesn't extend — D4; resets `stepsOnActive` and `noProgressStreak` to 0; total step counter is NOT reset), `Switch to /velo:discuss`, `Abandon`. When total steps = 15, do not offer "Keep going" — fire F1 unconditionally. |
 | F2 | User cannot reproduce the bug | Ask for logs or a minimal repro. If neither is available → transition to `ABANDON`. |
-| F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:yo` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
-| F4 | Fix requires schema migration / infra change | In `HANDOFF`, substitute `Start /velo:new` for `Start /velo:task` in the interaction prompt options. |
+| F3 | Bug spans multiple services | Use `ask-options`: `Switch to /velo:discuss` (architecture discussion), `Switch to /velo:task` (single-service deployment fix), `Continue hunting in this service`, `Abandon` |
+| F4 | Fix requires schema migration / infra change | In `HANDOFF`, substitute `Start /velo:plan` for `Start /velo:task` in the interaction prompt options. |
 | F5 | User asks Velo to write code mid-hunt | Decline per Hard Rule. Use `ask-options`: `Start /velo:task`, `Keep investigating`, `Abandon`. |
-| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:yo`, `Switch to /velo:new`, `Abandon`. Do not continue hunt after flagging. |
-| F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:yo`, `Abandon`. |
+| F6 | Investigation reveals intentional behaviour (feature gap) | Use `ask-options`: `Switch to /velo:discuss`, `Switch to /velo:plan`, `Abandon`. Do not continue hunt after flagging. |
+| F7 | Known upstream dependency issue | Use `ask-options`: `Continue hunting (workaround)`, `Switch to /velo:discuss`, `Abandon`. |
 | F8 | File or shell access error returns failure | Re-render Hunt board. Log the failed read in the evidence ledger as `error: <message>`. Propose an alternative read. Two consecutive tool errors → trigger F1. |
 | F9 | Shell history read blocked (permission denied for `git log` / `git blame`) | Skip the history read. Continue with file reads and search. Note in evidence ledger: `skipped: git history unavailable`. |
 | F10 | Stack trace contains only library frames (no first-party code) | Ask user for the calling code path or the entry point that triggered the trace. Do not hypothesise on library internals. |

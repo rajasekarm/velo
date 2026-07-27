@@ -8,17 +8,7 @@ fail() {
   exit 1
 }
 
-body_without_frontmatter() {
-  local file="$1"
-
-  awk '
-    NR == 1 && $0 == "---" { in_frontmatter = 1; next }
-    in_frontmatter && $0 == "---" { in_frontmatter = 0; next }
-    !in_frontmatter { print }
-  ' "${file}"
-}
-
-runtime_leak_pattern='AskUserQuestion|ToolSearch|TodoWrite|ExitPlanMode|Agent tool|`Read`|`Grep`|`Glob`|`Bash`|request_user_input|update_plan|tool_search|spawn_agent|Codex CLI|codex exec|runtime interaction prompt adapter|runtime agent adapter|runtime todo adapter|runtime deferred-tool adapter|runtime file access adapter|runtime shell adapter|runtime mode handoff adapter|runtime cost adapter|sonnet|opus|haiku|gpt-[0-9]|model: (sonnet|opus|haiku|gpt)'
+runtime_leak_pattern='AskUserQuestion|ToolSearch|TodoWrite|ExitPlanMode|Agent tool|`Read`|`Grep`|`Glob`|`Bash`|request_user_input|update_plan|tool_search|spawn_agent|Codex CLI|codex exec|runtime interaction prompt adapter|runtime agent adapter|runtime todo adapter|runtime deferred-tool adapter|runtime file access adapter|runtime shell adapter|runtime mode handoff adapter|runtime cost adapter|sonnet|opus|haiku|fable|gpt-[0-9]|model: (sonnet|opus|haiku|gpt)'
 
 while IFS= read -r file; do
   if grep -qE "${runtime_leak_pattern}" "${file}"; then
@@ -35,8 +25,13 @@ done < <(
   } | sort
 )
 
+# Agent files are scanned whole, frontmatter included. Frontmatter used to be the one
+# legitimate home for a provider model name, so this scan stripped it; agent files now
+# declare no model at all (tests/model-classes.test.sh), leaving nowhere in the file
+# where a provider name belongs. Scanning the whole file makes this guard a second net
+# under that rule: a re-added `model: opus` trips here as well.
 while IFS= read -r file; do
-  if body_without_frontmatter "${file}" | grep -qE "${runtime_leak_pattern}"; then
-    fail "${file#${repo_root}/} body must use ADAPTER.md concept names instead of runtime-specific tool/model names"
+  if grep -qE "${runtime_leak_pattern}" "${file}"; then
+    fail "${file#${repo_root}/} must use ADAPTER.md concept names instead of runtime-specific tool/model names"
   fi
 done < <(find "${repo_root}/agents" -name '*.md' | sort)

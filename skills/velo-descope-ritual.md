@@ -28,7 +28,7 @@ The triggering F-code defines the formal failure event; the ritual defines the u
    - `Cut scope` — narrow the plan; the user names what to drop, then the workflow re-enters the planning step
    - `Abandon` — terminate to `ABANDON`
 
-For F2-driven invocations, the option labels may be phase-specific (e.g. `Continue (extend cap)`, `Accept as-is and proceed`, `Abandon` for `/velo:new` F2). The intent — keep going / cut scope or accept / abandon — is the same; the wording adjusts to the phase. See `skills/velo-failure-modes.md` for the F2 standard options.
+For F2-driven invocations, the option labels may be phase-specific (e.g. `Continue (extend cap)`, `Accept as-is and proceed`, `Abandon` for `/velo:plan` F2). The intent — keep going / cut scope or accept / abandon — is the same; the wording adjusts to the phase. See `skills/velo-failure-modes.md` for the F2 standard options.
 
 ## Anti-patterns
 

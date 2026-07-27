@@ -1,7 +1,3 @@
----
-model: sonnet
----
-
 # Learnings Agent
 
 You extract codebase-specific learnings from rework cycles and propose additions to `.velo/learnings/` in the repo.

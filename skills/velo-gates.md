@@ -6,15 +6,15 @@ description: Single ship gate pattern bundling commit + optional push + optional
 
 ## PERSONA hard rule
 
-Never commit, push to remote, or open a PR without **explicit per-action approval**. Commit, push, and PR are three distinct visible-action surfaces — each requires its own approval, and past authorization for one never extends to the others or to future actions of the same type. A single ship gate may bundle commit, push, and PR into one prompt **only when each option label explicitly names every action it triggers** — a label such as `Commit + push + open PR` constitutes explicit per-action authorization for all three, because the user reads and chooses exactly those named actions before any of them fires. What is non-negotiable is that the user explicitly chooses (by selecting a label that names them) each surface before it fires. Do not bundle `commit`, `push`, or `pr` into a `/velo:task` or `/velo:new` brief unless the user explicitly authorized that specific action for that specific task.
+Never commit, push to remote, or open a PR without **explicit per-action approval**. Commit, push, and PR are three distinct visible-action surfaces — each requires its own approval, and past authorization for one never extends to the others or to future actions of the same type. A single ship gate may bundle commit, push, and PR into one prompt **only when each option label explicitly names every action it triggers** — a label such as `Commit + push + open PR` constitutes explicit per-action authorization for all three, because the user reads and chooses exactly those named actions before any of them fires. What is non-negotiable is that the user explicitly chooses (by selecting a label that names them) each surface before it fires. Do not bundle `commit`, `push`, or `pr` into a `/velo:task` or `/velo:plan` brief unless the user explicitly authorized that specific action for that specific task.
 
 ## Why this gate
 
-Commit, push, and PR are three distinct visible-action surfaces. This skill defines a single **ship gate** pattern that both `/velo:task` and `/velo:new` compose into their state machines. The gate bundles commit, push, and PR into one `ask-options` prompt whose option labels each name the full action sequence they trigger, so a single choice still satisfies PERSONA's per-action approval rule (selecting `Commit + push + open PR` authorizes all three named actions, in that order). The gate honors per-action approval precisely because no action fires that is not spelled out in the chosen label.
+Commit, push, and PR are three distinct visible-action surfaces. This skill defines a single **ship gate** pattern that `/velo:task` composes into its state machine (shipping happens in task mode; `/velo:plan` plans but never ships). The gate bundles commit, push, and PR into one `ask-options` prompt whose option labels each name the full action sequence they trigger, so a single choice still satisfies PERSONA's per-action approval rule (selecting `Commit + push + open PR` authorizes all three named actions, in that order). The gate honors per-action approval precisely because no action fires that is not spelled out in the chosen label.
 
 ## Ship gate (commit + optional push + optional PR)
 
-The single shipping gate, used by `/velo:task`'s `SHIP_GATE` and `/velo:new`'s `SHIP_GATE`. The state body names the gate, its entry condition, and its exit conditions; this skill defines the prompt mechanics.
+The single shipping gate, used by `/velo:task`'s `SHIP_GATE`. The state body names the gate, its entry condition, and its exit conditions; this skill defines the prompt mechanics.
 
 Use `ask-options`:
 - **Header**: `"Ready to ship"` or `"Ship approval"` (state-specific phrasing is fine)
@@ -30,7 +30,7 @@ When the current branch equals the repo's default branch, the `Commit + push + o
 
 ### Failure handling
 
-All failures fire F1 for telemetry; the state body decides halt vs. retry/route.
+All failures fire F1; the state body decides halt vs. retry/route.
 - **Commit agent fails** (any path) → F1. The state body decides whether to halt or to offer `Retry` / route to `/velo:hunt` / `Abandon`.
 - **Push fails** (either `Commit + push` or `Commit + push + open PR`) → F1; halt. The report MUST surface `"local commit landed — push failed, retry manually or revert"` so the user knows the side effect.
 - **PR step fails** on `Commit + push + open PR` after commit AND push both succeeded → F1; halt. Surface that the commit and push landed and that the PR can be retried manually with `gh pr create` (this preserves the retired standalone PR gate's failure behavior).
@@ -49,6 +49,6 @@ If none of the three resolve, the gate cannot determine a base branch — treat 
 
 Then compare against `git rev-parse --abbrev-ref HEAD`: if equal, the current branch IS the base branch, so the `Commit + push + open PR` option is omitted.
 
-## Telemetry
+## Terminal reasons
 
-The ship gate emits option-resolution events per `skills/velo-telemetry.md` (event 2). Its terminal reasons (`delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, and any caller-specific phase abandons such as `abandoned-ship-gate`) are command-specific — each command enumerates its own terminal taxonomy.
+The ship gate's terminal reasons (`delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, and any caller-specific phase abandons such as `abandoned-ship-gate`) are command-specific — each command enumerates its own terminal taxonomy.

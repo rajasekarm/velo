@@ -11,7 +11,7 @@ argument-hint: Describe the task to execute
 
 For day-to-day work: bug fixes, refactors, small enhancements, single-domain changes. A single adaptive delegated flow: validate scope, partition + plan + announce with inline assumptions, delegate build/test work, review, ship.
 
-> **Altitude note**: the assumptions ledger captures the *positive* interpretation of terms that appear in the brief. It structurally cannot capture rejected-scenario / negative-space requirements ("must NOT affect X" where X is not a term in the brief). Work whose correctness hinges on negative-space/regression guarantees belongs in `/velo:new`.
+> **Altitude note**: the assumptions ledger captures the *positive* interpretation of terms that appear in the brief. It structurally cannot capture rejected-scenario / negative-space requirements ("must NOT affect X" where X is not a term in the brief). Work whose correctness hinges on negative-space/regression guarantees belongs in `/velo:plan`.
 
 ---
 
@@ -25,29 +25,31 @@ This rule applies to every state, every failure mode, and every branch of the sk
 
 ## Hard Rule — Escalate Underspecification UP, Never Sideways
 
-Task mode has no inline spec branch. The guardrail is this: **when the brief is genuinely underspecified, escalate to `/velo:new` — do not invent a spec inline.** Without this rule the adaptive path would quietly grow its own spec branch.
+Task mode has no inline spec branch. The guardrail is this: **when the brief is genuinely underspecified, escalate to `/velo:plan` — do not invent a spec inline.** Without this rule the adaptive path would quietly grow its own spec branch.
 
-**Escalation trigger** — escalate to `/velo:new` when ANY of the following holds at `VALIDATE`:
+**Escalation trigger** — escalate to `/velo:plan` when ANY of the following holds at `VALIDATE`:
 
 1. The brief **cannot be reduced to a stable assumptions ledger the user will confirm** — i.e. resolving the load-bearing terms requires guesses the user is unlikely to simply correct at the gate, because the design space is still open.
 2. **Conflicting requirements that are not resolvable by a single assumption** — two clauses pull in incompatible directions and picking one is a product decision, not an interpretation.
 3. The work is **net-new feature scope** rather than a change to existing behavior — there is no existing surface to modify; something new must be designed.
 
-If the trigger fires, do NOT proceed to `PLAN_AND_ANNOUNCE`. Use `handoff-mode` to route to `/velo:new`, carrying the original brief forward verbatim as the new-work brief. Surface a one-line reason (which trigger fired) so the user understands the redirect. This is a redirect, not an abandon — telemetry terminal reason `escalated-to-new`.
+If the trigger fires, do NOT proceed to `PLAN_AND_ANNOUNCE`. Use `handoff-mode` to route to `/velo:plan`, carrying the original brief forward verbatim as the new-work brief. Surface a one-line reason (which trigger fired) so the user understands the redirect. This is a redirect, not an abandon — terminal reason `escalated-to-plan`.
 
-The adaptive path is for work that **can** be reduced to a confirmable assumptions ledger. Everything past that bar runs the single path below; everything under it goes to `/velo:new`.
+**Exception — already-planned work**: an invocation carrying the `Planned-via: /velo:plan` dispatch key (the plan-package header per [Velo Plan Package](skills/velo-plan-package.md)) SUPPRESSES this escalation entirely — the work was already planned in `/velo:plan`, and a heavy-path brief is net-new by construction, so re-escalating would bounce it straight back in a loop. On a package-bearing invocation, do not evaluate the triggers; proceed with the workflow.
+
+The adaptive path is for work that **can** be reduced to a confirmable assumptions ledger. Everything past that bar runs the single path below; everything under it goes to `/velo:plan`.
 
 ---
 
 ## Non-Goals
 
 - Writing or editing source code directly (always delegate)
-- New features or capabilities that don't exist yet (→ `/velo:new`)
-- Briefs that cannot be reduced to a confirmable assumptions ledger (→ `/velo:new`, per the escalation rule above)
+- New features or capabilities that don't exist yet (→ `/velo:plan`)
+- Briefs that cannot be reduced to a confirmable assumptions ledger (→ `/velo:plan`, per the escalation rule above)
 - Debug investigation without a known fix (→ `/velo:hunt`)
-- Architecture discussions or design exploration (→ `/velo:yo`)
+- Architecture discussions or design exploration (→ `/velo:discuss`)
 - Durable planning artifacts such as PRDs and EDDs — task mode uses only a lightweight plan plus an inline assumptions ledger
-- Inline task-specs of any kind — task mode has no spec sub-system; underspecified work escalates to `/velo:new`
+- Inline task-specs of any kind — task mode has no spec sub-system; underspecified work escalates to `/velo:plan`
 - Multi-product cross-cutting refactors that span more than one product slug
 - Skipping the F2 rework cap (use the descope ritual instead)
 
@@ -62,8 +64,9 @@ The following must be true before the workflow starts. If any precondition fails
 3. **TEAM.md present and parseable**: agent roster resolves before state `VALIDATE` begins.
 4. **PERSONA + ADAPTER imports loaded**: tone rules and adapter concept names resolve before state `VALIDATE` begins.
 5. **Runtime capability — option prompts**: `ask-options` is available; without it, gated transitions cannot solicit user choice.
+6. **`.velo/tasks/` writable**: the status breadcrumb and task index must be persistable.
 
-**Fail-fast**: if any precondition fails, print `Cannot start task: precondition failed — <name>: <one-line reason>` and halt. If `spawn-agent` is the missing precondition, print: `/velo:task requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo in Direct mode (concept questions answered without panel spawning).` Do not role-play agents as a fallback — `ADAPTER.md` forbids that.
+**Fail-fast**: if any precondition fails, print `Cannot start task: precondition failed — <name>: <one-line reason>` and halt. If `spawn-agent` is the missing precondition, print: `/velo:task requires spawn-agent capability, which is not available in the current runtime. Alternatives that may still work: /velo:hunt (debug loop — no delegation) or /velo:yo (concept questions answered directly from knowledge — no agents spawned).` Do not role-play agents as a fallback — `ADAPTER.md` forbids that.
 
 ---
 
@@ -75,9 +78,32 @@ A single adaptive path — no forks, no spec states.
 VALIDATE → PLAN_AND_ANNOUNCE → BUILD → REVIEW → SHIP_GATE → DONE   (+ ABANDON terminal sink)
 ```
 
-`ABANDON` is the terminal failure sink, reachable from any user-gate or capped failure-mode handler. `VALIDATE` may also redirect out via `handoff-mode` to `/velo:new` (escalation, terminal `escalated-to-new`).
+`ABANDON` is the terminal failure sink, reachable from any user-gate or capped failure-mode handler. `VALIDATE` may also redirect out via `handoff-mode` to `/velo:plan` (escalation, terminal `escalated-to-plan`).
 
-**Reading guide**: each state's `Exit conditions` list is the authoritative source for transitions out of that state. There is no separate top-level transition table — when you need to know "where does this go next?", read the `Exit conditions` block on the current state.
+**Reading guide**: each state's `Exit conditions` list is the authoritative source for transitions out of that state. There is no separate top-level transition table — when you need to know "where does this go next?", read the `Exit conditions` block on the current state. Any state may additionally be entered via a resume per [Velo Task Status](skills/velo-task-status.md); resume re-entry does not change that state's body or exit conditions.
+
+---
+
+## Narration
+
+The workflow is a state machine internally, but the user should experience it as an EM giving a running status — not silent teleports between phases. At every state transition, emit **one short line in Velo's voice** (per [PERSONA.md](PERSONA.md): direct, owns the call, no filler) saying what just finished, what's starting next, and — only when it isn't obvious — why the ordering is what it is. This is narration, not a report.
+
+Rules:
+- **One line per transition.** If a sentence covers it, don't write three. Don't narrate a state you pass through instantly.
+- **Name what's happening, not the state.** The user doesn't care that we entered `REVIEW`; they care that the reviewer caught an N+1. Never say state names (`BUILD`, `SHIP_GATE`) out loud.
+- **Say the *why* only when ordering isn't obvious** ("DB first — backend needs the schema"); skip it when it is.
+- **Failure and rework narration stays factual** — what broke, what you're doing about it. No spin, no reassurance-padding.
+
+Beat sheet (illustrative texture, never verbatim):
+- Starting build: "Schema's the dependency, so db-engineer goes first — backend and FE follow once it lands."
+- Batch handoff: "Schema's in. Backend's building on it now, FE running alongside."
+- Into review: "Both back. Sending to review."
+- Rework: "Reviewer caught an N+1 in the backend — bouncing it back, holding the rest."
+- Into the ship gate: "Clean this pass. Here's where we landed —" then the summary and gate.
+
+This convention governs the narration at `BUILD`, `REVIEW`, and `SHIP_GATE` transitions. It does not replace any gate, template, or `ask-options` prompt — it wraps them in voice.
+
+**Status breadcrumbs**: per [Velo Task Status](skills/velo-task-status.md) — plain-markdown breadcrumbs, no engine. Velo creates `.velo/tasks/<slug>/status.md` and inserts the task's `.velo/tasks/index.md` row when the task folder is created at `PLAN_AND_ANNOUNCE` (reusing a plan package's `Task-folder` when one is carried), rewrites `status.md` at EVERY state transition alongside the `track-tasks` todo update (it is that update's persisted twin — phase ID + team name, node checklist, rework counters, `date`-sourced timestamp), and flips the `index.md` row at the terminal states. Agents never write these files.
 
 ---
 
@@ -103,15 +129,13 @@ The classification label (`product` | `pure-tech`) is set deterministically at `
 
 ---
 
-## Telemetry
+## Failure modes and terminal reasons
 
-Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F7 per [Velo Failure Modes](skills/velo-failure-modes.md). F8 does not apply (no PRD/EDD phase). There are no spec states, so the spec-audit F-code variant (F2-spec-audit) does not apply.
+F-codes that fire from this command are F1–F7 per [Velo Failure Modes](skills/velo-failure-modes.md). F8 does not apply (no PRD/EDD phase). There are no spec states, so the spec-audit F-code variant (F2-spec-audit) does not apply.
 
-**Cap names used by this command**: `cap:review-cycles` (F2 at `REVIEW`). There is no `cap:spec-audit-cycles`.
+**Terminal reasons**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-review-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-announce`, `escalated-to-plan`, `preflight-failed`.
 
-**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-review-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-announce`, `escalated-to-new`, `preflight-failed`.
-
-**Terminal-reason convention**: F2 abandons are phase-named for telemetry clarity. REVIEW F2 abandon → `abandoned-review-f2`. Other phase-cap abandons follow the same `abandoned-<phase>` pattern. (No `abandoned-spec-audit` / `abandoned-spec-approval` — those states do not exist.)
+**Terminal-reason convention**: F2 abandons are phase-named. REVIEW F2 abandon → `abandoned-review-f2`. Other phase-cap abandons follow the same `abandoned-<phase>` pattern. (No `abandoned-spec-audit` / `abandoned-spec-approval` — those states do not exist.)
 
 ---
 
@@ -119,9 +143,11 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Entry condition**: skill invoked with `$ARGUMENTS`.
 
-**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition. Do not proceed to `PLAN_AND_ANNOUNCE`. Emit the precondition-check telemetry event (see Telemetry — Event 0) with `trigger=preconditions:ok` on success or `trigger=preconditions:fail:<name>` on failure, regardless of outcome.
+**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition. Do not proceed to `PLAN_AND_ANNOUNCE`.
 
 **Body**:
+
+**Resume check (per [Velo Task Status](skills/velo-task-status.md))**: if the invocation references an existing task — an explicit `.velo/tasks/<slug>/` path or a brief that maps unambiguously to a row in `.velo/tasks/index.md` — and that folder's `status.md` is non-terminal, run the skill's resume protocol (`ask-options`: `Resume from <team name>` / `Start fresh`) before fresh interpretation. Resume re-enters the recorded state; nodes already marked `done` are never re-run (same semantics as the plan package's `done:` annotations). A plan-package-bearing invocation is NOT a resume prompt — it is the expected continuation; reuse its `Task-folder` silently. Its `status.md` arrives non-terminal by design (plan mode leaves it at `Phase: HANDOFF` rather than stamping a terminal phase — per [Velo Task Status](skills/velo-task-status.md)); task mode's first write at `PLAN_AND_ANNOUNCE` takes ownership, flipping `Mode:` to `task`. If `status.md` is missing, unparseable, or terminal, proceed as new work — that rule governs the resume check only; a package-bearing invocation is not a resume and reuses its named `Task-folder` regardless.
 
 Read the request. Apply the [Requirement Interpretation](skills/requirement-interpretation.md) rule to every term in the request whose interpretation could change which user sees what, which code path runs, or which data gets touched. Resolve each term per the rule for later capture in the Assumptions ledger (built in `PLAN_AND_ANNOUNCE`).
 
@@ -129,21 +155,22 @@ Read the request. Apply the [Requirement Interpretation](skills/requirement-inte
 
 **Two stop mechanisms — do not conflate them**. `VALIDATE` can halt forward progress in two distinct, non-overlapping ways:
 
-1. **In-place stop-and-ask** (requirement-interpretation's hard-stop): when a term has **zero codebase signals OR multiple competing signals**, [Requirement Interpretation](skills/requirement-interpretation.md) mandates STOP and ask the user *before announcing the plan*. This is resolved **in-place** — ask the clarifying question, loop within `VALIDATE` on the user's answer (or surface it at the announce gate as a flagged assumption once exactly one signal is pinned). It is NOT an escalation. An ordinary "name the new flag / which of these two fields" ambiguity on an otherwise in-scope change to existing behavior resolves here — it does not go to `/velo:new`.
-2. **Escalation to `/velo:new`** (the underspecification guardrail): reserved for the **three escalation triggers ONLY** (can't-reduce-to-confirmable-ledger, unresolvable conflicting requirements, net-new feature scope). A single ambiguous term is not an escalation trigger by itself; it is an in-place stop-and-ask per mechanism 1.
+1. **In-place stop-and-ask** (requirement-interpretation's hard-stop): when a term has **zero codebase signals OR multiple competing signals**, [Requirement Interpretation](skills/requirement-interpretation.md) mandates STOP and ask the user *before announcing the plan*. This is resolved **in-place** — ask the clarifying question, loop within `VALIDATE` on the user's answer (or surface it at the announce gate as a flagged assumption once exactly one signal is pinned). It is NOT an escalation. An ordinary "name the new flag / which of these two fields" ambiguity on an otherwise in-scope change to existing behavior resolves here — it does not go to `/velo:plan`.
+2. **Escalation to `/velo:plan`** (the underspecification guardrail): reserved for the **three escalation triggers ONLY** (can't-reduce-to-confirmable-ledger, unresolvable conflicting requirements, net-new feature scope). A single ambiguous term is not an escalation trigger by itself; it is an in-place stop-and-ask per mechanism 1.
 
 The seam between them: a zero-signal term on an in-scope change is mechanism 1 (ask in-place, then ride the confirmed answer into the ledger) — *unless* asking reveals the work is actually net-new scope or carries an unresolvable conflict, at which point escalation trigger 1 or 2 fires and mechanism 2 takes over. Resolve the in-place ask first; escalate only if the answer surfaces a trigger.
 
-**Escalation check**: after any in-place stop-and-ask resolves, evaluate the [Escalate Underspecification UP](#hard-rule--escalate-underspecification-up-never-sideways) trigger. If it fires, redirect to `/velo:new` via `handoff-mode` — do not continue.
+**Escalation check**: after any in-place stop-and-ask resolves, evaluate the [Escalate Underspecification UP](#hard-rule--escalate-underspecification-up-never-sideways) trigger. If it fires, redirect to `/velo:plan` via `handoff-mode` — do not continue. Skip this check entirely on a `Planned-via: /velo:plan` invocation — see the Hard Rule's exception clause.
 
 **Pairing classification**: apply the rule in [Pairing — reviewer routing](#pairing--reviewer-routing). Carry the resolved pairing (`product` | `pure-tech`) forward into `PLAN_AND_ANNOUNCE` as an explicit value, **for reviewer selection only**.
 
 **Context decay check (per PERSONA)**: if the task is scoped to a product slug, check `.velo/products/<slug>/context.md`. If it is older than 30 days OR predates multiple completed tasks, fire F6.
 
 **Exit conditions**:
+- Resume check matches a non-terminal task and user picks `Resume from <team name>` → (user-gate: resume) → re-enter the recorded state per [Velo Task Status](skills/velo-task-status.md)
 - Term has zero / multiple competing signals → (stop-and-ask) → ask the user in-place; on the user's answer, loop within `VALIDATE` (re-evaluate interpretation + escalation check with the answer folded in). Non-escalation, non-failure, non-auto exit per [Requirement Interpretation](skills/requirement-interpretation.md).
 - Preconditions pass, request understood, all interpretation ambiguities resolved, not underspecified, pairing resolved → (auto) → `PLAN_AND_ANNOUNCE`
-- Escalation trigger fires → (handoff) → route to `/velo:new` via `handoff-mode` carrying the brief (terminal `escalated-to-new`)
+- Escalation trigger fires → (handoff) → route to `/velo:plan` via `handoff-mode` carrying the brief (terminal `escalated-to-plan`)
 - Precondition fails → (failure:preconditions) → halt (terminal `preflight-failed`)
 - F6 fires → see F6 handling in the failure-mode table
 - F7 fires (user asks Velo to write code) → see F7 handling
@@ -160,13 +187,15 @@ This state does the internal planning and the announcement together. **Internal 
 
 **Body — Part 1: internal work (do this first)**:
 
-1. **Domain partition** — which agents are involved, parallel vs sequential. DB before BE (schema dependency). Independent domains (FE + Infra) parallelize. Builders before reviewers.
-2. **Assumptions ledger** — every term in the request whose interpretation was resolved at `VALIDATE`. Each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term in the request resolves to exactly one obvious signal. **This ledger does the spec's job** — it states, inline, every interpretation the user needs to confirm.
-3. **Register todos** through `track-tasks`:
-   - **One independent sub-task = one todo item = one agent.** Do not bundle independent work into a single agent.
+1. **Domain partition (plan DAG)** — build the plan DAG per [Velo Plan DAG](skills/velo-plan-dag.md): which agents are involved, as nodes with `needs` edges; batches derive from the edges. The node-granularity rule governs decomposition — a node earns independence only if it fans out (has a parallel sibling) or exposes a clean interface seam; same-file sequential work stays one node. Standard edge constraints: DB before BE (schema dependency). Independent domains (FE + Infra) parallelize. Builders before reviewers — reviewers are never DAG nodes.
+2. **Skill composition** — for each DAG node, resolve the composed skill set per [Velo Skill Composition](skills/velo-skill-composition.md): default bundle + validated additions from the `skills/` catalog. The composed set is frozen at plan approval.
+3. **Assumptions ledger** — every term in the request whose interpretation was resolved at `VALIDATE`. Each entry as `<term> → <interpretation/signal>`. Write `(none)` only if every term in the request resolves to exactly one obvious signal. **This ledger does the spec's job** — it states, inline, every interpretation the user needs to confirm.
+4. **Register todos** through `track-tasks`:
+   - **One DAG node = one todo item = one agent.** Do not bundle independent work into a single node.
    - At minimum, one item per planned agent spawn.
    - Add lifecycle items: "Review findings", "Present summary for approval", "Commit" when relevant.
    - Register the full list upfront, every item `pending`.
+5. **Task folder + status breadcrumb** (per [Velo Task Status](skills/velo-task-status.md)) — derive the task slug from the work's name (lowercase, hyphens for spaces/special characters; suffix `-2`, `-3`, ... if `.velo/tasks/<slug>/` already exists). When resuming, or when a plan package carries a `Task-folder`, reuse that folder instead of deriving a new one. `mkdir -p .velo/tasks/<slug>`, write `status.md` (Mode `task`, Pairing, Phase `PLAN_AND_ANNOUNCE (Plan & kickoff)`, the DAG nodes as the checklist — all `pending`, timestamp via `date`), and insert the task's row into `.velo/tasks/index.md` (status `in-progress`) if not already present.
 
 The pairing value resolved at `VALIDATE` carries through unchanged (it is not re-classified here).
 
@@ -176,7 +205,7 @@ The pairing value resolved at `VALIDATE` carries through unchanged (it is not re
 
 Print the announcement using the template in [Templates — Plan announcement](#plan-announcement-plan_and_announce). Per the PERSONA hard rule "Always ask before delegating", wait for the user.
 
-The user corrects assumptions at this gate. **An assumption flip re-renders the plan**: re-run Part 1 with the corrected assumption(s), then re-render the announcement before any agent is spawned. A pairing flip likewise re-runs Part 1 (it changes the reviewer set at `REVIEW`). Flips compose; last-confirmed value wins.
+The user corrects assumptions at this gate. **An assumption flip re-renders the plan**: re-run Part 1 with the corrected assumption(s) — including DAG re-partition and skill re-composition — then re-render the announcement before any agent is spawned. A pairing flip likewise re-runs Part 1 (it changes the reviewer set at `REVIEW`). Flips compose; last-confirmed value wins.
 
 **Exit conditions**:
 - User approves → (user-gate: approve) → `BUILD`
@@ -196,11 +225,15 @@ The user corrects assumptions at this gate. **An assumption flip re-renders the 
 
 **Use `spawn-agent` for every team member. Do not role-play agents.**
 
-Update the todo list when transitioning between sub-phases — mark the completed sub-phase item `completed` and the next sub-phase item `in_progress` before spawning agents for it.
+**Narrate the handoffs** per [Narration](#narration): one line as the first builders start (why this ordering), and one at each batch handoff as dependencies clear and the next batch spawns.
+
+Spawn each DAG node with its composed skill set injected per `inject-skills` (`ADAPTER.md`) — the set was frozen at the approved announcement; do not recompose at spawn time. Rework re-spawns inherit the node's frozen composition.
+
+Update the todo list when transitioning between sub-phases — mark the completed sub-phase item `completed` and the next sub-phase item `in_progress` before spawning agents for it. Mirror each todo flip into `status.md`'s node checklist (`pending` → `in-flight` → `done`) per [Velo Task Status](skills/velo-task-status.md).
 
 **Sub-phases (skip any that doesn't apply)**:
 
-1. **Builders**: spawn relevant builders. DB → BE if schema changes involved.
+1. **Builders**: spawn builder nodes per DAG batches (`needs: —` nodes first, in one runtime turn; later batches as their dependencies complete). DB → BE if schema changes involved.
 2. **Tests**: spawn automation-engineer after builders, if tests are needed.
 
 Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Parallelism](skills/velo-parallelism.md).
@@ -226,6 +259,8 @@ Parallelism, dependency ordering, and `track-tasks` lifecycle follow [Velo Paral
 **Entry condition**: `BUILD` produced builder + test output for all in-scope agents.
 
 **Body**:
+
+**Narrate** per [Narration](#narration): one line handing the work into review as builders come back. On rework, name what the reviewer actually caught and what's bouncing back to whom — don't just say "review failed".
 
 Spawn the reviewer set selected by the pairing classification — see [Pairing — reviewer routing](#pairing--reviewer-routing). Spawn them in parallel per [Velo Parallelism](skills/velo-parallelism.md), including the mandatory observability pairing defined there if a BE builder actually ran. Each reviewer is briefed against the scope of the corresponding builder.
 
@@ -254,6 +289,8 @@ Spawn the reviewer set selected by the pairing classification — see [Pairing �
 **Entry condition**: `REVIEW` reported all reviewers passing.
 
 **Body**:
+
+**Narrate** per [Narration](#narration): one short line closing out the review ("Clean this pass — here's where we landed") before the summary and the gate. Lead into the report; don't drop the table cold.
 
 Present the final summary per [Velo Final Report](skills/velo-final-report.md). Then apply the single ship-gate pattern per [Velo Approval Gates](skills/velo-gates.md#ship-gate-commit--optional-push--optional-pr) with header `"Ready to ship"` and question `"All reviewers passed. How do you want to ship?"`. Resolve the repo's default branch at gate time per the skill's Base-branch detection; omit the `Commit + push + open PR` option when the current branch is the default branch.
 
@@ -292,7 +329,7 @@ Present the final summary per [Velo Final Report](skills/velo-final-report.md). 
 
 **Body**:
 
-Print the final-report template from [Velo Final Report](skills/velo-final-report.md). Skill ends.
+Print the final-report template from [Velo Final Report](skills/velo-final-report.md). Update `status.md` to `Phase: DONE (Done — <terminal reason>)` and flip the task's `index.md` row to `done` per [Velo Task Status](skills/velo-task-status.md). Skill ends.
 
 **Exit conditions**: terminal.
 
@@ -309,11 +346,11 @@ Print the final-report template from [Velo Final Report](skills/velo-final-repor
 - F3 / F4 descope ritual resolved with "Abandon"
 - F5 cross-task dependency surfaced and user chose to halt
 
-(Escalation to `/velo:new` is NOT an abandon — it routes via `handoff-mode` from `VALIDATE` with terminal `escalated-to-new`.)
+(Escalation to `/velo:plan` is NOT an abandon — it routes via `handoff-mode` from `VALIDATE` with terminal `escalated-to-plan`.)
 
 **Body**:
 
-Print a short abandon summary: what was attempted, what completed (if anything), what was left, and any commits that landed. No file written.
+Print a short abandon summary: what was attempted, what completed (if anything), what was left, and any commits that landed. No report file written; if the task folder exists, set `status.md` to `Phase: ABANDON (Abandoned — <terminal reason>)` and flip the task's `index.md` row to `abandoned` per [Velo Task Status](skills/velo-task-status.md).
 
 **Exit conditions**: terminal. Skill ends.
 
@@ -325,26 +362,27 @@ Print a short abandon summary: what was attempted, what completed (if anything),
 
 ### Plan announcement (PLAN_AND_ANNOUNCE)
 
+The announcement is voiced, not a form. Velo talks through the read, then lays out the plan. Lead with the pairing call folded into a plain clause, surface the load-bearing assumptions as a short list the user can correct, then the DAG. Keep every scannable element — the ledger, the `needs` edges, the skills field, the batch/execution info — but say them like an EM, not a template.
+
 ```
-Velo here. Assessing the task...
+Looked at this — <one clause: what kind of change it is + the pairing call in plain voice, e.g. "it's a product change (touches a request path), so review pulls in observability" or "pure-tech — just the domain reviewer">. Flag me if that read's off.
 
-Pairing: <product | pure-tech>  (reviewer routing only)
-- product → full reviewer set (domain reviewers + mandatory BE observability pairing)
-- pure-tech → narrower set (domain reviewers for the builders that run)
-(flag if the pairing is wrong)
-
-Assumptions (flag if wrong):
+<If any terms were resolved — how I'm reading the ambiguous bits:>
 - <term from request> → <interpretation/signal>
-- (write "(none)" only if every term in the request resolves to exactly one obvious signal)
+<tell me if I've got any backwards. If nothing was ambiguous, say so in one line instead — "Nothing ambiguous in the brief, reading it straight" — never print "(none)".>
 
-Plan:
-- <agent>: <what they'll do>
-- <agent>: <what they'll do>
+Plan — <N> agent(s)<, one clause on ordering rationale only if there's a dependency, e.g. "DB goes first since the backend needs the schema">:
+- T1 · <agent> — <what it produces> · skills: <slug>, <slug>, +<addition> · needs: —
+- T2 · <agent> — <what it produces> (waits on T1) · skills: <slug> · needs: T1
 
-Execution: <parallel vs sequential, and why>
+<Execution line only when there's real batching to call out — "T2 and T3 run together once T1 lands." For a single node, say nothing.>
+
+Good to go?
 ```
 
-> If the brief cannot be reduced to a confirmable assumptions ledger, do not reach this template — escalate to `/velo:new` from `VALIDATE` instead (see the escalation Hard Rule).
+> Render the announcement as plain markdown — never wrap the plan list or any other part of the announcement in a fenced code block (the fence above is only to show the template shape). This is Velo speaking, per [PERSONA.md](PERSONA.md) — direct, owns the call, no filler; do not read the template back as labelled fields. Node/edge semantics, batch derivation, and the node-granularity rule per [Velo Plan DAG](skills/velo-plan-dag.md); the skills field (default slugs plain, additions prefixed `+`) per [Velo Skill Composition](skills/velo-skill-composition.md).
+
+> If the brief cannot be reduced to a confirmable assumptions ledger, do not reach this template — escalate to `/velo:plan` from `VALIDATE` instead (see the escalation Hard Rule).
 
 ### Final report (DONE)
 

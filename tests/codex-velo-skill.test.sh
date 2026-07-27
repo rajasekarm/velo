@@ -59,12 +59,12 @@ assert_wrapper_skill() {
   assert_file_contains "${wrapper_file}" "Treat this as a Codex wrapper around the existing Velo playbook."
   assert_file_contains "${wrapper_file}" "Do not treat this wrapper as an automatic Codex slash command."
 
-  if grep -qE 'AskUserQuestion|ToolSearch|TodoWrite|Agent tool|request_user_input|update_plan|tool_search|spawn_agent|Codex CLI|codex exec|sonnet|opus|haiku|gpt-[0-9]' "${wrapper_file}"; then
+  if grep -qE 'AskUserQuestion|ToolSearch|TodoWrite|Agent tool|request_user_input|update_plan|tool_search|spawn_agent|Codex CLI|codex exec|sonnet|opus|haiku|fable|gpt-[0-9]' "${wrapper_file}"; then
     fail ".agents/skills/${skill_dir}/SKILL.md must not contain runtime-specific mappings"
   fi
 }
 
-assert_wrapper_skill "velo-new" "new" "commands/new.md" "Use when the user asks for /velo:new"
 assert_wrapper_skill "velo-task" "task" "commands/task.md" "Use when the user asks for /velo:task"
 assert_wrapper_skill "velo-yo" "yo" "commands/yo.md" "Use when the user asks for /velo:yo"
 assert_wrapper_skill "velo-hunt" "hunt" "commands/hunt.md" "Use when the user asks for /velo:hunt"
+assert_wrapper_skill "velo-discuss" "discuss" "commands/discuss.md" "Use when the user asks for /velo:discuss"

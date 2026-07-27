@@ -1,6 +1,6 @@
 ---
 name: velo-final-report
-description: Final-report template printed at the DONE terminal state of Velo slash commands. Authoritative shape for the summary table emitted on successful completion. Consumed by `/velo:task` and `/velo:new` in place of an inlined template.
+description: Final-report template printed at the DONE terminal state of Velo slash commands. Authoritative shape for the summary table emitted on successful completion. Consumed by `/velo:task` in place of an inlined template.
 ---
 # Velo Final Report
 

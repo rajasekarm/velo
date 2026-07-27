@@ -13,7 +13,7 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 - **Bounded rework loop**: Reviewers that fail send builders back with findings inline. Cycle 1 fixes Critical + Significant, cycle 2 fixes remaining Critical only. Capped at 3 cycles — if issues remain, you decide: extend, accept as-is, or abandon.
 - **Spec-check before review**: Every build is verified against the PRD before reviewers run. Acceptance criteria are mapped to diff evidence; unmet criteria trigger rework. Capped at 2 automatic cycles — on the 3rd, you decide: extend, accept-with-FYI, or abandon. Ambiguous PRDs route back to the PM, not the builder.
 - **Observability baked in**: Every BE task is reviewed by BE Reviewer and Observability Engineer — non-optional. Security review is available on-demand via `/security-review`.
-- **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. PM, builders, and reviewers use `balanced`. `ADAPTER.md` maps these classes to the active runtime.
+- **Right model class for the job**: Tech lead and architecture reviewers use `deep-reasoning`. Builders use `build`. PM, reviewers, and utilities use `balanced`. `ADAPTER.md` maps these classes to the active runtime.
 
 ## The team
 
@@ -47,11 +47,11 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 
 | Agent | Model Class | Responsibility |
 |---|---|---|
-| **Frontend Engineer** | balanced | React components, routing, client-side logic |
-| **Backend Engineer** | balanced | APIs, business logic, Node.js services |
-| **Database Engineer** | balanced | Schema design, migrations, query optimisation |
-| **Infrastructure Engineer** | balanced | Docker, Kubernetes, AWS, Kafka, CI/CD |
-| **Automation Engineer** | balanced | Playwright e2e tests, Vitest unit tests |
+| **Frontend Engineer** | build | React components, routing, client-side logic |
+| **Backend Engineer** | build | APIs, business logic, Node.js services |
+| **Database Engineer** | build | Schema design, migrations, query optimisation |
+| **Infrastructure Engineer** | build | Docker, Kubernetes, AWS, Kafka, CI/CD |
+| **Automation Engineer** | build | Playwright e2e tests, Vitest unit tests |
 
 ### Reviewers
 
@@ -75,14 +75,17 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 
 See [WORKFLOW.md](WORKFLOW.md) for detailed flow diagrams.
 
-### `/velo:new` — New features
-Structured workflow: PM → Tech Lead → DE review → Build → Review → Commit. Mandatory planning and approval gates before any code is written.
+### `/velo:plan` — Plan work (Plan → Task → Ship)
+Unified planning front-end. Depth adapts to the work: the **light tier** goes straight to a Tech Lead breakdown; the **heavy tier** (net-new or underspecified work) first runs PM user stories → a Distinguished-Engineer-reviewed engineering design doc → your design sign-off. Produces an approved plan package (task breakdown + composed skills, plus the DE-reviewed EDD on the heavy path), then hands off to `/velo:task` to build and ship. Planning only — it never writes code.
 
 ### `/velo:task` — Day-to-day tasks
-Lightweight delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan, use an inline transient task-spec when needed, then build, review, and ship.
+A single adaptive delegated flow for bug fixes, refactors, and small changes: validate scope, announce the plan — a task DAG with an inline assumptions ledger — then build, review, and ship.
 
-### `/velo:yo` — Advisory
-Ask Velo anything. Get a direct answer, a TL + DE panel, or a full PM + TL + DE panel depending on the question.
+### `/velo:yo` — Entry point
+The front door. Bring anything — an idea, a bug, a question — and Velo triages the intent and routes it: `/velo:plan` or `/velo:task` to build, `/velo:hunt` to debug, the review skills to review, `/velo:discuss` to think a question through with the advisory panel. A question with a settled answer Velo can give from knowledge alone gets answered right there, with no file reads; anything needing evidence from the codebase routes to `/velo:discuss` instead. An answer that lands on something to do hands off into a mode with a draft brief. Yo is a front door, not a gate: every mode stays directly invokable.
+
+### `/velo:discuss` — Advisory discussion
+Bring a question, a trade-off, or a decision you're stuck on. Velo convenes the advisory panel — TL + DE for a technical trade-off, PM + TL + DE when scope and product impact are in play — synthesizes the positions, and picks a side instead of averaging. Prefix `@pm`, `@tl`, or `@de` to skip mode selection and target one agent. The panel agents read the codebase; Velo does not. Advisory only: no code, no artifacts — and a discussion that lands on a decision hands off into a mode with a draft brief.
 
 ### `/velo:hunt` — Structured debug loop
 Symptom → hypothesis → root cause → handoff. Tight, iterative debugging mode that ends with a confirmed root cause and a handoff brief to `/velo:task` — or an explicit dead-end with what was ruled out.

@@ -1,10 +1,10 @@
 ---
 name: spec-quality-check
-description: Consumer-side adversarial audit of a spec (PRD or task-spec) before any design or implementation begins. Encodes a 5-finding taxonomy and 5 quality criteria. Returns STATUS:SPEC_OK or STATUS:SPEC_REWORK_NEEDED with prioritized findings. Loaded by the agent that consumes the spec.
+description: Consumer-side adversarial audit of a spec (PRD) before any design or implementation begins. Encodes a 5-finding taxonomy and 5 quality criteria. Returns STATUS:SPEC_OK or STATUS:SPEC_REWORK_NEEDED with prioritized findings. Loaded by the agent that consumes the spec.
 ---
 # Spec Quality Check
 
-The agent that *consumes* the spec is the natural auditor. The Tech Lead consumes the PRD or task-spec to design the build, so the TL audits it. This skill encodes how.
+The agent that *consumes* the spec is the natural auditor. The Tech Lead consumes the PRD to design the build, so the TL audits it. This skill encodes how.
 
 **Framing — adversarial, not validating.** Read the spec looking for failure modes that will hurt the downstream build: ambiguity that will be resolved silently and wrongly; conflicts that will surface as bugs; gaps where requirements are missing entirely. Do NOT look for things to praise. Do NOT produce theater findings to look thorough. **Zero findings is the expected outcome when the spec is clean** — return `STATUS: SPEC_OK` and stop.
 
@@ -72,7 +72,7 @@ If you observed more than 7 candidate findings, add one final line: `(N addition
 
 ## Return contract
 
-The caller (TL workflow Step 0; `/velo:task`'s `SPEC_AUDIT` state) reads the first line of your output. The contract is:
+The caller (TL workflow Step 0, invoked on `/velo:plan`'s heavy path at `DESIGN_PHASE`) reads the first line of your output. The contract is:
 
 - First line is `STATUS: SPEC_OK` → caller proceeds to the next step. Advisory findings, if any, are surfaced to the user but do not block.
 - First line is `STATUS: SPEC_REWORK_NEEDED` → caller stops, surfaces the findings, and routes back to the spec author (PM) for revision. The caller does not silently revise the spec on the author's behalf.
