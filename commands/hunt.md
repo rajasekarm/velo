@@ -50,13 +50,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 ---
 
-## Telemetry
+## Failure modes and terminal reasons
 
-Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:plan` and `/velo:task`).
+F-codes that fire from this command are F1–F12 plus `S2-silent` — see the local failure-mode table below; hunt's F-codes are hunt-specific and are NOT defined in `skills/velo-failure-modes.md` (that skill covers the F1–F8 shared across `/velo:plan` and `/velo:task`).
 
-**Cap names used by this command**: `cap:steps-on-active`, `cap:no-progress-streak`, `cap:total-steps`.
-
-**Terminal reasons (event 5)**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-plan`, `routed-to-discuss`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
+**Terminal reasons**: `root-cause-confirmed-handoff`, `root-cause-confirmed-self-fix`, `routed-to-task`, `routed-to-plan`, `routed-to-discuss`, `abandoned-user`, `abandoned-f1`, `abandoned-f2`, `cancelled-validate`.
 
 ---
 
@@ -83,7 +81,7 @@ States:
 
 **Entry condition**: skill invoked with `$ARGUMENTS`.
 
-**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition (e.g. `Cannot start hunt: precondition failed — <name>: <one-line reason>`). Do not proceed to the banner, the pre-gates, or the classifier. Emit the precondition-check telemetry event (see Telemetry — Event 0) with `trigger=preconditions:ok` on success or `trigger=preconditions:fail:<name>` on failure, regardless of outcome.
+**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition (e.g. `Cannot start hunt: precondition failed — <name>: <one-line reason>`). Do not proceed to the banner, the pre-gates, or the classifier.
 
 **Body**:
 

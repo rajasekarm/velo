@@ -33,7 +33,7 @@ Task mode has no inline spec branch. The guardrail is this: **when the brief is 
 2. **Conflicting requirements that are not resolvable by a single assumption** — two clauses pull in incompatible directions and picking one is a product decision, not an interpretation.
 3. The work is **net-new feature scope** rather than a change to existing behavior — there is no existing surface to modify; something new must be designed.
 
-If the trigger fires, do NOT proceed to `PLAN_AND_ANNOUNCE`. Use `handoff-mode` to route to `/velo:plan`, carrying the original brief forward verbatim as the new-work brief. Surface a one-line reason (which trigger fired) so the user understands the redirect. This is a redirect, not an abandon — telemetry terminal reason `escalated-to-plan`.
+If the trigger fires, do NOT proceed to `PLAN_AND_ANNOUNCE`. Use `handoff-mode` to route to `/velo:plan`, carrying the original brief forward verbatim as the new-work brief. Surface a one-line reason (which trigger fired) so the user understands the redirect. This is a redirect, not an abandon — terminal reason `escalated-to-plan`.
 
 **Exception — already-planned work**: an invocation carrying the `Planned-via: /velo:plan` dispatch key (the plan-package header per [Velo Plan Package](skills/velo-plan-package.md)) SUPPRESSES this escalation entirely — the work was already planned in `/velo:plan`, and a heavy-path brief is net-new by construction, so re-escalating would bounce it straight back in a loop. On a package-bearing invocation, do not evaluate the triggers; proceed with the workflow.
 
@@ -129,15 +129,13 @@ The classification label (`product` | `pure-tech`) is set deterministically at `
 
 ---
 
-## Telemetry
+## Failure modes and terminal reasons
 
-Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1–F7 per [Velo Failure Modes](skills/velo-failure-modes.md). F8 does not apply (no PRD/EDD phase). There are no spec states, so the spec-audit F-code variant (F2-spec-audit) does not apply.
+F-codes that fire from this command are F1–F7 per [Velo Failure Modes](skills/velo-failure-modes.md). F8 does not apply (no PRD/EDD phase). There are no spec states, so the spec-audit F-code variant (F2-spec-audit) does not apply.
 
-**Cap names used by this command**: `cap:review-cycles` (F2 at `REVIEW`). There is no `cap:spec-audit-cycles`.
+**Terminal reasons**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-review-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-announce`, `escalated-to-plan`, `preflight-failed`.
 
-**Terminal reasons (event 5)**: `delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, `abandoned-review-f2`, `abandoned-f3`, `abandoned-f4`, `abandoned-f5`, `cancelled-announce`, `escalated-to-plan`, `preflight-failed`.
-
-**Terminal-reason convention**: F2 abandons are phase-named for telemetry clarity. REVIEW F2 abandon → `abandoned-review-f2`. Other phase-cap abandons follow the same `abandoned-<phase>` pattern. (No `abandoned-spec-audit` / `abandoned-spec-approval` — those states do not exist.)
+**Terminal-reason convention**: F2 abandons are phase-named. REVIEW F2 abandon → `abandoned-review-f2`. Other phase-cap abandons follow the same `abandoned-<phase>` pattern. (No `abandoned-spec-audit` / `abandoned-spec-approval` — those states do not exist.)
 
 ---
 
@@ -145,7 +143,7 @@ Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.m
 
 **Entry condition**: skill invoked with `$ARGUMENTS`.
 
-**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition. Do not proceed to `PLAN_AND_ANNOUNCE`. Emit the precondition-check telemetry event (see Telemetry — Event 0) with `trigger=preconditions:ok` on success or `trigger=preconditions:fail:<name>` on failure, regardless of outcome.
+**Precondition check (fail-fast)**: before any other VALIDATE behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition. Do not proceed to `PLAN_AND_ANNOUNCE`.
 
 **Body**:
 

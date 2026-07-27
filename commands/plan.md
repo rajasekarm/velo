@@ -99,13 +99,11 @@ The following must be true before the workflow starts. If any precondition fails
 
 ---
 
-## Telemetry
+## Failure modes and terminal reasons
 
-Event taxonomy and trigger codes follow [Velo Telemetry](skills/velo-telemetry.md). F-codes that fire from this command are F1, F2, F5, F6, F7, F8 per [Velo Failure Modes](skills/velo-failure-modes.md). **F3 and F4 never fire — plan mode has no build phase.** The heavy/light fork is observable in phase-entry events as `state_from=ANNOUNCE, state_to=PM_PHASE|DAG_PHASE` — no additional trigger codes.
+F-codes that fire from this command are F1, F2, F5, F6, F7, F8 per [Velo Failure Modes](skills/velo-failure-modes.md). **F3 and F4 never fire — plan mode has no build phase.**
 
-**Cap names used by this command**: `cap:spec-cycles` (F2-spec at `DESIGN_PHASE`, heavy path only, cap = 3 — the TL's Step 0 spec-quality loop back to the PM), `cap:edd-cycles` (F2-edd at `DESIGN_REVIEW`, heavy path only, cap = 3 — the DE's design-review rework loop back to the TL).
-
-**Terminal reasons (event 5)**: `handed-off-to-task`, `plan-saved-no-handoff`, `cancelled-announce`, `abandoned-prd-review`, `abandoned-design-approval`, `abandoned-plan-approval`, `abandoned-spec-f2`, `abandoned-edd-f2`, `abandoned-user`, `abandoned-f5`, `abandoned-f7`, `preflight-failed`. (F6's options are continue/pause — it has no abandon branch and therefore no terminal reason.)
+**Terminal reasons**: `handed-off-to-task`, `plan-saved-no-handoff`, `cancelled-announce`, `abandoned-prd-review`, `abandoned-design-approval`, `abandoned-plan-approval`, `abandoned-spec-f2`, `abandoned-edd-f2`, `abandoned-user`, `abandoned-f5`, `abandoned-f7`, `preflight-failed`. (F6's options are continue/pause — it has no abandon branch and therefore no terminal reason.)
 
 ---
 
@@ -120,7 +118,7 @@ The heavy tier gains a design depth — `DESIGN_PHASE → DESIGN_REVIEW → DESI
 
 **Reading guide**: each state's `Exit conditions` list is the authoritative source for transitions out of that state. There is no separate top-level transition table — when you need to know "where does this go next?", read the `Exit conditions` block on the current state. Any state may additionally be entered via a resume per [Velo Task Status](skills/velo-task-status.md); resume re-entry does not change that state's body or exit conditions.
 
-**Narration**: adopt the narration convention from `commands/task.md` — one short line in Velo's voice per transition, name what's happening in team terms ("PM's framing the ask", "TL's designing it", "design's reviewed, let's sign off"), say the *why* only when it isn't obvious, keep failure narration factual. **Never say state names (`PM_PHASE`, `DESIGN_PHASE`, `DAG_PHASE`) out loud** — in the conversation the steps go by their team names: `VALIDATE` is the "Scope check", `ANNOUNCE` the "Kickoff", `PM_PHASE` the "Product framing", `PRD_REVIEW` the "Framing review", `DESIGN_PHASE` the "Design doc", `DESIGN_REVIEW` the "Design review", `DESIGN_APPROVAL` the "Design sign-off", `DAG_PHASE` the "Work planning", `PLAN_APPROVAL` the "Plan sign-off", `HANDOFF` the "Hand to the builders". Structure and telemetry use the technical names; everything the user reads uses the team names.
+**Narration**: adopt the narration convention from `commands/task.md` — one short line in Velo's voice per transition, name what's happening in team terms ("PM's framing the ask", "TL's designing it", "design's reviewed, let's sign off"), say the *why* only when it isn't obvious, keep failure narration factual. **Never say state names (`PM_PHASE`, `DESIGN_PHASE`, `DAG_PHASE`) out loud** — in the conversation the steps go by their team names: `VALIDATE` is the "Scope check", `ANNOUNCE` the "Kickoff", `PM_PHASE` the "Product framing", `PRD_REVIEW` the "Framing review", `DESIGN_PHASE` the "Design doc", `DESIGN_REVIEW` the "Design review", `DESIGN_APPROVAL` the "Design sign-off", `DAG_PHASE` the "Work planning", `PLAN_APPROVAL` the "Plan sign-off", `HANDOFF` the "Hand to the builders". Structure uses the technical names; everything the user reads uses the team names.
 
 **Status breadcrumbs**: per [Velo Task Status](skills/velo-task-status.md) — plain-markdown breadcrumbs, no engine. Velo creates `.velo/tasks/<slug>/status.md` and inserts the task's `.velo/tasks/index.md` row when the task folder is created at `ANNOUNCE`, rewrites `status.md` at EVERY state transition (phase ID + team name, node checklist, last gate passed, rework counters, `date`-sourced timestamp), and updates both files at the terminal states. Agents never write these files.
 
@@ -130,7 +128,7 @@ The heavy tier gains a design depth — `DESIGN_PHASE → DESIGN_REVIEW → DESI
 
 **Entry condition**: skill invoked with `$ARGUMENTS` — a direct brief, a pasted `/velo:yo` draft brief or `/velo:hunt` handoff brief, or a re-entry package (see [Re-entry](#re-entry--descope-from-velotask)).
 
-**Precondition check (fail-fast)**: before any other `VALIDATE` behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition. Do not proceed to `ANNOUNCE`. Emit the precondition-check telemetry event (see Telemetry — Event 0) with `trigger=preconditions:ok` on success or `trigger=preconditions:fail:<name>` on failure, regardless of outcome.
+**Precondition check (fail-fast)**: before any other `VALIDATE` behavior, evaluate each item in the Preconditions section in order. If any precondition fails, halt immediately and print a clear error naming the missing precondition. Do not proceed to `ANNOUNCE`.
 
 **Body**:
 

@@ -88,7 +88,3 @@ These rules are non-negotiable. They override caller convenience.
 - **Never amend a commit that has been pushed**. Amend is acceptable only for the most recent local-only commit, and only when the caller explicitly asked for an amend. By default, prefer creating a NEW commit over amending.
 - **Never amend after a pre-commit hook failure**. The failed commit did not happen; amending would modify the PREVIOUS commit. Fix the underlying issue, re-stage, and create a new commit.
 - **Never commit `.env`, credentials, or generated lock-file changes** unless the caller explicitly asked for them.
-
-## Telemetry
-
-Commit-protocol does not emit telemetry directly. The calling agent or state emits events per its own taxonomy.

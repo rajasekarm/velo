@@ -30,7 +30,7 @@ When the current branch equals the repo's default branch, the `Commit + push + o
 
 ### Failure handling
 
-All failures fire F1 for telemetry; the state body decides halt vs. retry/route.
+All failures fire F1; the state body decides halt vs. retry/route.
 - **Commit agent fails** (any path) → F1. The state body decides whether to halt or to offer `Retry` / route to `/velo:hunt` / `Abandon`.
 - **Push fails** (either `Commit + push` or `Commit + push + open PR`) → F1; halt. The report MUST surface `"local commit landed — push failed, retry manually or revert"` so the user knows the side effect.
 - **PR step fails** on `Commit + push + open PR` after commit AND push both succeeded → F1; halt. Surface that the commit and push landed and that the PR can be retried manually with `gh pr create` (this preserves the retired standalone PR gate's failure behavior).
@@ -49,6 +49,6 @@ If none of the three resolve, the gate cannot determine a base branch — treat 
 
 Then compare against `git rev-parse --abbrev-ref HEAD`: if equal, the current branch IS the base branch, so the `Commit + push + open PR` option is omitted.
 
-## Telemetry
+## Terminal reasons
 
-The ship gate emits option-resolution events per `skills/velo-telemetry.md` (event 2). Its terminal reasons (`delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, and any caller-specific phase abandons such as `abandoned-ship-gate`) are command-specific — each command enumerates its own terminal taxonomy.
+The ship gate's terminal reasons (`delivered-and-committed-and-pushed-and-pr-opened`, `delivered-and-committed-and-pushed`, `delivered-and-committed`, `delivered-no-commit`, `abandoned-user`, and any caller-specific phase abandons such as `abandoned-ship-gate`) are command-specific — each command enumerates its own terminal taxonomy.

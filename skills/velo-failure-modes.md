@@ -26,7 +26,3 @@ Failure-mode IDs F1–F8 are stable contracts. Commands reference these by ID an
 - A state's `Failure modes` line lists which F-codes can fire from that state. It is a closed list — only those F-codes apply.
 - A state's `Exit conditions` block names the destination for each F-code firing.
 - If a state body inlines an F-code's handling, that override takes precedence over the standard handling in this table for that state.
-
-## Telemetry
-
-F-code firings emit a `failure:<F-code>` telemetry event per `skills/velo-telemetry.md` (event 3). F2 firing due to a per-phase cap dual-emits: a state-entry event with `trigger=cap:<phase>-cycles` AND a failure event with `trigger=failure:F2`.

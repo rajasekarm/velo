@@ -15,7 +15,7 @@ Persisted breadcrumbs so an interrupted `/velo:plan` or `/velo:task` run can be 
 
 ## Phase names
 
-`status.md` records both the technical state ID (structure, telemetry, increment-2 executor dispatch) and the friendly team name (everything the user reads), per each command's narration convention. Plan-mode names come from `commands/plan.md`; task-mode names are defined here (task.md narrates work, not states, so these appear only in breadcrumbs and resume prompts):
+`status.md` records both the technical state ID (structure, increment-2 executor dispatch) and the friendly team name (everything the user reads), per each command's narration convention. Plan-mode names come from `commands/plan.md`; task-mode names are defined here (task.md narrates work, not states, so these appear only in breadcrumbs and resume prompts):
 
 | Mode | Technical ID | Team name |
 |---|---|---|

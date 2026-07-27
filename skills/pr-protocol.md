@@ -141,7 +141,3 @@ PR bodies do NOT carry a Claude Code attribution line. Commits carry their `Co-A
 - Does not commit. Does not push. Those are caller responsibilities.
 - Does not modify the working tree.
 - Does not retry on `gh pr create` failure. Callers (e.g. `PR_GATE`) decide retry policy.
-
-## Telemetry
-
-PR-protocol does not emit telemetry directly. The calling state (typically `PR_GATE`) emits events per its own taxonomy.

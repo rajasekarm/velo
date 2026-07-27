@@ -60,7 +60,7 @@ Descope choice: <what the user said to cut or re-plan>
 
 Plan-side semantics (defined in `commands/plan.md` — Re-entry section): `VALIDATE` recognizes the `Re-entry:` header, skips fresh interpretation of the original brief (the confirmed ledger carries), re-evaluates the depth gate **on the delta only**, and re-plans with `done:` nodes preserved verbatim so the executor never re-runs them.
 
-Task-side terminal for this exit: `replanned-via-plan` (increment 2 defines it in task.md's telemetry; named here so the taxonomy is agreed).
+Task-side terminal for this exit: `replanned-via-plan` (increment 2 defines it in task.md's terminal reasons; named here so the taxonomy is agreed).
 
 ## Scope
 
