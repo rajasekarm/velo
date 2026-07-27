@@ -29,8 +29,9 @@ const CLAUDE = process.env.CLAUDE_BIN || 'claude';
 const PLUGIN_HOME = join(homedir(), '.claude', 'plugins');
 const ARTIFACTS = join(REPO, '.velo', 'run-artifacts');
 
-// Probe timeout. An unbounded /velo:yo turn that is allowed to spawn advisory
-// panels can run past 10 minutes, so probes disable the Agent tool and cap here.
+// Probe timeout. Yo itself spawns nothing, but a probe that follows a route into
+// /velo:discuss lands in the advisory panel, which fans out to subagents and can run
+// past 10 minutes. Probes disable the Agent tool and cap here.
 const PROBE_TIMEOUT_MS = Number(process.env.VELO_PROBE_TIMEOUT_MS || 420_000);
 const PROBE_MODEL = process.env.VELO_PROBE_MODEL || 'sonnet';
 
@@ -211,7 +212,7 @@ function runCheck() {
 const VERDICT_SCHEMA = {
   type: 'object',
   properties: {
-    recommended_mode: { type: 'string', enum: ['plan', 'task', 'hunt', 'review', 'answer'] },
+    recommended_mode: { type: 'string', enum: ['plan', 'task', 'hunt', 'review', 'discuss', 'answer'] },
     awaiting_user_approval: { type: 'boolean' },
     reason: { type: 'string' },
   },
@@ -244,6 +245,14 @@ const CASES = [
     prompt: `/velo:yo I want a full eval harness for velo: per-mode eval cases, graders, CI wiring and a scoring report. Nothing exists yet. ${ASK}`,
   },
   {
+    // A discuss fixture has to be a question with no settled answer — a genuine
+    // multi-sided trade-off, not work. If the prompt implies a decision already made,
+    // yo routes to plan or task instead, which is correct and makes the fixture wrong.
+    name: 'discuss',
+    expect: ['discuss'],
+    prompt: `/velo:yo Should velo's per-discipline reviewer agents (be-reviewer, fe-reviewer, db-reviewer, …) collapse into one generalist reviewer, or stay split? I genuinely go back and forth on it and have not decided. ${ASK}`,
+  },
+  {
     name: 'answer',
     expect: ['answer'],
     prompt: `/velo:yo What is the difference between /velo:plan's light tier and heavy tier? ${ASK}`,
@@ -255,8 +264,9 @@ function runProbe(testCase, outDir) {
     '-p',
     '--model',
     PROBE_MODEL,
-    // plan mode keeps the session read-only by design; Agent/Task are disabled
-    // because yo's advisory panels fan out to subagents and blow past any timeout.
+    // plan mode keeps the session read-only by design; Agent/Task are disabled as
+    // insurance against a probe following a route into /velo:discuss, whose panel fans
+    // out to subagents and blows past any timeout. Yo's own turn spawns nothing.
     '--permission-mode',
     'plan',
     '--disallowed-tools',

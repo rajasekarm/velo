@@ -187,10 +187,12 @@ assertions over the markdown (does `commands/task.md` still contain
 - **A hunt fixture needs a genuinely unknown cause.** "audit.sh exits 1, which
   assertion?" routes to `task`, because one grep finds the answer and there is nothing
   to hunt. Velo is right and the fixture is wrong.
-- **Leave the Agent/Task tools disabled in probes.** Yo's advisory panels fan out to
-  subagents; with them enabled one probe ran past 9 minutes and had to be killed.
-  Disabled, cases land in 32–140 s. But do not strip *everything*: with `Read`/`Grep`
-  also gone, yo spends the turn complaining it has no tools and returns `clarify`.
+- **Leave the Agent/Task tools disabled in probes.** Yo itself spawns nothing, but a
+  probe that follows a route into `/velo:discuss` lands in the advisory panel, which
+  fans out to subagents; with them enabled one probe ran past 9 minutes and had to be
+  killed. Disabled, cases land in 32–140 s. But do not strip *everything*: with
+  `Read`/`Grep` also gone, yo spends the turn complaining it has no tools and returns
+  `clarify`.
 - **`--permission-mode plan` is the right sandbox for a probe** (read-only by design),
   but headless plan mode has two quirks: `ExitPlanMode` is not actually callable, so
   every run ends with the session noting it "can't formally close out plan mode" (the
@@ -211,9 +213,9 @@ assertions over the markdown (does `commands/task.md` still contain
   .claude-plugin/plugin.json` reports all 17; the dir form (`validate .`) checks only
   the marketplace manifest and stays silent about them.
 - **`commands/plan.md` has no Codex wrapper.** `.agents/skills/` has `velo-new`,
-  `velo-task`, `velo-yo`, `velo-hunt` — no `velo-plan` — so the flagship mode is
-  Claude-only, and `tests/codex-velo-skill.test.sh` does not assert it, so no test
-  catches the gap.
+  `velo-task`, `velo-yo`, `velo-hunt`, `velo-discuss` — no `velo-plan` — so the flagship
+  mode is Claude-only, and `tests/codex-velo-skill.test.sh` does not assert it, so no
+  test catches the gap.
 - **`audit.sh` fails on this branch at `HEAD`, not just in your working tree:**
   `.agents/skills/velo-new/SKILL.md` lost the `description: Use when the user asks for
   /velo:new` string during the `/velo:new` retirement, and `commands/task.md` no longer
