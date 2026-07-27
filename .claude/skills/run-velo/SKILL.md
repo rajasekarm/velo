@@ -6,7 +6,7 @@ description: Run and drive the Velo plugin — load it into a real Claude Code s
 # Run Velo
 
 Velo is a **Claude Code + Codex plugin**, not a service: 5 commands (`commands/*.md`),
-17 agents (`agents/*.md`), ~40 skill files (`skills/*.md`), plus a Codex wrapper layer
+16 agents (`agents/*.md`), ~40 skill files (`skills/*.md`), plus a Codex wrapper layer
 (`.agents/skills/velo-*/SKILL.md`). There is nothing to compile and no port to open —
 **the running app is a Claude Code session with the plugin loaded**, and "driving it"
 means invoking `/velo:yo` and watching where it routes.
@@ -38,39 +38,42 @@ No build step. No `package.json`. Velo is loaded from the working tree — see
 node .claude/skills/run-velo/driver.mjs check
 ```
 
-Actual output on this branch (`velo/plan-mode-unification`):
+Actual output, captured against a working tree that already carries the `velo-plan` Codex
+wrapper (`.agents/skills/velo-plan/SKILL.md`). Without that file — e.g. at commit
+`34c0de2`, before it was added — `codex-parity` is a `⚠` instead and the run reports three
+warnings:
 
 ```
 === velo check (repo: /Users/rajasekarm/Documents/focus/velo) ===
 
-  ⚠ manifest — 17 warning(s)
+  ⚠ manifest — 16 warning(s)
   ✓ marketplace — marketplace.json passes --strict
-  ✓ inventory — 5 skills + 17 agents loaded, ~463 tok always-on
-  ⚠ live-source — velo@local recorded at cache copy …/plugins/cache/local/velo/1.0.0 —
-    that copy is stale (no commands/yo.md) yet /velo:yo works, so sessions load the
-    repo working tree. Edit the repo, never the cache.
-  ⚠ codex-parity — no .agents/skills/velo-<cmd>/SKILL.md wrapper for: plan
-  ✗ audit — === Result: FAIL (2 error(s), 45 warning(s)) === → …
+  ✓ inventory — 5 skills + 16 agents loaded, ~476 tok always-on
+  ⚠ live-source — velo@local recorded at cache copy /Users/rajasekarm/.claude/plugins/cache/local/velo/1.0.0 — that copy is stale (no commands/yo.md) yet /velo:yo works, so sessions load the repo working tree. Edit the repo, never the cache.
+  ✓ codex-parity — 5 commands each have a Codex wrapper skill
+  ✓ audit — === Result: PASS (0 errors, 45 warning(s)) ===
 
-=== FAIL (1 failure(s), 3 warning(s)) ===
+=== PASS (0 failure(s), 2 warning(s)) ===
 ```
 
-Exit 1 on any `✗`; `⚠` still exits 0. **The three warnings and the one failure above
-are the pre-existing state of this branch, not something you broke** — the two audit
-failures reproduce identically at `HEAD` (verified in a detached worktree). See Gotchas.
+Exit 1 on any `✗`; `⚠` still exits 0, so the run above is green. **A clean `check` is
+two warnings, not zero** — `manifest` (one "no frontmatter block" warning per agent) and
+`live-source` (the installed plugin points at a stale cache copy while sessions load the
+repo). Both are permanent, explained under Gotchas, and neither is something to fix. A
+`✗` on any line *is* a regression.
 
 `inventory` is the check that earns its keep: it diffs `claude plugin details velo`
 (what the *runtime* sees) against `commands/` and `agents/` on disk, so adding
 `commands/foo.md` and forgetting to make it loadable shows up as a hard failure. The
-token figure it echoes is informational only — it is environment-dependent (~463 tok in
-a normal shell, ~273 tok under `env -i`, same inventory), so nothing asserts on it.
+token figure it echoes is informational only — it is environment-dependent (~476 tok in
+a normal shell, ~281 tok under `env -i`, same inventory), so nothing asserts on it.
 
 ## Run: live routing probes
 
 ```bash
 node .claude/skills/run-velo/driver.mjs cases          # list fixtures
 node .claude/skills/run-velo/driver.mjs probe hunt     # one case
-node .claude/skills/run-velo/driver.mjs probe all      # all four (~4.5 min, ~$1.80)
+node .claude/skills/run-velo/driver.mjs probe all      # all five (~5-6 min, ~$2)
 ```
 
 Each case spawns a real headless session:
@@ -85,7 +88,10 @@ and grades `structured_output.recommended_mode` against the fixture's expectatio
 Full transcripts (cost, turns, session id) land in
 `.velo/run-artifacts/probe-<timestamp>/<case>.json` — `.velo` is gitignored.
 
-Real `probe all` output on this branch:
+A real `probe all` run, captured 2026-07-26 back when there were four fixtures. Kept as
+an example of the **output shape only** — `driver.mjs cases` now lists five (a `discuss`
+fixture was added since), and timings and costs vary per run. Run `probe all` yourself
+for current numbers; do not treat the block below as the expected result:
 
 ```
 === velo probe (sonnet) — transcripts: .velo/run-artifacts/probe-2026-07-26T15-02-46-111Z ===
@@ -108,7 +114,7 @@ Knobs: `VELO_PROBE_MODEL` (default `sonnet`), `VELO_PROBE_TIMEOUT_MS` (default 4
 
 **Always read the `reason` before believing a `✗`.** An earlier `hunt` fixture ("audit.sh
 exits 1, which assertion is tripping?") routed to `task` — correctly, because one grep
-finds the answer, so there was nothing to hunt. Two of the four fixtures here were wrong
+finds the answer, so there was nothing to hunt. Two of the fixtures here were wrong
 before Velo was.
 
 ## Run: one agent, directly
@@ -215,13 +221,13 @@ token does.
 - **`--output-format json` + `--json-schema` compose**, and `structured_output` gives
   you the parsed object. Parse **stdout only**: `claude` writes a workspace-trust
   warning to stderr, so `2>&1 | python3 -m json.tool` blows up on line 1.
-- **All 17 agents ship with no frontmatter block at all** — the file starts at its `#`
+- **All 16 agents ship with no frontmatter block at all** — the file starts at its `#`
   heading. No `description:`, and deliberately no `model:`: a role's model is resolved
   from its `TEAM.md` class through `ADAPTER.md` and passed on the spawn, so the agent
   file carries no routing information (`tests/model-classes.test.sh` asserts it stays
   that way). Frontmatter-less agents register and load normally — verified against
-  `claude plugin details velo` (17 agents) and live `--agent` loads. `claude plugin
-  validate .claude-plugin/plugin.json` reports 17 warnings, one per agent
+  `claude plugin details velo` (16 agents) and live `--agent` loads. `claude plugin
+  validate .claude-plugin/plugin.json` reports 16 warnings, one per agent
   ("No frontmatter block found"), and still exits 0 / "passed with warnings"; that is
   why `check`'s `manifest` line is a `⚠` and not a `✗`. The missing `description:` is
   why the Agent-tool listing shows every one as "Agent from velo plugin" and Claude has
@@ -233,10 +239,6 @@ token does.
   failed`, which turns `check`'s `manifest` into a `✗`. The agents still register and
   load in that state, so `plugin details` and a live `--agent` probe both look green —
   only `validate` catches it. Either carry real keys or carry no fences.
-- **`commands/plan.md` has no Codex wrapper.** `.agents/skills/` has
-  `velo-task`, `velo-yo`, `velo-hunt`, `velo-discuss` — no `velo-plan` — so the flagship
-  mode is Claude-only, and `tests/codex-velo-skill.test.sh` does not assert it, so no
-  test catches the gap.
 - **`tests/task-workflow-contract.test.sh` was reconciled after the retirement
   commits outran it** (it used to pin `lightweight delegated flow` as *required*
   prose, which went red at `HEAD` once the name was retired). It is now

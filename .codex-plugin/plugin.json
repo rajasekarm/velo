@@ -18,7 +18,7 @@
   "interface": {
     "displayName": "Velo",
     "shortDescription": "Agentic engineering team workflow for Codex",
-    "longDescription": "Velo provides mode-specific Codex workflows: request triage and routing, advisory discussion, structured debugging, scoped implementation, and full feature delivery.",
+    "longDescription": "Velo provides mode-specific Codex workflows: request triage and routing, adaptive planning, scoped implementation, structured debugging, and advisory discussion.",
     "developerName": "Rajasekar",
     "category": "Coding",
     "capabilities": [
@@ -30,6 +30,7 @@
       "Bring Velo a request and let it route",
       "Talk a trade-off through with Velo's advisory panel",
       "Hunt down a bug with Velo",
+      "Plan a feature out with Velo before building it",
       "Start a Velo task"
     ],
     "brandColor": "#111827",
