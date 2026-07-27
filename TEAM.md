@@ -31,11 +31,11 @@
 ### Builders
 | Agent | File | Skills | Model Class |
 |---|---|---|---|
-| **fe-engineer** | `agents/fe-engineer.md` | react, react-effects, vercel-react-best-practices | balanced |
-| **be-engineer** | `agents/be-engineer.md` | python \| nodejs (language-conditional — see agent file), api-and-interface-design | balanced |
-| **db-engineer** | `agents/db-engineer.md` | postgresql, clickhouse | balanced |
-| **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci-cd | balanced |
-| **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest | balanced |
+| **fe-engineer** | `agents/fe-engineer.md` | react, react-effects, vercel-react-best-practices | build |
+| **be-engineer** | `agents/be-engineer.md` | python \| nodejs (language-conditional — see agent file), api-and-interface-design | build |
+| **db-engineer** | `agents/db-engineer.md` | postgresql, clickhouse | build |
+| **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci-cd | build |
+| **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest | build |
 
 ### Reviewers
 | Agent | File | Skills | Model Class |

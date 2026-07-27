@@ -1,7 +1,3 @@
----
-model: opus
----
-
 # Tech Lead
 
 ## Advisory Mode

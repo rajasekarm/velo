@@ -27,7 +27,8 @@ Model classes describe the reasoning budget Velo needs from a role.
 
 | Model Class | Intent | Claude Code | Codex |
 |---|---|---|---|
-| balanced | Routine planning, build, verification, and review work | `sonnet` | inherited model, or medium reasoning when selectable |
+| balanced | Routine planning, verification, and review work | `sonnet` | inherited model, or medium reasoning when selectable |
+| build | Implementation work — writing and modifying production code, schemas, config, and tests | `opus` | high reasoning when selectable |
 | deep-reasoning | Architecture, high-risk design review, and second-order trade-offs | `fable` | high or xhigh reasoning when selectable |
 
 Use `resolve-model` with the model class from `TEAM.md` as routing intent. Resolve it through the active runtime before spawning an agent. If the runtime cannot select a model directly, omit the model override and preserve the requested reasoning budget in the prompt.
@@ -51,14 +52,18 @@ Use `spawn-agent` whenever a playbook delegates work to a team member.
 1. Read the agent file listed in `TEAM.md`.
 2. If the plan carries a composed skill set for this spawn (per `skills/velo-skill-composition.md`), render the Composed Skills block and prepend it to the task-specific prompt — see Pre-Composed Skill Injection below.
 3. Replace `$ARGUMENTS` with the composed prompt (block + task prompt).
-4. Resolve the role's model class through the Model Classes table above.
+4. Resolve the role's model. Read its model class from its `TEAM.md` roster row, resolve that class through the Model Classes table above, and pass the resolved model on the spawn. **Always pass it.** `agents/*.md` carries no model declaration — `tests/model-classes.test.sh` asserts that no agent file declares `model:` — so this resolution is the only thing that puts a role on its intended model. A playbook may name a different model class for a given spawn (`/velo:discuss` downgrades the Tech Lead, for example); that changes *which* class you resolve, never *whether* you pass one. If the runtime cannot select a model directly, fall back as `resolve-model` specifies: omit the override and state the requested reasoning budget in the prompt.
 5. Spawn through the runtime's delegation mechanism.
 
 | Need | Claude Code | Codex |
 |---|---|---|
 | Single agent | Agent tool | `spawn_agent` when available and when the current request permits delegation |
-| Parallel agents | Multiple Agent tool calls in one assistant turn | Multiple `spawn_agent` calls in one turn when allowed |
+| Pass the resolved model | The Agent tool's `model` parameter. It accepts `sonnet`, `opus`, `haiku`, and `fable`, so every class in the Model Classes table is directly expressible — set it on every call. Omitting it inherits the session model. | `spawn_agent`'s model/reasoning-effort argument where the runtime exposes one. Codex classes map to reasoning effort rather than a model name, so pass the effort the table names. |
+| Runtime exposes no model selector | Should not occur on Claude Code — the Agent tool's `model` parameter is always available. | Omit the override and state the requested reasoning budget in the prompt, per `resolve-model`. Do not silently drop the intent. |
+| Parallel agents | Multiple Agent tool calls in one assistant turn — each call carries its own `model` | Multiple `spawn_agent` calls in one turn when allowed, each carrying its own effort |
 | Agent unavailable | Stop and report the blocker | Stop and report that the active runtime cannot run workflows requiring independent agents |
+
+**Residual risk — an omitted model parameter fails silently.** Because `agents/*.md` declares no model, a spawn that forgets to pass one does not error: the agent inherits the session model and runs at the wrong reasoning budget while every file on disk still reads correct. No static test can catch this. `tests/model-classes.test.sh` can only prove the value is absent from the agent files, never that a spawner supplied it. This applies to **every** spawn on both runtimes, not to any one playbook. Treat step 4 as mandatory, and when a role behaves at the wrong budget, suspect a dropped parameter before suspecting the roster.
 
 Do not role-play a delegated team member when the active workflow requires an independent agent.
 

@@ -45,7 +45,7 @@ The following must be true before the workflow starts. If any precondition fails
 
 1. **Adapter concepts available**: `spawn-agent`, `resolve-model`, `ask-options`, `handoff-mode`, `read-files`, `load-tool`, `report-cost` are all defined and bound in the runtime adapter.
 2. **Runtime capability — agent spawning**: the active runtime supports `spawn-agent`. Every mode below delegates the advisory work; without delegation there is no panel and no discussion.
-3. **Runtime capability — model classes**: `resolve-model` resolves `balanced` and `deep-reasoning`. The panel's cost shape depends on TL and PM running balanced while DE runs deep-reasoning.
+3. **Runtime capability — model classes**: `resolve-model` resolves the classes discuss uses — `balanced` and `deep-reasoning` (`ADAPTER.md`'s Model Classes table defines others that no discuss spawn needs). The panel's cost shape depends on TL and PM running balanced while DE runs deep-reasoning. Per `ADAPTER.md`'s Agent Spawning step 4 a resolved model goes on every spawn, so TL's row asks nothing extra of the runtime — it differs only in *which* class is resolved: `model class: balanced` in place of the `model class: deep-reasoning` its `TEAM.md` roster row names. Where the runtime cannot select a model at all, take `ADAPTER.md`'s documented fallback — omit it and state the requested reasoning budget in the prompt — and record TL's actual cost in the Step 8 table rather than the balanced estimate. That degrades the cost shape; it does not fail this precondition.
 4. **TEAM.md present and parseable**: the PM / TL / DE roster resolves before Step 1 begins.
 5. **PERSONA + ADAPTER imports loaded**: tone rules and adapter concept names resolve before Step 1 begins.
 6. **Runtime capability — option prompts**: `ask-options` is available; without it, Step 1's action-request offer and Step 7's routing options cannot solicit user choice.
@@ -115,7 +115,7 @@ Pre-read:
 1. Read `README.md` at root
 2. Capture the top-level directory listing through `read-files`
 
-Spawn Tech Lead with `model class: balanced` and Distinguished Engineer with `model class: deep-reasoning`, **in parallel**.
+Spawn Tech Lead with `model class: balanced` — resolved and passed on the spawn in place of TL's standing `TEAM.md` class; see Step 4's Tech Lead step for the override and its known enforcement limit — and Distinguished Engineer with `model class: deep-reasoning`, **in parallel**.
 
 Use the prompts from the Full panel section below — same prompts, just skip PM.
 
@@ -131,7 +131,7 @@ Pre-read:
 1. Read `README.md` at root
 2. Capture the top-level directory listing through `read-files`
 
-Spawn PM and TL with `model class: balanced`, DE with `model class: deep-reasoning`, all **in parallel**.
+Spawn PM and TL with `model class: balanced` — PM's is its standing `TEAM.md` class, TL's is resolved and passed in place of the class its own roster row names (see Step 4's Tech Lead step for the override and its known enforcement limit) — and DE with `model class: deep-reasoning`, all **in parallel**.
 
 After all return → go to Step 5 (check response count) → Step 6 (synthesize).
 
@@ -148,7 +148,7 @@ Pre-read:
 Spawn only the agent the user targeted. Use the prompt template for that agent from Step 4 — do not duplicate it here.
 
 - `@pm` → Product Manager, `model class: balanced`
-- `@tl` → Tech Lead, `model class: balanced`
+- `@tl` → Tech Lead, `model class: balanced` — resolved and passed on the spawn in place of TL's standing `TEAM.md` class; see Step 4's Tech Lead step for the override and its known enforcement limit
 - `@de` → Distinguished Engineer, `model class: deep-reasoning`
 
 Skip Step 5 (no panel-count check needed — only one agent).
@@ -216,7 +216,11 @@ Keep your response under 400 words. Structure as:
 
 ### Tech Lead
 
-Read `agents/tech-lead.md`, then spawn with `model class: balanced`. (advisory override — TL defaults to `deep-reasoning` in TEAM.md; downgraded here for cost efficiency)
+Read `agents/tech-lead.md`, then spawn with `model class: balanced` — **resolved through `resolve-model` and passed on this spawn in place of the class `TEAM.md` gives the Tech Lead**.
+
+This is a deliberate advisory downgrade. `TEAM.md` gives the Tech Lead a standing `model class: deep-reasoning`; the discuss panel does not need that budget from TL, because DE holds the deep-reasoning seat. Per `ADAPTER.md`'s Agent Spawning step 4 a resolved model is passed on every spawn, and a playbook may name a different class for a given spawn — that changes *which* class is resolved, never *whether* one is passed. This step is that naming: resolve `balanced` and pass it here in place of the roster's class. Drop the override and step 4 still passes the standing class, so TL runs the panel on a deep-reasoning budget and the cost shape is wrong.
+
+**Known enforcement limit — this override is not tested.** `tests/model-classes.test.sh` validates the standing roster only: that every `TEAM.md` class resolves to a real model, and that no agent file declares one. A class a playbook names for a single spawn sits *outside* that axis, so the test cannot see it — it cannot verify that `balanced` is a real class, that it resolves at spawn time, or that this spawn passes it in place of the roster's. That gap is how the earlier defect survived: this step described a downgrade nothing applied. Making the override an explicit spawn parameter fixes the *behaviour*, not the *enforcement*, and the cost of dropping it lands here — a panel paying deep-reasoning rates for a seat that does not need them. For the general failure, where a spawn passes no class at all, see `ADAPTER.md`'s residual-risk note under Agent Spawning.
 
 Pass the following as $ARGUMENTS:
 

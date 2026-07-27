@@ -1,7 +1,3 @@
----
-model: opus
----
-
 # Distinguished Engineer
 
 ## Advisory Mode

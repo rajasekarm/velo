@@ -1,7 +1,3 @@
----
-model: sonnet
----
-
 # Product Manager
 
 ## Advisory Mode

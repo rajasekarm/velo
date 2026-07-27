@@ -16,7 +16,7 @@ The modes below are the shapes the discussion can take. Velo decides which one f
 
 ### Lightweight
 
-TL + DE only. TL uses `model class: balanced`, DE uses `model class: deep-reasoning`.
+TL + DE only. TL uses `model class: balanced` — an explicit `resolve-model` override passed on the spawn, not TL's standing class — and DE uses `model class: deep-reasoning`. The Tech Lead spawn step in Step 4 of `commands/discuss.md` owns the override and records its known enforcement limit; do not restate the downgrade here as intent alone.
 
 Use when:
 - There's a genuine technical trade-off but no product/scope dimension
@@ -24,7 +24,7 @@ Use when:
 
 ### Full panel
 
-PM + TL + DE. PM and TL use `model class: balanced`, DE uses `model class: deep-reasoning`.
+PM + TL + DE. PM and TL use `model class: balanced` — PM's is its standing class, TL's is an explicit `resolve-model` override passed on the spawn — and DE uses `model class: deep-reasoning`. The Tech Lead spawn step in Step 4 of `commands/discuss.md` owns the override and records its known enforcement limit; do not restate the downgrade here as intent alone.
 
 Use when:
 - The question is build-vs-shelve, scope, or prioritization

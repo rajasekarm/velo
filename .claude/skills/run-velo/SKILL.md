@@ -43,7 +43,7 @@ Actual output on this branch (`velo/plan-mode-unification`):
 ```
 === velo check (repo: /Users/rajasekarm/Documents/focus/velo) ===
 
-  ⚠ manifest — 17 warning(s), 17 agent(s) have no frontmatter description
+  ⚠ manifest — 17 warning(s)
   ✓ marketplace — marketplace.json passes --strict
   ✓ inventory — 5 skills + 17 agents loaded, ~463 tok always-on
   ⚠ live-source — velo@local recorded at cache copy …/plugins/cache/local/velo/1.0.0 —
@@ -132,8 +132,11 @@ Free-form drive of any mode (streams the reply straight to your terminal):
 node .claude/skills/run-velo/driver.mjs ask \
   "/velo:yo In one sentence: should ADAPTER.md own model classes, or should each agent file?"
 # → **Answer:** ADAPTER.md should own model classes — it already does (the Model Classes
-#   table maps balanced/deep-reasoning to concrete runtime models), so agent files and
-#   TEAM.md only declare intent, keeping runtime-model changes to one file instead of 17+.
+#   table maps every class to a concrete runtime model), so agent files carry no model at
+#   all and TEAM.md only declares intent, keeping runtime-model changes to one file.
+#
+# The reply above is a real transcript, kept as an example of the `ask` output shape —
+# not as a spec. Read ADAPTER.md's Model Classes table for what the mapping actually is.
 ```
 
 ## Run: human path
@@ -207,11 +210,24 @@ assertions over the markdown (does `commands/task.md` still contain
 - **`--output-format json` + `--json-schema` compose**, and `structured_output` gives
   you the parsed object. Parse **stdout only**: `claude` writes a workspace-trust
   warning to stderr, so `2>&1 | python3 -m json.tool` blows up on line 1.
-- **All 17 agents ship with no frontmatter `description:`** (only `model:`). That is
-  why the Agent-tool listing shows every one as "Agent from velo plugin" and Claude
-  has nothing to match on when choosing an agent. `claude plugin validate
-  .claude-plugin/plugin.json` reports all 17; the dir form (`validate .`) checks only
-  the marketplace manifest and stays silent about them.
+- **All 17 agents ship with no frontmatter block at all** — the file starts at its `#`
+  heading. No `description:`, and deliberately no `model:`: a role's model is resolved
+  from its `TEAM.md` class through `ADAPTER.md` and passed on the spawn, so the agent
+  file carries no routing information (`tests/model-classes.test.sh` asserts it stays
+  that way). Frontmatter-less agents register and load normally — verified against
+  `claude plugin details velo` (17 agents) and live `--agent` loads. `claude plugin
+  validate .claude-plugin/plugin.json` reports 17 warnings, one per agent
+  ("No frontmatter block found"), and still exits 0 / "passed with warnings"; that is
+  why `check`'s `manifest` line is a `⚠` and not a `✗`. The missing `description:` is
+  why the Agent-tool listing shows every one as "Agent from velo plugin" and Claude has
+  nothing to match on when choosing an agent. The dir form (`validate .`) checks only
+  the marketplace manifest and stays silent about all of it.
+- **Do not "tidy" the agent files by adding empty `---` / `---` fences.** An empty
+  frontmatter block is a hard validation *error*, not a warning: `frontmatter:
+  Frontmatter must be a YAML mapping (key: value pairs), got null` → `✘ Validation
+  failed`, which turns `check`'s `manifest` into a `✗`. The agents still register and
+  load in that state, so `plugin details` and a live `--agent` probe both look green —
+  only `validate` catches it. Either carry real keys or carry no fences.
 - **`commands/plan.md` has no Codex wrapper.** `.agents/skills/` has
   `velo-task`, `velo-yo`, `velo-hunt`, `velo-discuss` — no `velo-plan` — so the flagship
   mode is Claude-only, and `tests/codex-velo-skill.test.sh` does not assert it, so no
