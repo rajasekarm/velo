@@ -43,11 +43,27 @@ from pathlib import Path
 team_file = Path(sys.argv[1])
 adapter_file = Path(sys.argv[2])
 
+# `\|` is the markdown escape for a literal pipe inside a table cell, so it is not a
+# column separator. Split on unescaped pipes only, then unescape — downstream code
+# treats these cells as human-readable text.
+CELL_SEPARATOR = re.compile(r"(?<!\\)\|")
+
+
+def split_cells(line):
+    cells = CELL_SEPARATOR.split(line.strip())
+    # A well-formed row yields an empty cell before the leading and after the trailing pipe.
+    if cells and not cells[0].strip():
+        cells = cells[1:]
+    if cells and not cells[-1].strip():
+        cells = cells[:-1]
+    return [cell.replace("\\|", "|").strip() for cell in cells]
+
+
 adapter_classes = set()
 for line in adapter_file.read_text().splitlines():
     if not line.startswith("|"):
         continue
-    cols = [part.strip() for part in line.strip().strip("|").split("|")]
+    cols = split_cells(line)
     if len(cols) >= 1 and re.fullmatch(r"[a-z][a-z-]+", cols[0]):
         adapter_classes.add(cols[0])
 
@@ -61,7 +77,7 @@ for lineno, line in enumerate(team_file.read_text().splitlines(), start=1):
     if not line.startswith("|") or "agents/" not in line:
         continue
 
-    cols = [part.strip() for part in line.strip().strip("|").split("|")]
+    cols = split_cells(line)
     if len(cols) != 4:
         raise SystemExit(f"FAIL: TEAM.md:{lineno} roster row must have 4 columns: {line}")
 
