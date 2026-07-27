@@ -27,11 +27,11 @@ Model classes describe the reasoning budget Velo needs from a role.
 
 | Model Class | Intent | Claude Code | Codex |
 |---|---|---|---|
-| balanced | Routine planning, verification, and review work | `sonnet` | inherited model, or medium reasoning when selectable |
-| build | Implementation work — writing and modifying production code, schemas, config, and tests | `opus` | high reasoning when selectable |
-| deep-reasoning | Architecture, high-risk design review, and second-order trade-offs | `fable` | high or xhigh reasoning when selectable |
+| balanced | Routine planning, verification, and review work | `sonnet` | `gpt-5.6-terra` with `medium` reasoning |
+| build | Implementation work — writing and modifying production code, schemas, config, and tests | `opus` | `gpt-5.6-sol` with `high` reasoning |
+| deep-reasoning | Architecture, high-risk design review, and second-order trade-offs | `fable` | `gpt-5.6-sol` with `xhigh` reasoning |
 
-Use `resolve-model` with the model class from `TEAM.md` as routing intent. Resolve it through the active runtime before spawning an agent. If the runtime cannot select a model directly, omit the model override and preserve the requested reasoning budget in the prompt.
+Use `resolve-model` with the model class from `TEAM.md` as routing intent. Resolve it through the active runtime before spawning an agent. On Codex, pass both the resolved model and reasoning effort on every spawn when those selectors are available. If the runtime cannot select a model or reasoning effort directly, omit the unavailable override and preserve the complete requested route in the prompt.
 
 ## Interaction Prompts
 
@@ -52,18 +52,18 @@ Use `spawn-agent` whenever a playbook delegates work to a team member.
 1. Read the agent file listed in `TEAM.md`.
 2. If the plan carries a composed skill set for this spawn (per `skills/velo-skill-composition.md`), render the Composed Skills block and prepend it to the task-specific prompt — see Pre-Composed Skill Injection below.
 3. Replace `$ARGUMENTS` with the composed prompt (block + task prompt).
-4. Resolve the role's model. Read its model class from its `TEAM.md` roster row, resolve that class through the Model Classes table above, and pass the resolved model on the spawn. **Always pass it.** `agents/*.md` carries no model declaration — `tests/model-classes.test.sh` asserts that no agent file declares `model:` — so this resolution is the only thing that puts a role on its intended model. A playbook may name a different model class for a given spawn (`/velo:discuss` downgrades the Tech Lead, for example); that changes *which* class you resolve, never *whether* you pass one. If the runtime cannot select a model directly, fall back as `resolve-model` specifies: omit the override and state the requested reasoning budget in the prompt.
+4. Resolve the role's model route. Read its model class from its `TEAM.md` roster row, resolve that class through the Model Classes table above, and pass every value the active runtime mapping supplies on the spawn. **Always pass it.** For Claude Code that is the resolved model; for Codex, pass both the resolved model and reasoning effort on every spawn when selectable. `agents/*.md` carries no model declaration — `tests/model-classes.test.sh` asserts that no agent file declares `model:` — so this resolution is the only thing that puts a role on its intended route. A playbook may name a different model class for a given spawn (`/velo:discuss` downgrades the Tech Lead, for example); that changes *which* class you resolve, never *whether* you pass its route. If the runtime cannot select a model or reasoning effort directly, fall back as `resolve-model` specifies: omit the unavailable override and state the complete requested route in the prompt.
 5. Spawn through the runtime's delegation mechanism.
 
 | Need | Claude Code | Codex |
 |---|---|---|
 | Single agent | Agent tool | `spawn_agent` when available and when the current request permits delegation |
-| Pass the resolved model | The Agent tool's `model` parameter. It accepts `sonnet`, `opus`, `haiku`, and `fable`, so every class in the Model Classes table is directly expressible — set it on every call. Omitting it inherits the session model. | `spawn_agent`'s model/reasoning-effort argument where the runtime exposes one. Codex classes map to reasoning effort rather than a model name, so pass the effort the table names. |
-| Runtime exposes no model selector | Should not occur on Claude Code — the Agent tool's `model` parameter is always available. | Omit the override and state the requested reasoning budget in the prompt, per `resolve-model`. Do not silently drop the intent. |
-| Parallel agents | Multiple Agent tool calls in one assistant turn — each call carries its own `model` | Multiple `spawn_agent` calls in one turn when allowed, each carrying its own effort |
+| Pass the resolved model route | The Agent tool's `model` parameter. It accepts `sonnet`, `opus`, `haiku`, and `fable`, so every class in the Model Classes table is directly expressible — set it on every call. Omitting it inherits the session model. | Use `spawn_agent`'s `model` and `reasoning_effort` arguments; pass both the resolved model and reasoning effort on every spawn. Model and reasoning overrides require a non-full-history fork: set `fork_turns="none"` or a positive turn count. |
+| Runtime exposes no model or reasoning selector | Should not occur on Claude Code — the Agent tool's `model` parameter is always available. | Omit only the unavailable override and state the complete requested model-and-reasoning route in the prompt, per `resolve-model`. Do not silently drop the intent. |
+| Parallel agents | Multiple Agent tool calls in one assistant turn — each call carries its own `model` | Multiple `spawn_agent` calls in one turn when allowed, each carrying its own `model`, `reasoning_effort`, and non-full-history `fork_turns` value |
 | Agent unavailable | Stop and report the blocker | Stop and report that the active runtime cannot run workflows requiring independent agents |
 
-**Residual risk — an omitted model parameter fails silently.** Because `agents/*.md` declares no model, a spawn that forgets to pass one does not error: the agent inherits the session model and runs at the wrong reasoning budget while every file on disk still reads correct. No static test can catch this. `tests/model-classes.test.sh` can only prove the value is absent from the agent files, never that a spawner supplied it. This applies to **every** spawn on both runtimes, not to any one playbook. Treat step 4 as mandatory, and when a role behaves at the wrong budget, suspect a dropped parameter before suspecting the roster.
+**Residual risk — an omitted routing parameter fails silently.** Because `agents/*.md` declares no model, a spawn that forgets to pass the model or reasoning effort does not error: the agent may inherit the session route and run at the wrong reasoning budget while every file on disk still reads correct. No static test can catch this. `tests/model-classes.test.sh` can prove that the mapping is complete and the value is absent from the agent files, but never that a spawner supplied both runtime arguments. This applies to **every** spawn on both runtimes, not to any one playbook. Treat step 4 as mandatory, and when a role behaves at the wrong budget, suspect a dropped parameter before suspecting the roster.
 
 Do not role-play a delegated team member when the active workflow requires an independent agent.
 

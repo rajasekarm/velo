@@ -62,48 +62,153 @@ def split_cells(line):
     return [cell.replace("\\|", "|").strip() for cell in cells]
 
 
+adapter_lines = adapter_file.read_text().splitlines()
 adapter_classes = set()
+adapter_class_lines = {}
 # Model Classes table columns: | Model Class | Intent | Claude Code | Codex |.
-# Column 2 is the backticked Claude Code model a class resolves to. Nothing on disk
-# is derived from it any more — agents/*.md declares no model (asserted below) — so
-# this cell is what the orchestrator resolves and passes at spawn time per
-# ADAPTER.md's Agent Spawning step 4. An unparseable or duplicated cell is therefore
-# a live routing defect, not just stale documentation.
+# The two provider cells are what the orchestrator resolves and passes at spawn
+# time per ADAPTER.md's Agent Spawning step 4. An unparseable, incomplete, or
+# duplicated row is therefore a live routing defect, not just stale documentation.
 adapter_class_models = {}
-adapter_class_model_lines = {}
-for lineno, line in enumerate(adapter_file.read_text().splitlines(), start=1):
-    if not line.startswith("|"):
+adapter_class_codex_routes = {}
+in_model_classes = False
+model_table_started = False
+for lineno, line in enumerate(adapter_lines, start=1):
+    if line == "## Model Classes":
+        in_model_classes = True
         continue
+    if in_model_classes and line.startswith("## "):
+        break
+    if not in_model_classes or not line.startswith("|"):
+        continue
+
     cols = split_cells(line)
-    if len(cols) >= 1 and re.fullmatch(r"[a-z][a-z-]+", cols[0]):
-        adapter_classes.add(cols[0])
-        if len(cols) >= 3:
-            claude_model = re.fullmatch(r"`([a-z][a-z0-9.\-]*)`", cols[2])
-            if claude_model:
-                # Assigning without checking would let a duplicate class row resolve
-                # last-write-wins, silently picking one of two models with no signal.
-                if cols[0] in adapter_class_models:
-                    raise SystemExit(
-                        f"FAIL: ADAPTER.md declares model class '{cols[0]}' more than once "
-                        f"(ADAPTER.md:{adapter_class_model_lines[cols[0]]} -> "
-                        f"{adapter_class_models[cols[0]]}, ADAPTER.md:{lineno} -> "
-                        f"{claude_model.group(1)}); each class must resolve to exactly one "
-                        "Claude Code model"
-                    )
-                adapter_class_models[cols[0]] = claude_model.group(1)
-                adapter_class_model_lines[cols[0]] = lineno
+    if cols == ["Model Class", "Intent", "Claude Code", "Codex"]:
+        model_table_started = True
+        continue
+    if all(re.fullmatch(r":?-+:?", col) for col in cols):
+        continue
+    if not model_table_started:
+        continue
+    if len(cols) != 4:
+        raise SystemExit(
+            f"FAIL: ADAPTER.md:{lineno} Model Classes row must have 4 columns: {line}"
+        )
+
+    model_class = cols[0]
+    if not re.fullmatch(r"[a-z][a-z-]+", model_class):
+        raise SystemExit(
+            f"FAIL: ADAPTER.md:{lineno} declares invalid model class '{model_class}'"
+        )
+    if model_class in adapter_classes:
+        raise SystemExit(
+            f"FAIL: ADAPTER.md declares model class '{model_class}' more than once "
+            f"(ADAPTER.md:{adapter_class_lines[model_class]}, ADAPTER.md:{lineno})"
+        )
+    adapter_classes.add(model_class)
+    adapter_class_lines[model_class] = lineno
+
+    claude_model = re.fullmatch(r"`([a-z][a-z0-9.\-]*)`", cols[2])
+    if claude_model:
+        adapter_class_models[model_class] = claude_model.group(1)
+
+    codex_route = re.fullmatch(
+        r"`(gpt-[a-z0-9.\-]+)` with `(medium|high|xhigh)` reasoning",
+        cols[3],
+    )
+    if codex_route:
+        adapter_class_codex_routes[model_class] = codex_route.groups()
+
+if not in_model_classes or not model_table_started:
+    raise SystemExit("FAIL: ADAPTER.md must contain a parseable Model Classes table")
 
 required = {"balanced", "deep-reasoning", "build"}
 if not required.issubset(adapter_classes):
     missing = ", ".join(sorted(required - adapter_classes))
     raise SystemExit(f"FAIL: ADAPTER.md missing model classes: {missing}")
 
-missing_models = sorted(required - set(adapter_class_models))
+missing_models = sorted(adapter_classes - set(adapter_class_models))
 if missing_models:
     raise SystemExit(
         "FAIL: ADAPTER.md Model Classes table must give a backticked Claude Code model "
-        f"for every class; missing for: {', '.join(missing_models)}"
+        f"for every declared class; missing for: {', '.join(missing_models)}"
     )
+
+missing_codex_routes = sorted(adapter_classes - set(adapter_class_codex_routes))
+if missing_codex_routes:
+    raise SystemExit(
+        "FAIL: ADAPTER.md Model Classes table must give a backticked Codex model "
+        "and reasoning effort for every declared class; missing for: "
+        f"{', '.join(missing_codex_routes)}"
+    )
+
+expected_claude_models = {
+    "balanced": "sonnet",
+    "build": "opus",
+    "deep-reasoning": "fable",
+}
+for model_class, expected_model in expected_claude_models.items():
+    actual_model = adapter_class_models[model_class]
+    if actual_model != expected_model:
+        raise SystemExit(
+            f"FAIL: ADAPTER.md Claude Code route for '{model_class}' must be "
+            f"'{expected_model}', got '{actual_model}'"
+        )
+
+expected_codex_routes = {
+    "balanced": ("gpt-5.6-terra", "medium"),
+    "build": ("gpt-5.6-sol", "high"),
+    "deep-reasoning": ("gpt-5.6-sol", "xhigh"),
+}
+for model_class, expected_route in expected_codex_routes.items():
+    actual_route = adapter_class_codex_routes[model_class]
+    if actual_route != expected_route:
+        raise SystemExit(
+            f"FAIL: ADAPTER.md Codex route for '{model_class}' must be "
+            f"{expected_route}, got {actual_route}"
+        )
+
+# The Agent Spawning table is the runtime authority for how Codex receives a
+# resolved route. Parse that section and that row specifically: matching prose
+# elsewhere in ADAPTER.md must not make this contract pass.
+in_agent_spawning = False
+codex_spawn_route_rows = []
+for lineno, line in enumerate(adapter_lines, start=1):
+    if line == "## Agent Spawning":
+        in_agent_spawning = True
+        continue
+    if in_agent_spawning and line.startswith("## "):
+        break
+    if not in_agent_spawning or not line.startswith("|"):
+        continue
+
+    cols = split_cells(line)
+    if len(cols) == 3 and cols[0] == "Pass the resolved model route":
+        codex_spawn_route_rows.append((lineno, cols[2]))
+
+if len(codex_spawn_route_rows) != 1:
+    locations = ", ".join(
+        f"ADAPTER.md:{lineno}" for lineno, _ in codex_spawn_route_rows
+    ) or "none"
+    raise SystemExit(
+        "FAIL: ADAPTER.md Agent Spawning table must contain exactly one "
+        f"'Pass the resolved model route' row; found: {locations}"
+    )
+
+spawn_route_lineno, codex_spawn_route = codex_spawn_route_rows[0]
+required_spawn_route_text = {
+    "`model`": "model argument",
+    "`reasoning_effort`": "reasoning-effort argument",
+    "non-full-history fork": "non-full-history constraint",
+    '`fork_turns="none"`': "no-history fork option",
+    "positive turn count": "bounded-history fork option",
+}
+for expected_text, label in required_spawn_route_text.items():
+    if expected_text not in codex_spawn_route:
+        raise SystemExit(
+            f"FAIL: ADAPTER.md:{spawn_route_lineno} Codex 'Pass the resolved model "
+            f"route' cell must contain the {label}: {expected_text}"
+        )
 
 validated_rows = 0
 # An agent may hold more than one roster row (observability-engineer and
