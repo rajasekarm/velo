@@ -38,15 +38,15 @@ PR titles follow the format `[TICKET-ID] - Description` when a ticket ID is deri
 
 ### Ticket ID derivation
 
-Set `TICKET` per [Ticket ID Derivation](ticket-id-derivation.md). That skill owns the ID shape and both regex forms, the stop-at-first-match lookup and its extraction idiom, the within-source tie-break, and the prompt-validate-re-ask fallback. This protocol declares only the two bindings required by [Ticket ID Derivation — Consumer binding contract](ticket-id-derivation.md#consumer-binding-contract) and restates none of those rules.
+Set `TICKET` per [Ticket ID Derivation](ticket-id-derivation.md). That skill owns the ID shape and both regex forms, the stop-at-first-match lookup and its extraction idiom, the within-source tie-break, and the prompt-validate-re-ask fallback. This protocol declares only the three bindings required by [Ticket ID Derivation — Consumer binding contract](ticket-id-derivation.md#consumer-binding-contract) and restates none of those rules.
 
 **Source list**, in precedence order — checked per [Ticket ID Derivation — Source lookup order](ticket-id-derivation.md#source-lookup-order):
 
 1. **Branch name** — `git branch --show-current`
-2. **Commit messages in the PR range** — `git log <base>..HEAD --format=%B`, where `<base>` is the base branch resolved above. This source is specific to this protocol: a PR spans a range of commits that already exist, so the range is readable here and has no counterpart in a protocol that authors a commit not yet written.
+2. **Commit subjects in the PR range** — `git log <base>..HEAD --format=%s`, where `<base>` is the base branch resolved above. Subjects only: bodies are prose — they quote example subjects and reference other tickets — so scanning them derives IDs the branch never carried. `commit-protocol.md` binds the same range for the same reason.
 3. **Recent conversation context** — a ticket ID the user mentioned in their most recent message or the message that triggered this PR flow. Do not search older history.
 
-If all three come back empty, the fixed prompt step in [Ticket ID Derivation — Prompting the user](ticket-id-derivation.md#prompting-the-user) runs. The prompt is not a fourth source.
+**Prompt participation: declared.** If all three come back empty, the prompt step in [Ticket ID Derivation — Prompting the user](ticket-id-derivation.md#prompting-the-user) runs before the terminal behavior fires. The prompt is not a fourth source.
 
 **Terminal behavior: `SOFT-FALLBACK`**, per [Ticket ID Derivation — Terminal behavior](ticket-id-derivation.md#terminal-behavior). Its two declared parts:
 
@@ -59,9 +59,9 @@ If all three come back empty, the fixed prompt step in [Ticket ID Derivation —
 
   This is a caller responsibility, not a `gh pr create` flag — the protocol prescribes the message but does not emit it itself.
 
-**Why this survives the mandatory-ticket rule** (do not prune it as dead code): that rule governs only commits Velo authors going forward and cannot retroactively constrain the range a PR spans, so pre-existing commits on long-lived branches, hand-authored or non-Velo commits, merges from forks, and rebased or cherry-picked history still lack `[TICKET-ID]` — and hard-aborting `gh pr create` on legitimate history is strictly worse than a degraded title.
+**Why the fallback exists** (do not prune it as dead code): a PR title is derived from existing history Velo may not have authored — pre-existing commits on long-lived branches, hand-authored or non-Velo commits, merges from forks, and rebased or cherry-picked history routinely lack `[TICKET-ID]` — and hard-aborting `gh pr create` on legitimate history is strictly worse than a degraded title.
 
-**The asymmetry with commits is deliberate**: `commit-protocol.md` binds `HALT` — a ticket ID is mandatory for a commit — while this protocol binds `SOFT-FALLBACK`. A commit subject is authored fresh, so Velo controls the input and can demand a ticket. A PR title is derived from existing history Velo may not have authored, so making it mandatory would hard-block exactly the legitimate cases named above. PR titles stay soft by design, not by oversight.
+**The asymmetry with commits is the prompt, not the hook**: `commit-protocol.md` also binds `SOFT-FALLBACK`, but it declines the prompt and falls back silently — commits are authored constantly, so asking on every ticketless one would be pure friction. A PR is opened once per branch, so one question is cheap; this protocol declares the prompt and asks before degrading the title. Both bindings are by design, not by oversight.
 
 ### Building the title
 
@@ -72,7 +72,7 @@ TITLE="[$TICKET] - $(<description> | <de-dup strip> | <type strip> | tr -cd 'a-z
 ```
 
 `<description>` is:
-- **Exactly one commit on the branch**: that commit's subject (`git log -1 --format="%s"`). Under the subject format in `commit-protocol.md` that subject is `[TICKET-ID] [TYPE] - description`, so it carries **two** bracketed tokens. Both must come off before the title is assembled — otherwise the title reads `[AGT-123] - [FEAT] - add oauth login`, with a redundant type token and a doubled ` - ` separator, against the format declared above.
+- **Exactly one commit on the branch**: that commit's subject (`git log -1 --format="%s"`). Under the subject format in `commit-protocol.md` that subject is `[TICKET-ID] [TYPE] - description` when the commit had a derivable ticket, or `[TYPE] - description` when it did not — so it carries up to **two** bracketed tokens. Every one it carries must come off before the title is assembled — otherwise the title reads `[AGT-123] - [FEAT] - add oauth login`, with a redundant type token and a doubled ` - ` separator, against the format declared above. Both strips are `^`-anchored no-ops on tokens that are absent, so the ticketless form needs no special handling: the de-dup strip passes it through and the type strip takes the leading `[TYPE]`.
 - **Multiple commits**: a single imperative-mood summary line, max 72 chars. Do not concatenate commit subjects. Such a line has no bracketed prefix by construction, so both strips are no-ops on it.
 
 `<de-dup strip>` is the `sed -E` expression from Prefix de-duplication. It removes a leading bracketed *ticket* ID plus one following separator and nothing else — by design it leaves `[TYPE]` untouched, a property `commit-protocol.md` depends on. It therefore cannot remove the type token; that is this protocol's job.
@@ -92,12 +92,12 @@ It removes a leading bracketed token drawn from the eight-value type enum plus o
 
 Both strips are no-ops on input they do not match, so a pre-existing or hand-authored subject survives intact.
 
-Both strips apply only on the `TICKET`-non-empty path. Under `SOFT-FALLBACK` the description is used as the title as-is (see the no-ticket title form above): nothing is being prefixed, so there is no redundancy to remove, and stripping would only discard information the author wrote.
+The de-dup strip applies only on the `TICKET`-non-empty path — under `SOFT-FALLBACK` nothing is being prefixed, so there is no doubled ticket to remove (and a subject carrying a ticket would have matched source 2, so the fallback path never sees one). The type strip applies on **both** paths: these subjects are now routinely Velo-authored under `commit-protocol.md`'s format, so a ticketless subject like `[FEAT] - add retry` reaches this step still carrying a type token that has no place in a PR title. Under `SOFT-FALLBACK` the title is therefore the description with the type strip applied — not the raw subject. The strip stays a no-op on everything outside the type enum, so a pre-existing or hand-authored subject survives intact.
 
 ## Body templates
 
 Pick the body template by inferring the PR type. Sources, in order:
-1. The bracketed type token in the most recent commit's subject (`[TICKET-ID] [TYPE] - description`), mapped across the full eight-value type enum:
+1. The bracketed type token in the most recent commit's subject (`[TICKET-ID] [TYPE] - description`, or `[TYPE] - description` for a ticketless commit), mapped across the full eight-value type enum:
    - `[FIX]` → bug fix
    - `[FEAT]` → feature
    - `[REFACTOR]`, `[CHORE]`, `[DOCS]`, `[TEST]`, `[PERF]`, `[STYLE]` → other

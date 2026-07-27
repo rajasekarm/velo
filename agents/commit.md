@@ -15,7 +15,7 @@ Standalone (non-Velo) invocations behave the same way: default mode commits only
 
 ## Skills
 
-- [Commit Protocol](skills/commit-protocol.md) — Required in default mode. The `[TICKET-ID] [TYPE] - short description` subject format with its bracketed uppercase type enum, the mandatory-ticket rule (no ticket, no commit), body conventions, HEREDOC pattern, Co-Authored-By tail, one-logical-change-per-commit rule, secret scans (pre-stage and post-stage), when-NOT-to-commit list, and git safety rules (no force-push, no `--no-verify`, no `--no-gpg-sign`, no amending pushed commits). Ticket-ID lookup, prompting, and the `HALT` terminal behavior come from the shared ticket-ID derivation skill.
+- [Commit Protocol](skills/commit-protocol.md) — Required in default mode. The `[TICKET-ID] [TYPE] - short description` subject format with its bracketed uppercase type enum, the optional-ticket rule (no derivable ticket → `[TYPE] - short description`, no prompt), body conventions, HEREDOC pattern, Co-Authored-By tail, one-logical-change-per-commit rule, secret scans (pre-stage and post-stage), when-NOT-to-commit list, and git safety rules (no force-push, no `--no-verify`, no `--no-gpg-sign`, no amending pushed commits). Ticket-ID lookup and the `SOFT-FALLBACK` terminal behavior come from the shared ticket-ID derivation skill.
 - [PR Protocol](skills/pr-protocol.md) — Required in PR mode. Title derivation with ticket-prefix convention (derivation delegated to the shared ticket-ID derivation skill, terminal behavior `SOFT-FALLBACK`), type-specific body templates (`[FIX]` / `[FEAT]` / other), base-branch selection, idempotency check, gh-cli invocation.
 
 ## Modes
@@ -45,11 +45,11 @@ Inspect `$ARGUMENTS` for a mode signal:
 3. **Analyze**: intent (`[FEAT]` / `[FIX]` / `[REFACTOR]` / `[CHORE]` / `[DOCS]` / `[TEST]` / `[PERF]` / `[STYLE]`), files affected, single vs multiple logical changes.
 4. **Draft and create the commit** following [Commit Protocol](skills/commit-protocol.md):
    - Run the pre-stage secret scan defined in the skill. On any match, abort without staging.
-   - Draft the message per the skill (`[TICKET-ID] [TYPE] - short description` subject, optional body, optional Co-Authored-By tail). Ticket-ID derivation runs here, ahead of staging — if it ends with no ticket ID, halt per the skill's `HALT` terminal behavior and report the blocker; nothing has been staged.
+   - Draft the message per the skill (`[TICKET-ID] [TYPE] - short description` subject, or `[TYPE] - short description` when no ticket is derivable; optional body, optional Co-Authored-By tail). Ticket-ID derivation runs here, ahead of staging — if it ends with no ticket ID, proceed per the skill's `SOFT-FALLBACK` terminal behavior with the no-ticket subject form; do not halt and do not prompt the user for a ticket.
    - Stage files explicitly with `git add <file>`. If multiple unrelated concerns, split into separate commits.
    - Re-run the secret scan against `git diff --cached` per the skill, now that files are staged. On any match, abort without committing.
    - Create the commit with the HEREDOC pattern from the skill.
-5. **Report.** Print commit hash, message, files committed, and any files intentionally left unstaged with the reason. Stop here. Do NOT push. Do NOT prompt about a PR.
+5. **Report.** Print commit hash, message, files committed, and any files intentionally left unstaged with the reason. If the no-ticket fallback fired, include the skill's one-line notice. Stop here. Do NOT push. Do NOT prompt about a PR.
 
 ## PR mode workflow
 
