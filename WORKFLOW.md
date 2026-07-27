@@ -29,7 +29,7 @@ Bring a question, a trade-off, or a decision you're stuck on. Velo convenes the 
 flowchart TD
     A([Start]) --> IN[Input handling]
     IN -->|empty| ASK([Stop — what's the question?])
-    IN -->|@pm / @tl / @de| SA[Single-agent\ntargeted agent only]
+    IN -->|"@pm" / @tl / @de| SA[Single-agent\ntargeted agent only]
     IN -->|no prefix| MS{Select mode}
     MS -->|technical trade-off| LW[Lightweight panel\nTL + DE]
     MS -->|scope + product impact| FP[Full panel\nPM + TL + DE]

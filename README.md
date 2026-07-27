@@ -69,7 +69,6 @@ Velo is an agentic engineering team — a full squad of specialised role agents 
 |---|---|---|
 | **Commit** | balanced | Analyse diff, generate commit message, create git commit |
 | **Spec Writer** | balanced | Write technical specifications from PRDs when needed |
-| **Learnings Agent** | balanced | Extract codebase-specific learnings after rework cycles |
 
 ## How it works
 

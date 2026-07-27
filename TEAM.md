@@ -52,7 +52,6 @@
 | Agent | File | Skills | Model Class |
 |---|---|---|---|
 | **commit** | `agents/commit.md` | commit-protocol, pr-protocol | balanced |
-| **learnings-agent** | `agents/learnings-agent.md` | (none) — extracts codebase-specific learnings after rework cycles | balanced |
 
 ---
 
