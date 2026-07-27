@@ -79,7 +79,7 @@ Plan mode classifies pairing once, at `VALIDATE`, and carries the label in the p
 - Architecture discussions or open-ended design exploration (→ `/velo:discuss`)
 - Editing `/velo:task`'s behavior — the executor-side consumption of the plan package is increment 2
 
-Routing hint: net-new or underspecified work → plan here (heavy tier: PM → DE-reviewed engineering design doc → design sign-off), then execute in `/velo:task`. `/velo:new` is retired and redirects into this command. Small change you'd rather have task mode plan itself → `/velo:task` directly.
+Routing hint: net-new or underspecified work → plan here (heavy tier: PM → DE-reviewed engineering design doc → design sign-off), then execute in `/velo:task`. Small change you'd rather have task mode plan itself → `/velo:task` directly.
 
 ---
 

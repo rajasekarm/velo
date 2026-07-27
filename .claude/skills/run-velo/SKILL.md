@@ -212,15 +212,13 @@ assertions over the markdown (does `commands/task.md` still contain
   has nothing to match on when choosing an agent. `claude plugin validate
   .claude-plugin/plugin.json` reports all 17; the dir form (`validate .`) checks only
   the marketplace manifest and stays silent about them.
-- **`commands/plan.md` has no Codex wrapper.** `.agents/skills/` has `velo-new`,
+- **`commands/plan.md` has no Codex wrapper.** `.agents/skills/` has
   `velo-task`, `velo-yo`, `velo-hunt`, `velo-discuss` — no `velo-plan` — so the flagship
   mode is Claude-only, and `tests/codex-velo-skill.test.sh` does not assert it, so no
   test catches the gap.
 - **`audit.sh` fails on this branch at `HEAD`, not just in your working tree:**
-  `.agents/skills/velo-new/SKILL.md` lost the `description: Use when the user asks for
-  /velo:new` string during the `/velo:new` retirement, and `commands/task.md` no longer
-  contains `lightweight delegated flow`. Both are contract tests that the retirement
-  commits outran. Expect a red audit until those are reconciled.
+  `commands/task.md` no longer contains `lightweight delegated flow`. That is a contract
+  test that the retirement commits outran. Expect a red audit until it is reconciled.
 - **The 45 audit warnings are load-bearing noise.** Check 4 flags every
   `skills/*.md` not referenced by an agent — but the orchestrator-composed skills
   (`velo-plan-dag.md`, `velo-gates.md`, `velo-task-status.md`, …) are pulled in by

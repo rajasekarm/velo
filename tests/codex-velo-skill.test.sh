@@ -64,7 +64,6 @@ assert_wrapper_skill() {
   fi
 }
 
-assert_wrapper_skill "velo-new" "new" "commands/new.md" "Use when the user asks for /velo:new"
 assert_wrapper_skill "velo-task" "task" "commands/task.md" "Use when the user asks for /velo:task"
 assert_wrapper_skill "velo-yo" "yo" "commands/yo.md" "Use when the user asks for /velo:yo"
 assert_wrapper_skill "velo-hunt" "hunt" "commands/hunt.md" "Use when the user asks for /velo:hunt"

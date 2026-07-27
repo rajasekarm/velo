@@ -47,10 +47,6 @@ flowchart TD
     HB -->|keep discussing| WAIT([Wait for the user's next message])
 ```
 
-## `/velo:new` — Retired (redirects to `/velo:plan`)
-
-`/velo:new` is retired. Its full depth — PM user stories → a DE-reviewed engineering design doc → design sign-off → build → review → ship — now lives in `/velo:plan`'s heavy tier (design) and `/velo:task` (build/ship). Invoking `/velo:new` prints a notice and hands off to `/velo:plan` via `handoff-mode`, carrying the brief forward. See the `/velo:plan` and `/velo:task` sections below for the unified **Plan → Task → Ship** flow.
-
 ## `/velo:task` — Day-to-day tasks
 
 Lightweight path for bug fixes, refactors, and small changes. Task self-plans: after validating scope, Velo announces the plan (builders, order, scope) for your approval, then builds. There is no spec sub-system — underspecified work escalates to `/velo:plan`.
@@ -81,7 +77,7 @@ flowchart TD
 
 Adaptive planning that hands off to `/velo:task` for execution. Depth is gated: when the work is net-new, conflicted, or can't be reduced to a confirmable assumptions ledger (the three triggers shared with task.md's escalation rule), the heavy path fires — the PM writes user stories first, then the Tech Lead authors an engineering design doc that the Distinguished Engineer reviews (≤3 cycles) before you sign off on the design; otherwise the light path goes straight to the Tech Lead's breakdown (no PM, no EDD). The DE-reviewed EDD is a heavy-path artifact only — the light path carries no EDD. The TL breakdown runs **always** and becomes the plan-DAG (with skills composed per `velo-skill-composition`), frozen at your plan sign-off and carried in a plan package (`velo-plan-package`). No build — execution is `/velo:task`'s job.
 
-> **Transition note (increment 1)**: `/velo:plan` is the planning front-end and `/velo:new` now redirects into it. Stock `/velo:task` does not yet consume the plan package as binding — it will re-announce the plan with its own gate. Executor-side consumption (and descope-as-reentry back into plan mode) lands in increment 2.
+> **Transition note (increment 1)**: `/velo:plan` is the planning front-end. Stock `/velo:task` does not yet consume the plan package as binding — it will re-announce the plan with its own gate. Executor-side consumption (and descope-as-reentry back into plan mode) lands in increment 2.
 
 ```mermaid
 flowchart TD
