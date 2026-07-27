@@ -19,8 +19,8 @@ Standalone (non-Velo) invocations behave the same way: default mode commits only
 
 ## Skills
 
-- [Commit Protocol](skills/commit-protocol.md) — Required in default mode. Conventional Commits message format, body conventions, HEREDOC pattern, Co-Authored-By tail, one-logical-change-per-commit rule, secret scans (pre-stage and post-stage), when-NOT-to-commit list, and git safety rules (no force-push, no `--no-verify`, no `--no-gpg-sign`, no amending pushed commits).
-- [PR Protocol](skills/pr-protocol.md) — Required in PR mode. Title derivation with ticket-prefix convention, type-specific body templates (fix / feat / other), base-branch selection, idempotency check, gh-cli invocation.
+- [Commit Protocol](skills/commit-protocol.md) — Required in default mode. The `[TICKET-ID] [TYPE] - short description` subject format with its bracketed uppercase type enum, the mandatory-ticket rule (no ticket, no commit), body conventions, HEREDOC pattern, Co-Authored-By tail, one-logical-change-per-commit rule, secret scans (pre-stage and post-stage), when-NOT-to-commit list, and git safety rules (no force-push, no `--no-verify`, no `--no-gpg-sign`, no amending pushed commits). Ticket-ID lookup, prompting, and the `HALT` terminal behavior come from the shared ticket-ID derivation skill.
+- [PR Protocol](skills/pr-protocol.md) — Required in PR mode. Title derivation with ticket-prefix convention (derivation delegated to the shared ticket-ID derivation skill, terminal behavior `SOFT-FALLBACK`), type-specific body templates (`[FIX]` / `[FEAT]` / other), base-branch selection, idempotency check, gh-cli invocation.
 
 ## Modes
 
@@ -46,11 +46,12 @@ Inspect `$ARGUMENTS` for a mode signal:
    - `git diff` (unstaged)
    - `git diff --cached` (staged)
    - `git log --oneline -10` (style reference)
-3. **Analyze**: intent (feat / fix / refactor / chore / docs / test / perf / style), files affected, single vs multiple logical changes.
+3. **Analyze**: intent (`[FEAT]` / `[FIX]` / `[REFACTOR]` / `[CHORE]` / `[DOCS]` / `[TEST]` / `[PERF]` / `[STYLE]`), files affected, single vs multiple logical changes.
 4. **Draft and create the commit** following [Commit Protocol](skills/commit-protocol.md):
-   - Run the secret scans (pre-stage and post-stage) defined in the skill.
+   - Run the pre-stage secret scan defined in the skill. On any match, abort without staging.
+   - Draft the message per the skill (`[TICKET-ID] [TYPE] - short description` subject, optional body, optional Co-Authored-By tail). Ticket-ID derivation runs here, ahead of staging — if it ends with no ticket ID, halt per the skill's `HALT` terminal behavior and report the blocker; nothing has been staged.
    - Stage files explicitly with `git add <file>`. If multiple unrelated concerns, split into separate commits.
-   - Draft the message per the skill (Conventional Commits subject, optional body, optional Co-Authored-By tail).
+   - Re-run the secret scan against `git diff --cached` per the skill, now that files are staged. On any match, abort without committing.
    - Create the commit with the HEREDOC pattern from the skill.
 5. **Report.** Print commit hash, message, files committed, and any files intentionally left unstaged with the reason. Stop here. Do NOT push. Do NOT prompt about a PR.
 
@@ -64,8 +65,8 @@ Each step below delegates its mechanics to [PR Protocol](skills/pr-protocol.md) 
 2. **Resolve the base branch** per the skill (use base from `$ARGUMENTS` if provided; otherwise resolve via [Velo Approval Gates — Base-branch detection](skills/velo-gates.md)).
 3. **Idempotency check** per the skill — if a PR already exists for the current branch, print its URL and stop.
 4. **Analyze commits since the base** per the skill to drive title and body template selection.
-5. **Draft the title** per the skill — ticket-ID derivation order, `[TICKET] - Description` shape, no-ticket fallback.
-6. **Draft the body** per the skill — pick the type-specific template (fix / feat / other). PR bodies go out clean per the skill's no-Claude-attribution rule.
+5. **Draft the title** per the skill — ticket-ID derivation, `[TICKET-ID] - Description` shape, no-ticket fallback.
+6. **Draft the body** per the skill — pick the type-specific template (`[FIX]` / `[FEAT]` / other; a commit with no parseable type token also maps to other). PR bodies go out clean per the skill's no-Claude-attribution rule.
 7. **Invoke `gh pr create`** per the skill — temp-file body, invocation, cleanup, error handling. On success, print the PR URL; if the no-ticket fallback fired, surface the skill's one-line notice immediately after the URL.
 
 ### PR-mode rules
