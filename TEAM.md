@@ -32,7 +32,7 @@
 | Agent | File | Skills | Model Class |
 |---|---|---|---|
 | **fe-engineer** | `agents/fe-engineer.md` | react, react-effects, vercel-react-best-practices | balanced |
-| **be-engineer** | `agents/be-engineer.md` | nodejs, api-and-interface-design | balanced |
+| **be-engineer** | `agents/be-engineer.md` | python \| nodejs (language-conditional — see agent file), api-and-interface-design | balanced |
 | **db-engineer** | `agents/db-engineer.md` | postgresql, clickhouse | balanced |
 | **infra-engineer** | `agents/infra-engineer.md` | kafka, docker, kubernetes, aws, ci-cd | balanced |
 | **automation-engineer** | `agents/automation-engineer.md` | playwright, vitest | balanced |
@@ -41,7 +41,7 @@
 | Agent | File | Skills | Model Class |
 |---|---|---|---|
 | **fe-reviewer** | `agents/fe-reviewer.md` | react, react-effects, vercel-react-best-practices, review-protocol | balanced |
-| **be-reviewer** | `agents/be-reviewer.md` | nodejs, api-and-interface-design, review-protocol | balanced |
+| **be-reviewer** | `agents/be-reviewer.md` | python \| nodejs (language-conditional — see agent file), api-and-interface-design, review-protocol | balanced |
 | **db-reviewer** | `agents/db-reviewer.md` | postgresql, clickhouse, review-protocol | balanced |
 | **infra-reviewer** | `agents/infra-reviewer.md` | kafka, docker, kubernetes, aws, ci-cd, review-protocol | balanced |
 | **automation-reviewer** | `agents/automation-reviewer.md` | playwright, vitest, review-protocol | balanced |
