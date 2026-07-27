@@ -157,8 +157,13 @@ bash tests/task-workflow-contract.test.sh  # one contract test, fails fast with 
 ```
 
 `audit.sh` check 5 runs every `tests/*.test.sh`; the tests are string-contract
-assertions over the markdown (does `commands/task.md` still contain
-`lightweight delegated flow`), so prose edits break them and that is intentional.
+assertions over the markdown, in two tiers: case-insensitive *negative* guards
+that retired claims stay gone (e.g. `lightweight delegated flow` must NOT
+return to `commands/task.md` or `README.md`), and case-sensitive *positive*
+pins on machine-facing integration tokens (`Planned-via:`, `handoff-mode`,
+`Task-folder`). Current prose is deliberately not pinned — rewording does not
+break the tests; resurrecting a retired claim or dropping an integration
+token does.
 
 ## Gotchas
 
@@ -232,9 +237,12 @@ assertions over the markdown (does `commands/task.md` still contain
   `velo-task`, `velo-yo`, `velo-hunt`, `velo-discuss` — no `velo-plan` — so the flagship
   mode is Claude-only, and `tests/codex-velo-skill.test.sh` does not assert it, so no
   test catches the gap.
-- **`audit.sh` fails on this branch at `HEAD`, not just in your working tree:**
-  `commands/task.md` no longer contains `lightweight delegated flow`. That is a contract
-  test that the retirement commits outran. Expect a red audit until it is reconciled.
+- **`tests/task-workflow-contract.test.sh` was reconciled after the retirement
+  commits outran it** (it used to pin `lightweight delegated flow` as *required*
+  prose, which went red at `HEAD` once the name was retired). It is now
+  retired-claim negative guards plus integration-token pins — a green audit at
+  `HEAD` is the expected state; a red one means a retired claim resurrected or
+  an integration token vanished, not that prose was reworded.
 - **The 45 audit warnings are load-bearing noise.** Check 4 flags every
   `skills/*.md` not referenced by an agent — but the orchestrator-composed skills
   (`velo-plan-dag.md`, `velo-gates.md`, `velo-task-status.md`, …) are pulled in by
