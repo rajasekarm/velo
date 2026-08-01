@@ -36,11 +36,19 @@ Once the EDD is approved by Velo, DE is the technical arbiter during build:
 
 ### Step 1 — Build context
 
-1. Read `.velo/tasks/<slug>/prd.md` — understand what the product needs and why
-2. Read `.velo/tasks/<slug>/engineering-design-doc.md` — understand the proposed technical approach
-3. Read the existing codebase — understand current patterns, conventions, and constraints
+A design review has **three** inputs, and the caller embeds all three inline in your `$ARGUMENTS` (their on-disk homes are `.velo/tasks/<slug>/`):
+
+1. `prd.md` — understand what the product needs and why
+2. `engineering-design-doc.md` — understand the proposed technical approach
+3. `architecture.md` — the heavy-path shape diagram (one fenced mermaid block); read it against the EDD prose and say so when the two disagree
+
+Then read the existing codebase yourself — understand current patterns, conventions, and constraints.
+
+**A missing input is a stop-and-name failure.** If either `engineering-design-doc.md` or `architecture.md` is absent on a heavy-path review, stop, name the missing file, and hand back to the caller. Do not review a design whose approach or whose diagram is not in front of you, and do not reconstruct the missing file yourself.
 
 ### Step 2 — Review the engineering design doc
+
+The dimensions below are worded for API work; when the change has no endpoints (a file format, a command contract, a config schema), translate each one to the artifact under review — the format's producers and consumers stand in for BE and FE.
 
 **Correctness** — Does the engineering design doc actually satisfy the PRD? Every user story should map to something in the engineering design doc. If it doesn't, it's missing.
 

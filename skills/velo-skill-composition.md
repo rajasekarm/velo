@@ -42,7 +42,7 @@ Every addition must pass an existence check via `read-files`: `skills/<slug>.md`
 
 ## Freeze point
 
-The composed set is frozen when the user approves the plan — `/velo:task`'s announcement gate or `/velo:plan`'s `PLAN_APPROVAL` gate. `BUILD` injects exactly the approved set (see the `inject-skills` concept in `ADAPTER.md`); a plan-mode set is carried frozen in the plan package — advisory until increment 2: stock task.md still re-composes at its own `PLAN_AND_ANNOUNCE` over the package text, so the carried set informs but does not bind the executor until the rewrite lands. An assumption or pairing flip at the gate (or an `I have changes` plan revision in `/velo:plan`) re-runs composition along with the rest of the planning step. Rework re-spawns (REVIEW cycles, SHIP_GATE feedback) inherit the node's frozen composition unchanged.
+The composed set is frozen when the user approves the plan — `/velo:task`'s announcement gate or `/velo:plan`'s `PLAN_APPROVAL` gate. `BUILD` injects exactly the approved set (see the `inject-skills` concept in `ADAPTER.md`); a plan-mode set is carried frozen in the carrier's task lines per [Velo Task Status](velo-task-status.md), and consumption is binding: a carrier-bearing `/velo:task` invocation does NOT re-compose at its own `PLAN_AND_ANNOUNCE` — it injects the frozen set as written. An assumption or pairing flip at the gate (or an `I have changes` plan revision in `/velo:plan`) re-runs composition along with the rest of the planning step. Rework re-spawns (REVIEW cycles, SHIP_GATE feedback) inherit the node's frozen composition unchanged.
 
 ## Scope
 

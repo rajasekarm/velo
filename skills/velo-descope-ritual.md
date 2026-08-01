@@ -25,7 +25,7 @@ The triggering F-code defines the formal failure event; the ritual defines the u
    - What new work surfaced that wasn't in the original plan
 3. **Ask** the user via `ask-options` with the standard three-option set:
    - `Keep going` — accept the expanded scope; continue the workflow at the source state
-   - `Cut scope` — narrow the plan; the user names what to drop, then the workflow re-enters the planning step
+   - `Cut scope` — narrow the plan; the user names what to drop, then the workflow re-enters the planning step. **The planning step resolves per caller**: in `/velo:plan` it is that command's own re-plan path; in `/velo:task` there is no local planning step to re-enter — task mode never re-plans scope itself, so it exits via `handoff-mode` → `/velo:plan` with the Descope re-entry payload defined in [Velo Task Status](velo-task-status.md) (terminal `replanned-via-plan`). Either way the task folder, its `in-progress` index row, and every `Status: done` task survive.
    - `Abandon` — terminate to `ABANDON`
 
 For F2-driven invocations, the option labels may be phase-specific (e.g. `Continue (extend cap)`, `Accept as-is and proceed`, `Abandon` for `/velo:plan` F2). The intent — keep going / cut scope or accept / abandon — is the same; the wording adjusts to the phase. See `skills/velo-failure-modes.md` for the F2 standard options.
