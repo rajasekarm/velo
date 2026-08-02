@@ -27,8 +27,10 @@ Inspect `$ARGUMENTS` for a mode signal:
 
 ## Default mode workflow
 
-1. **Resolve the target branch.** Ask the user: "Which branch should I commit to?"
-   - Validate the branch name matches `[a-zA-Z0-9][a-zA-Z0-9/_.-]*`. Branch names must not start with `.` or `-`. If invalid, reject and re-ask.
+1. **Resolve the target branch.** Use the target branch from `$ARGUMENTS` if the caller supplied one (mirrors PR mode's base-from-arguments) and skip the ask; otherwise ask the user: "Which branch should I commit to?" Either way, the validation, stash, already-on-branch, and checkout steps below run on the resolved name.
+   - Validate the branch name matches `[a-zA-Z0-9][a-zA-Z0-9/_.-]*`. Branch names must not start with `.` or `-`. On an invalid name, the recovery depends on who supplied it — there is not always a user to re-ask:
+     - **Caller-supplied** (the name came from `$ARGUMENTS`, e.g. Velo's `SHIP_GATE` passing `<slug>-m<i>`) → do NOT prompt. Stop before touching the tree and report the failure to the caller: the rejected name and which rule it broke. Velo treats that as an F1.
+     - **User-supplied** (you asked the question above) → reject and re-ask.
    - Run `git status --porcelain`. If non-empty, stash: `git stash push -m "commit-agent-pre-checkout"` and notify the user.
    - Run `git branch --show-current`. If it matches the target, skip checkout; if a stash was created, pop it before continuing.
    - Otherwise check local (`git branch --list -- <name>`) and remote (`git ls-remote --heads origin <name>`):

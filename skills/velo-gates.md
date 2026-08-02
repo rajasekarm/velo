@@ -28,6 +28,10 @@ Use `ask-options`:
 
 When the current branch equals the repo's default branch, the `Commit + push + open PR` option is omitted; the gate presents the remaining four options and their relative order is preserved.
 
+The caller may supply the PR base branch instead of the repo's default branch (`/velo:task` passes the milestone's resolved base for stacked PRs), in which case that base is used both for the conditional-option comparison and as the base handed to the PR step. The caller may also append a continuation clause to an option label naming a follow-on action that resolution authorizes (e.g. `Commit only — and continue to M2 on <slug>-m2`), so the label still names every action it triggers; the five labels themselves, their wording, and their order are unchanged.
+
+**Carve-out — re-entry over a landed commit.** The five labels govern a **first** presentation of the gate, where nothing has landed yet. When a caller re-enters the gate over a durable record of a commit already on the branch (`/velo:task`'s per-milestone `SHIP_GATE` re-entered after an F1 halt whose push or PR step failed), it may present a **narrowed** set covering only the steps that remain — `Push <branch>`, `Open PR`, `Done — commit stays local` and the like. This is not a violation of the rule above: `Commit only` and `Done — no commit` name actions that cannot fire over such a record, and a label naming an impossible action is noise, not per-action authorization. Everything else still binds — each label names every action it triggers, the remaining steps stay in commit → push → PR order, and **`Hold feedback` is offered verbatim**, since a partial ship never invalidates it. The caller's state body owns when a re-entry qualifies and which subset it presents; `/velo:task`'s `SHIP_GATE` states its own table.
+
 ### Failure handling
 
 All failures fire F1; the state body decides halt vs. retry/route.
