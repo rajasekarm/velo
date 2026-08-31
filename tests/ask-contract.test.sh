@@ -3,11 +3,13 @@
 #
 # Proves the read-only, artifact-free contract is textually bound in both
 # entrypoints (commands/ask.md for Claude Code, .agents/skills/velo-ask/SKILL.md
-# for Codex), and that the surface's text never implements or hands off to an
-# excluded mode. Mode names (Pair, Run, Auto) ARE allowed — and asserted — as
-# route suggestions; what must be present is the binding language that makes
+# for Codex), and that the surface's text never implements or hands off to
+# another mode. Route names ARE allowed — and asserted — as suggestions:
+# /velo:plan as the real route in this two-mode build, Run and Auto as named
+# future routes. What must be present is the binding language that makes
 # suggestion the entire action, and what must be absent is excluded-machinery
-# text with no legitimate use in this surface.
+# text with no legitimate use in this surface. (Plan's own contract lives in
+# tests/plan-contract.test.sh.)
 #
 # Assertions anchor on contract sentences T1 wrote deliberately (exact fixed
 # strings via grep -F), not on incidental wording. Packaging/discoverability
@@ -28,6 +30,7 @@ marketplace="${repo_root}/.claude-plugin/marketplace.json"
 codex_plugin="${repo_root}/.codex-plugin/plugin.json"
 command_file="${repo_root}/commands/ask.md"
 skill_file="${repo_root}/.agents/skills/velo-ask/SKILL.md"
+readme="${repo_root}/README.md"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -39,7 +42,8 @@ assert_file_contains() {
   local expected="$2"
 
   [[ -f "${file}" ]] || fail "${file#${repo_root}/} must exist"
-  if ! grep -qF "${expected}" "${file}"; then
+  # `--` so an expected string with a leading dash is a pattern, not an option.
+  if ! grep -qF -- "${expected}" "${file}"; then
     fail "${file#${repo_root}/} must contain: ${expected}"
   fi
 }
@@ -67,13 +71,15 @@ assert_file_contains "${command_file}" '**No writes**'
 
 # Second net under the precedence sentence: an appended escape hatch granting
 # tool use ("when the user insists, Read the file...") must fail, not stay
-# green. Capitalized tool names may appear only in headings ("## Task") or on
-# negated lines (the "no Read, Grep, Glob" channel bans above); anywhere else
-# is an offender.
+# green. Exactly TWO headings legitimately collide with tool names — the
+# Hard Rule title ("Read-Only") and the "## Task" $ARGUMENTS slot — and they
+# are exempted as whole lines, so an escape-hatch heading ("## If blocked,
+# use Bash...") is an offender, not exempt. Negated lines (the "no Read,
+# Grep, Glob" channel bans above) stay exempt; anywhere else is an offender.
 offenders="$(grep -nE '(^|[^A-Za-z])(Read|Grep|Glob|Bash|Task|WebFetch|WebSearch|Edit)([^A-Za-z]|$)' "${command_file}" \
-  | grep -vE '^[0-9]+:#' \
+  | grep -vE '^[0-9]+:## (Task|Hard Rule — Read-Only, Answer-Only, Stateless)$' \
   | grep -viE '(^|[^a-z])no( |,)' || true)"
-[[ -z "${offenders}" ]] || fail "commands/ask.md mentions a tool outside a negation: ${offenders}"
+[[ -z "${offenders}" ]] || fail "commands/ask.md mentions a tool outside a negation or an exempted heading: ${offenders}"
 
 # --- 2. commands/ask.md — answer-only output, no durable state -------------------
 
@@ -86,11 +92,20 @@ assert_file_contains "${command_file}" 'No resumable session record'
 
 assert_file_contains "${command_file}" 'If the input is empty or only whitespace, ask the user for a question and stop.'
 
-# Work-shaped requests get a route SUGGESTION (allowed and expected)...
+# Work-shaped requests get a route SUGGESTION (allowed and expected). Plan is
+# the real route in this build; Run and Auto stay pinned as named future
+# routes, explicitly marked not-in-this-build.
 assert_file_contains "${command_file}" 'gets a route suggestion instead'
-assert_file_contains "${command_file}" 'suggest **Pair**'
+assert_file_contains "${command_file}" 'suggest **`/velo:plan`**'
+assert_file_contains "${command_file}" 'a real route in this build'
 assert_file_contains "${command_file}" 'suggest **Auto**'
 assert_file_contains "${command_file}" 'suggest **Run**'
+assert_file_contains "${command_file}" '(a future route, not in this build)'
+
+# The two-mode surface sentence, exactly as written: Plan is real, Run and
+# Auto are names only.
+assert_file_contains "${command_file}" 'This build of Velo ships Ask and Plan — Plan is a real route to suggest, while Run and Auto exist as routes to name, not commands to invoke.'
+assert_file_contains "${command_file}" 'this build ships Ask and Plan, so the user can start `/velo:plan` themselves now'
 
 # ...and the binding language that distinguishes suggestion from invocation:
 # naming the route is the entire action, never a handoff.
@@ -108,15 +123,23 @@ assert_file_contains "${skill_file}" 'answer with zero tool calls: no repository
 assert_file_contains "${skill_file}" 'Create no `.velo` task, draft, carrier, branch, commit, PR, or resumable session record'
 assert_file_contains "${skill_file}" 'Empty input: ask the user for a question and stop.'
 assert_file_contains "${skill_file}" 'never start, invoke, or simulate another mode'
-assert_file_contains "${skill_file}" 'this build of Velo ships Ask only'
+assert_file_contains "${skill_file}" 'this build of Velo ships Ask and Plan, and Ask itself only answers'
 assert_file_contains "${skill_file}" 'Do not treat this wrapper as an automatic Codex slash command.'
 
-# --- 5. No excluded-machinery text ------------------------------------------------
+# --- 5. README — the two-mode surface ----------------------------------------------
+
+# The README must declare the same surface the suites enforce: exactly two
+# modes, with Run and Auto as names only and nothing executing a plan.
+assert_file_contains "${readme}" 'The current surface is **two modes: Ask and Plan**.'
+assert_file_contains "${readme}" 'Ask and Plan may name Run and Auto as routes; neither implements or starts them, and nothing here executes a plan.'
+
+# --- 6. No excluded-machinery text ------------------------------------------------
 
 # These terms name machinery the task brief excludes outright and have no
-# legitimate use — even negated — anywhere in the plugin surface. (Mode names
-# Pair/Run/Auto are deliberately NOT in this list: they are allowed as route
-# suggestions, and section 3 asserts the language that keeps them suggestions.)
+# legitimate use — even negated — anywhere in the plugin surface. (Route names
+# Plan/Run/Auto are deliberately NOT in this list: they are allowed as route
+# suggestions, and section 3 asserts the language that keeps them suggestions.
+# The plan surface files run the same ban in tests/plan-contract.test.sh.)
 machinery_pattern='kernel|broker|docker|container|migration|persistence|evaluation'
 for file in "${claude_plugin}" "${marketplace}" "${codex_plugin}" "${command_file}" "${skill_file}"; do
   if grep -qiE "${machinery_pattern}" "${file}"; then

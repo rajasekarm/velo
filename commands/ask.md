@@ -7,7 +7,7 @@ argument-hint: Bring a conceptual question — Ask answers in place, with no sid
 
 Ask is Velo's off-axis mode: a place to think out loud without anything happening. Bring a conceptual question — a design trade-off, a pattern, a protocol, a "how does X work", a "which of these approaches and why" — and get a direct answer from an engineer's knowledge and the conversation so far. Nothing else moves: no files, no state, no other mode.
 
-Ask sits beside the delivery pipeline, not on it. Velo's delivery modes (Pair, Run, Auto) plan and build; Ask only answers. This build of Velo ships Ask and nothing else — the other modes exist as routes to name, not commands to invoke.
+Ask sits beside the delivery pipeline, not on it. Velo's other modes plan and build; Ask only answers. This build of Velo ships Ask and Plan — Plan is a real route to suggest, while Run and Auto exist as routes to name, not commands to invoke.
 
 ---
 
@@ -52,13 +52,13 @@ Do not invent a topic, echo a menu of modes, or read anything to find context.
 
 1. Answer any conceptual part of the request that can be answered from pure knowledge (optional, keep it brief).
 2. Suggest the Velo route by name, in one or two sentences:
-   - **Build or change something** → suggest **Pair** (plan it together, approve, then it runs)
-   - **Well-defined work the user wants delivered hands-off** → suggest **Auto**
-   - **Execute a plan that is already approved** → suggest **Run**
-   - **Debug, review, or investigate** → suggest **Pair** (the investigation needs repository evidence, which Ask cannot gather)
-3. State that this build ships Ask only, so the user would start that mode themselves when it is available.
+   - **Build or change something** → suggest **`/velo:plan`** (a real route in this build: it turns the request into a saved, versioned plan the user approves)
+   - **Well-defined work the user wants delivered hands-off** → suggest **Auto** (a future route, not in this build)
+   - **Execute a plan that is already approved** → suggest **Run** (a future route, not in this build)
+   - **Debug, review, or investigate** → suggest **`/velo:plan`** (the investigation needs repository evidence, which Ask cannot gather and Plan can)
+3. State which routes exist: this build ships Ask and Plan, so the user can start `/velo:plan` themselves now; Run and Auto they would start when available.
 
-**Never hand off.** Ask must never start, invoke, simulate, or "preview" Pair, Run, or Auto — no spawning them, no performing a lightweight version of their work inline, no drafting their artifacts. Suggesting the route is the entire action; the user decides, outside of Ask.
+**Never hand off.** Ask must never start, invoke, simulate, or "preview" Plan, Run, or Auto — no spawning them, no performing a lightweight version of their work inline, no drafting their artifacts. Suggesting the route is the entire action; the user decides, outside of Ask.
 
 ## Step 3 — Answer
 

@@ -1,31 +1,34 @@
 {
   "name": "velo",
-  "version": "2.0.0",
-  "description": "Velo V2 Ask mode for Codex — off-axis, read-only conceptual Q&A.",
+  "version": "2.1.0",
+  "description": "Velo V2 Ask and Plan modes for Codex — read-only conceptual Q&A, plus persisted, versioned planning with an explicit approval freeze.",
   "author": {
     "name": "Rajasekar"
   },
   "keywords": [
     "ask",
+    "plan",
     "questions",
+    "planning",
     "engineering",
     "codex"
   ],
   "skills": "./.agents/skills/",
   "interface": {
     "displayName": "Velo",
-    "shortDescription": "Read-only conceptual Q&A for Codex (Velo V2, Ask mode only)",
-    "longDescription": "Velo V2 currently ships a single mode: Ask. Ask answers conceptual engineering questions from model knowledge and the current conversation only — it never reads the repository, runs commands, browses, uses connectors, spawns agents, or writes artifacts, and it creates no durable state of any kind. Requests to build, debug, review, or investigate get a concise suggested Velo route by name; Ask never starts another mode.",
+    "shortDescription": "Conceptual Q&A and approval-gated planning for Codex (Velo V2 — Ask and Plan)",
+    "longDescription": "Velo V2 ships two modes. Ask answers conceptual engineering questions from model knowledge and the current conversation only — it never reads the repository, runs commands, browses, uses connectors, spawns agents, or writes artifacts, and it creates no durable state of any kind. Plan turns a brief into a persisted, versioned plan saved under .velo/ — it may read the repository to plan well, writes only under .velo/, offers explicit approval that freezes the plan version, and never executes the plan. Requests to execute work get a plain explanation and an offer to plan; Run and Auto are future routes neither mode starts.",
     "developerName": "Rajasekar",
     "category": "Coding",
     "capabilities": [
-      "Interactive"
+      "Interactive",
+      "Write"
     ],
     "defaultPrompt": [
       "Ask Velo a conceptual engineering question",
       "Talk a design trade-off through without touching the repo",
-      "Get a plain-language explanation of a pattern or protocol",
-      "Ask which approach fits and why"
+      "Plan a feature into a saved, versioned plan under .velo/",
+      "Revise a saved plan and approve it to freeze the version"
     ],
     "brandColor": "#111827",
     "screenshots": []

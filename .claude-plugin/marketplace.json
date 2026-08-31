@@ -1,14 +1,14 @@
 {
   "name": "local",
-  "description": "Velo V2 — clean-room rebuild. Current surface: Ask mode only.",
+  "description": "Velo V2 — clean-room rebuild. Current surface: Ask and Plan.",
   "owner": {
     "name": "Raja"
   },
   "plugins": [
     {
       "name": "velo",
-      "description": "Velo V2 — currently Ask mode only: off-axis, read-only conceptual Q&A. Answers from model knowledge and the current conversation; never reads the repo, never writes, never starts another mode.",
-      "version": "2.0.0",
+      "description": "Velo V2 — two modes: Ask (off-axis, read-only conceptual Q&A that never touches the repo) and Plan (a persisted, versioned plan saved under .velo/ with an explicit approval freeze — planning only, never execution). Neither mode starts Run or Auto.",
+      "version": "2.1.0",
       "source": "./",
       "author": {
         "name": "Raja"

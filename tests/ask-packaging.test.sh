@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
-# Packaging / discoverability tests for Velo V2's Ask-only surface.
+# Packaging / discoverability tests for Velo V2's two-mode surface, anchored
+# on Ask (Plan's own frontmatter/discoverability lives in
+# tests/plan-packaging.test.sh).
 #
 # Proves:
-#   1. Both plugin manifests parse as valid JSON with the required fields, and
-#      the Codex `skills` path resolves to a real directory holding the skill.
+#   1. Both plugin manifests parse as valid JSON with the required fields, all
+#      three manifest versions agree (drift check, not a version pin), and the
+#      Codex `skills` path resolves to a real directory holding both skills.
 #   2. commands/ask.md and .agents/skills/velo-ask/SKILL.md exist with
 #      well-formed frontmatter carrying the keys each host needs to discover
 #      and route the Ask command.
-#   3. The plugin surface contains ONLY Ask — no extra commands, skills,
+#   3. The plugin surface is exactly {Ask, Plan} — no extra commands, skills,
 #      registration keys, or V1 orchestration/container files (structural half
 #      of the "no excluded modes" contract; the textual half lives in
-#      tests/ask-contract.test.sh).
-#   4. The Codex manifest does not claim write capability.
+#      tests/ask-contract.test.sh and tests/plan-contract.test.sh).
+#   4. The Codex manifest claims exactly Interactive + Write capability: Write
+#      is required because Plan writes `.velo` artifacts. Ask's own read-only
+#      guarantee is textual (its Hard Rule pins), not manifest-level.
 #
 # Conventions follow V1 (velo/tests/*.test.sh): bash, set -euo pipefail, small
 # fail/assert helpers, frontmatter parsed with awk scoped to the leading ---
@@ -92,7 +97,7 @@ python3 -m json.tool "${claude_plugin}" >/dev/null || fail ".claude-plugin/plugi
 
 plugin_name="$(json_field "${claude_plugin}" "name")"
 [[ "${plugin_name}" == "velo" ]] \
-  || fail ".claude-plugin/plugin.json name must be exactly 'velo' so the command surfaces as /velo:ask, but it is '${plugin_name}'"
+  || fail ".claude-plugin/plugin.json name must be exactly 'velo' so the commands surface as /velo:ask and /velo:plan, but it is '${plugin_name}'"
 
 plugin_version="$(json_field "${claude_plugin}" "version")"
 [[ "${plugin_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
@@ -128,7 +133,7 @@ def fail(msg):
 
 plugins = json.load(open(sys.argv[1])).get("plugins")
 if not isinstance(plugins, list) or len(plugins) != 1:
-    fail(".claude-plugin/marketplace.json must list exactly one plugin — this build ships Ask only")
+    fail(".claude-plugin/marketplace.json must list exactly one plugin — velo is the only plugin in this surface")
 entry = plugins[0]
 if entry.get("name") != "velo":
     fail(f".claude-plugin/marketplace.json plugin entry must be named 'velo', but it is {entry.get('name')!r}")
@@ -162,6 +167,11 @@ codex_version="$(json_field "${codex_plugin}" "version")"
 [[ "${codex_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
   || fail ".codex-plugin/plugin.json version must be a semver string, but it is '${codex_version}'"
 
+# Drift check across all three manifests (marketplace == plugin.json is
+# asserted above): the manifests version in lockstep, whatever the number.
+[[ "${codex_version}" == "${plugin_version}" ]] \
+  || fail ".codex-plugin/plugin.json version '${codex_version}' must match .claude-plugin/plugin.json version '${plugin_version}' — the three manifests version in lockstep"
+
 skills_path="$(json_field "${codex_plugin}" "skills")"
 [[ "${skills_path}" == "./.agents/skills/" ]] \
   || fail ".codex-plugin/plugin.json skills must be './.agents/skills/', but it is '${skills_path}'"
@@ -169,10 +179,16 @@ skills_path="$(json_field "${codex_plugin}" "skills")"
   || fail ".codex-plugin/plugin.json skills path '${skills_path}' must resolve to a real directory"
 [[ -f "${repo_root}/${skills_path}/velo-ask/SKILL.md" ]] \
   || fail ".codex-plugin/plugin.json skills directory must contain the velo-ask skill"
+[[ -f "${repo_root}/${skills_path}/velo-plan/SKILL.md" ]] \
+  || fail ".codex-plugin/plugin.json skills directory must contain the velo-plan skill"
 
-# Deliverable 4: Ask is read-only — the Codex manifest must claim Interactive
-# and must NOT claim Write. Asserted on the parsed capabilities list so the
-# word "Write" elsewhere in the manifest cannot false-positive.
+# Deliverable 4: the capability claim is exactly {Interactive, Write} — Write
+# is REQUIRED because Plan writes `.velo` artifacts (carrier + index), and
+# anything beyond those two would be undeclared surface drift. Ask's read-only
+# contract is textual, enforced by its Hard Rule pins in
+# tests/ask-contract.test.sh, not by withholding the manifest capability Plan
+# needs. Asserted on the parsed capabilities list so wording elsewhere in the
+# manifest cannot false-positive.
 python3 - "${codex_plugin}" <<'PY'
 import json, sys
 
@@ -185,10 +201,11 @@ if not isinstance(caps, list) or not caps:
     fail(".codex-plugin/plugin.json interface.capabilities must be a non-empty list")
 if "Interactive" not in caps:
     fail('.codex-plugin/plugin.json capabilities must include "Interactive"')
-# Case-insensitive: "write"/"WRITE"/" Write " must all fail, not just the
-# exact-cased literal.
-if any(isinstance(c, str) and c.strip().lower() == "write" for c in caps):
-    fail('.codex-plugin/plugin.json capabilities must NOT include "Write" — Ask is read-only')
+if "Write" not in caps:
+    fail('.codex-plugin/plugin.json capabilities must include "Write" — Plan writes .velo artifacts')
+extra = sorted(set(caps) - {"Interactive", "Write"})
+if extra:
+    fail(f'.codex-plugin/plugin.json capabilities must be exactly ["Interactive", "Write"] — unexpected {extra} would claim surface neither mode has')
 PY
 
 # Key WHITELIST, mirroring the Claude manifest check: any key outside the
@@ -242,7 +259,7 @@ if [[ "${description_tail}" == [a-z0-9_-]* ]]; then
   fail ".agents/skills/velo-ask/SKILL.md frontmatter description must trigger on exactly '${trigger}', but it runs on into a longer mode name"
 fi
 
-# --- 6. Surface enumeration: Ask is the ONLY mode --------------------------------
+# --- 6. Surface enumeration: the surface is EXACTLY {Ask, Plan} ------------------
 
 list_files() {
   # All regular files under a directory, repo-relative, sorted. .DS_Store is
@@ -250,14 +267,18 @@ list_files() {
   find "$1" -type f -not -name '.DS_Store' | sed "s|^${repo_root}/||" | sort
 }
 
+expected_commands="commands/ask.md
+commands/plan.md"
 actual_commands="$(list_files "${repo_root}/commands")"
-if [[ "${actual_commands}" != "commands/ask.md" ]]; then
-  fail "commands/ must contain exactly ask.md — Ask is the only mode in this build; found: $(echo "${actual_commands}" | tr '\n' ' ')"
+if [[ "${actual_commands}" != "${expected_commands}" ]]; then
+  fail "commands/ must contain exactly ask.md and plan.md — Ask and Plan are the only modes in this build; found: $(echo "${actual_commands}" | tr '\n' ' ')"
 fi
 
+expected_skills=".agents/skills/velo-ask/SKILL.md
+.agents/skills/velo-plan/SKILL.md"
 actual_skills="$(list_files "${repo_root}/.agents/skills")"
-if [[ "${actual_skills}" != ".agents/skills/velo-ask/SKILL.md" ]]; then
-  fail ".agents/skills/ must contain exactly velo-ask/SKILL.md — Ask is the only skill in this build; found: $(echo "${actual_skills}" | tr '\n' ' ')"
+if [[ "${actual_skills}" != "${expected_skills}" ]]; then
+  fail ".agents/skills/ must contain exactly velo-ask/SKILL.md and velo-plan/SKILL.md — Ask and Plan are the only skills in this build; found: $(echo "${actual_skills}" | tr '\n' ' ')"
 fi
 
 # V1's orchestration, adapter, role, hook, and container scaffolding must not
@@ -265,7 +286,7 @@ fi
 # excluded mode.
 for artifact in AGENTS.md ADAPTER.md PERSONA.md TEAM.md agents hooks skills Dockerfile docker-compose.yml compose.yaml; do
   if [[ -e "${repo_root}/${artifact}" ]]; then
-    fail "${artifact} must not exist — V2 ships Ask only, with no orchestration roles, hooks, or container machinery"
+    fail "${artifact} must not exist — V2 ships Ask and Plan only, with no orchestration roles, hooks, or container machinery"
   fi
 done
 

@@ -20,5 +20,5 @@ This wrapper is self-contained. Velo V2 has no AGENTS.md, ADAPTER.md, or PERSONA
 - Once the playbook is loaded, answer with zero tool calls: no repository reads, no shell, no browsing, no connectors, no subagents, no writes. Model knowledge and the current conversation are the only sources.
 - An Ask invocation returns only a conversational answer. Create no `.velo` task, draft, carrier, branch, commit, PR, or resumable session record — no durable state at all.
 - Empty input: ask the user for a question and stop.
-- Requests to build, debug, review, or investigate: suggest the Velo route by name (Pair, Run, or Auto, per the playbook) but never start, invoke, or simulate another mode — this build of Velo ships Ask only.
+- Requests to build, debug, review, or investigate: suggest the Velo route by name (`/velo:plan` for planning the work — a real route in this build — or Run and Auto as future routes, per the playbook) but never start, invoke, or simulate another mode — this build of Velo ships Ask and Plan, and Ask itself only answers.
 - If a Claude-only instruction in the playbook cannot be mapped cleanly, state the mismatch and choose the closest Codex-native behavior that keeps the read-only contract intact.
