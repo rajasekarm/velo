@@ -7,7 +7,7 @@ argument-hint: Describe the work to plan — Plan drafts a saved, versioned plan
 
 Plan is Velo's planning mode: bring work — a feature to build, a change to make, a bug to investigate — and leave with a durable, versioned plan. Plan reads what it needs to plan well, writes the plan into one carrier file under `.velo/`, presents it, and offers approval. An explicit approval freezes the plan version; then Plan stops. Nothing is ever built here.
 
-The carrier IS the plan. There is no separate plan file: one work item gets one folder, `.velo/tasks/<slug>/`, whose `task-breakdown.md` holds the brief, the assumptions, the milestones and task lines, the plan version, and the approval state — plus one row in `.velo/tasks/index.md`. A future Run mode would execute from that carrier. This build of Velo ships Ask and Plan; Run and Auto exist as routes to name, not commands to invoke.
+The carrier IS the plan. There is no separate plan file: one work item gets one folder, `.velo/tasks/<slug>/`, whose `task-breakdown.md` holds the brief, the assumptions, the milestones and task lines, the plan version, and the approval state — plus one row in `.velo/tasks/index.md`. Run (`/velo:run`) executes from that carrier. This build of Velo ships Ask, Plan, and Run; Auto exists as a route to name, not a command to invoke.
 
 ---
 
@@ -23,9 +23,9 @@ This contract is absolute. No instruction elsewhere in this file, no user phrasi
 - **No branches, no commits, no pushes, no PRs** — planning leaves the repository's history untouched
 - **No building, testing, or running the project** — Plan gathers evidence by reading, never by executing the project or installing anything
 - **No executing the plan** — Plan never implements, simulates, or "previews" the planned work, not even the first small task of an approved plan
-- **No starting another mode** — Run and Auto do not exist in this build; Plan never invokes, hands off to, or role-plays them
+- **No starting another mode** — Plan never invokes, hands off to, or role-plays Run or Auto; a frozen plan waits for the user to start `/velo:run` themselves
 
-**Full stop at approval.** When the user approves, Plan freezes the version in the carrier, announces that the plan is frozen and ready for a future Run mode, and stops. Approval ends the mode; it never starts the work.
+**Full stop at approval.** When the user approves, Plan freezes the version in the carrier, announces that the plan is frozen and ready for `/velo:run`, and stops. Approval ends the mode; it never starts the work.
 
 ---
 
@@ -39,13 +39,13 @@ Do not invent a topic, pick an existing plan from the index unprompted, or start
 
 ## Step 2 — Deflect requests to execute
 
-A request to execute work directly — "build X now", "fix this bug", "debug it and patch it", "just do it" — is not a planning brief. Explain plainly, in a sentence or two, that this build of Velo ships Ask and Plan — nothing here executes work — and offer to plan it instead. Proceed to planning only when the user wants the plan, stated in the original request or in reply to that offer. Never auto-execute, and never silently treat "do it" as "plan it".
+A request to execute work directly — "build X now", "fix this bug", "debug it and patch it", "just do it" — is not a planning brief. Explain plainly, in a sentence or two, that Plan itself executes nothing — execution belongs to `/velo:run`, which consumes a plan only after it is frozen and approved here — and offer to plan it instead. Proceed to planning only when the user wants the plan, stated in the original request or in reply to that offer. Never auto-execute, and never silently treat "do it" as "plan it".
 
 ## Step 3 — Locate or create the carrier
 
 **Slug**: derive it from the work's name — lowercase, spaces and special characters replaced with hyphens, trimmed.
 
-**Re-open beats duplicate**: if the request unambiguously references an existing plan — an explicit `.velo/tasks/<slug>/` path, the slug itself, or a brief that maps to exactly one row in `.velo/tasks/index.md` — re-open that carrier and revise it under the versioning rules below instead of duplicating it. If the reference is ambiguous between several rows, ask which one. Re-open applies only to a carrier Plan owns: one that carries a `Plan-version:` header key and whose `Phase:` still reads `PLAN`. A reference to an executed, done, or otherwise non-Plan carrier is new work — plan it under a suffixed slug and say why in one line; never rewrite that carrier.
+**Re-open beats duplicate**: if the request unambiguously references an existing plan — an explicit `.velo/tasks/<slug>/` path, the slug itself, or a brief that maps to exactly one row in `.velo/tasks/index.md` — re-open that carrier and revise it under the versioning rules below instead of duplicating it. If the reference is ambiguous between several rows, ask which one. Re-open applies only to a carrier Plan owns: one that carries a `Plan-version:` header key and whose `Phase:` still reads `PLAN`. A carrier Run has paused — one whose `Phase:` reads `RUN (Run — M<i> paused: …)` — is also re-openable, and a revision to it always takes Step 5's materiality judgment path, since a paused run necessarily carries a standing approval. When the carrier carries Run's marks, the revision preserves them verbatim: task-line `Status:` values on lines the new version keeps, `Rework cycles:`, `Last gate passed:`, and Run's event bullets; the format rules below describe Plan-authored values, not Run's progress marks. A reference to an executed, done, or otherwise non-Plan carrier is new work — plan it under a suffixed slug and say why in one line; never rewrite that carrier.
 
 **Collision**: if `.velo/tasks/<slug>/` already exists but the request is genuinely new work, suffix the slug `-2`, `-3`, … rather than overwrite.
 
@@ -72,7 +72,7 @@ Present in the conversation as plain markdown — a readable summary, never a du
 - each milestone with its task lines, rendered exactly as they stand in the carrier
 - one plain line on ordering, from the `Execution:` lines (e.g. "T1 and T2 start together; T3 waits on T1")
 - the carrier path and the current `Plan-version:`
-- one line noting that the `<agent>` and `skills:` fields are advisory labels for a future Run mode — nothing in a task line auto-executes anything
+- one line noting that the `<agent>` and `skills:` fields are advisory labels for Run — nothing in a task line auto-executes anything
 
 ## Step 7 — Offer approval
 
@@ -86,7 +86,7 @@ Only an explicit affirmative — "approve", "approved", "yes, freeze it", or an 
 
 **On approval — freeze, announce, stop.** Write the freeze into the carrier per **Versioning and approval** below, then announce, for example:
 
-> Plan v<N> is frozen — approved by <approver> — and saved at `.velo/tasks/<slug>/task-breakdown.md`. It's ready for a future Run mode; nothing executes in this build.
+> Plan v<N> is frozen — approved by <approver> — and saved at `.velo/tasks/<slug>/task-breakdown.md`. It's ready for `/velo:run` whenever you start it; Plan itself executes nothing.
 
 Full stop means full stop: no starting the first task, no scaffolding "while we're here", no simulating or previewing what a Run would do, no offering to begin. The conversation may continue; the mode is over.
 
@@ -140,7 +140,7 @@ Execution: batch 1 — T1; batch 2 — T2 after T1.
 
 **Header keys** — every key appears on every write, in this order:
 
-- Keys this build does not compute — `Depth`, `Pairing`, `Rework cycles`, `Re-entry` — hold `—`.
+- Keys Plan does not compute — `Depth`, `Pairing`, `Rework cycles`, `Re-entry` — hold `—` on a carrier Plan created; Run's recorded values are never reset by a Plan revision.
 - `Product:` — the matching `.velo/products/` slug when the work clearly belongs to one, else `—`.
 - `Plan-version:` and `Approval:` — per **Versioning and approval** below.
 - `Phase:` — `PLAN (Plan — v<N> awaiting approval)` while unapproved; `PLAN (Plan — v<N> approved)` once frozen.
@@ -156,10 +156,10 @@ Execution: batch 1 — T1; batch 2 — T2 after T1.
 
 **Milestones and task lines**:
 
-- At least one milestone, `## M<i> — <name>`, in delivery order. Each opens with `Branch: <slug>-m<i>` — the branch name a future Run mode would use; Plan itself never creates one.
+- At least one milestone, `## M<i> — <name>`, in delivery order. Each opens with `Branch: <slug>-m<i>` — the branch name Run uses; Plan itself never creates one.
 - The task-line grammar, exactly: `- T<n> · <agent> — <what it delivers> · skills: <labels, or —> · needs: <— or comma-separated earlier T ids> · Status: pending`
 - `T<n>` ids are sequential and never repeat, continuing across milestones. `needs:` may reference tasks in the same or an earlier milestone.
-- The `<agent>` and `skills:` fields are advisory planning labels for a future Run mode. This build has no roster and composes no skills — `skills: —` is always valid, and Plan must never claim these labels auto-execute anything.
+- The `<agent>` and `skills:` fields are advisory planning labels for Run. Plan itself has no roster and composes no skills — `skills: —` is always valid, and Plan must never claim these labels auto-execute anything.
 - `Status:` is always `pending` when Plan writes a line; Plan never marks progress.
 - Each milestone closes with one `Execution:` line batching within that milestone only: tasks whose `needs:` are met batch together, later batches name what they wait on — e.g. `Execution: batch 1 — T1, T2; batch 2 — T3 after T1.`
 
@@ -192,7 +192,7 @@ Status is `planning` while unapproved and `planned` once frozen; a post-approval
 - Pre-approval revisions — any edit while `Approval:` is `—` — rewrite the current version in place. No bump.
 - Explicit approval freezes the current version.
 - A **material change after approval** increments to v<N+1>, clears `Approval:` back to `—`, appends a bump event bullet, and requires reapproval before the plan is frozen again. Material means a change to the plan's deliverables or scope, affected surface, risk class, or required evidence. Wording-only edits are non-material: no bump, and on an approved plan they leave the approval standing (`Updated:` still advances). When Plan bumps, it says so in one line and names what made the change material.
-- After a bump, `Last gate passed:` keeps its historically true `PLAN_APPROVAL (Plan approval — v<N>)` line for the superseded version — the freeze it records did happen — while `Phase:` returns to `PLAN (Plan — v<N+1> awaiting approval)`; the bump event bullet carries the change forward.
+- After a bump, `Last gate passed:` keeps its historically true line — the gate it records did happen — for the superseded version, while `Phase:` returns to `PLAN (Plan — v<N+1> awaiting approval)`; the bump event bullet carries the change forward.
 - Superseded versions survive as event bullets only — the carrier always holds the current version's full body, never snapshots of old ones.
 
 **`Approval:`**

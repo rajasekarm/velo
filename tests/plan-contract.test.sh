@@ -63,14 +63,14 @@ assert_file_contains "${command_file}" '**No building, testing, or running the p
 assert_file_contains "${command_file}" '**No executing the plan**'
 assert_file_contains "${command_file}" 'not even the first small task of an approved plan'
 assert_file_contains "${command_file}" '**No starting another mode**'
-assert_file_contains "${command_file}" 'Run and Auto do not exist in this build; Plan never invokes, hands off to, or role-plays them'
+assert_file_contains "${command_file}" 'Plan never invokes, hands off to, or role-plays Run or Auto; a frozen plan waits for the user to start `/velo:run` themselves'
 
 # Single conversational flow: no delegation machinery.
 assert_file_contains "${command_file}" 'Plan runs as a single conversational flow: no subagents, no delegation, no spawned roles.'
 
-# The two-mode surface sentence and the carrier identity, exactly as written.
+# The three-mode surface sentence and the carrier identity, exactly as written.
 assert_file_contains "${command_file}" 'The carrier IS the plan.'
-assert_file_contains "${command_file}" 'This build of Velo ships Ask and Plan; Run and Auto exist as routes to name, not commands to invoke.'
+assert_file_contains "${command_file}" 'This build of Velo ships Ask, Plan, and Run; Auto exists as a route to name, not a command to invoke.'
 
 # --- 2. commands/plan.md — approved plan is a FULL STOP --------------------------
 
@@ -83,9 +83,10 @@ assert_file_contains "${command_file}" 'Full stop means full stop: no starting t
 assert_file_contains "${command_file}" 'If the input is empty or only whitespace, ask the user what to plan and stop.'
 assert_file_contains "${command_file}" 'Do not invent a topic, pick an existing plan from the index unprompted, or start reading around to guess at intent.'
 
-# A request to execute is deflected with the two-mode explanation and an offer
-# to plan — never executed, and never silently reinterpreted.
-assert_file_contains "${command_file}" 'this build of Velo ships Ask and Plan — nothing here executes work — and offer to plan it instead'
+# A request to execute is deflected — execution belongs to Run, from a plan
+# frozen and approved here — with an offer to plan instead; never executed,
+# and never silently reinterpreted.
+assert_file_contains "${command_file}" 'that Plan itself executes nothing — execution belongs to `/velo:run`, which consumes a plan only after it is frozen and approved here — and offer to plan it instead'
 assert_file_contains "${command_file}" 'Never auto-execute, and never silently treat "do it" as "plan it".'
 
 # --- 4. commands/plan.md — slug and re-open rules ---------------------------------
@@ -100,6 +101,29 @@ assert_file_contains "${command_file}" 'if `.velo/tasks/` or `.velo/tasks/index.
 # rewritten, it spawns new work under a suffixed slug.
 assert_file_contains "${command_file}" 'Re-open applies only to a carrier Plan owns'
 assert_file_contains "${command_file}" 'never rewrite that carrier'
+
+# The deliberate v2 widening of re-open, pinned exactly so it cannot widen
+# further: ONLY a Run-paused carrier (Phase reading `RUN (Run — M<i> paused:
+# …)`) joins the re-openable set, and a revision to it always takes the
+# materiality-bump path — a paused run necessarily carries a standing
+# approval, so an in-place rewrite would bypass reapproval. This is the Plan
+# half of the pause seam; Run's half (never resuming a material-change pause
+# without a newly frozen version) is pinned in tests/run-contract.test.sh.
+assert_file_contains "${command_file}" 'A carrier Run has paused — one whose `Phase:` reads `RUN (Run — M<i> paused: …)` — is also re-openable'
+assert_file_contains "${command_file}" 'and a revision to it always takes Step 5'\''s materiality judgment path, since a paused run necessarily carries a standing approval'
+
+# The mark-preservation clause (rework): re-opening a Run-paused carrier
+# preserves Run's recorded progress marks verbatim — and the carrier-format
+# rules below are scoped to Plan-authored values, so "Status: is always
+# pending" (pinned further down) cannot be read as license to reset Run's
+# marks on lines the new version keeps.
+assert_file_contains "${command_file}" "When the carrier carries Run's marks, the revision preserves them verbatim"
+assert_file_contains "${command_file}" "the format rules below describe Plan-authored values, not Run's progress marks"
+
+# The header-keys sentence, reworded to match: the `—` defaults apply to a
+# carrier Plan created, and a Plan revision never resets Run's recorded
+# values (Rework cycles, Last gate passed, …).
+assert_file_contains "${command_file}" '- Keys Plan does not compute — `Depth`, `Pairing`, `Rework cycles`, `Re-entry` — hold `—` on a carrier Plan created; Run'\''s recorded values are never reset by a Plan revision.'
 
 # --- 5. commands/plan.md — versioning and approval seam ---------------------------
 
@@ -122,8 +146,10 @@ assert_file_contains "${command_file}" 'Material means a change to the plan'\''s
 assert_file_contains "${command_file}" 'Wording-only edits are non-material'
 
 # After a bump the audit trail stays honest: the superseded freeze's gate line
-# survives (it did happen) while Phase returns to awaiting-approval.
-assert_file_contains "${command_file}" 'keeps its historically true `PLAN_APPROVAL (Plan approval — v<N>)` line for the superseded version'
+# survives (it did happen) while Phase returns to awaiting-approval. Reworded
+# in rework to cover Run's MILESTONE_SHIP gate lines too — after a Run-paused
+# re-open, the standing gate line may be Run's, and it is equally history.
+assert_file_contains "${command_file}" 'keeps its historically true line — the gate it records did happen — for the superseded version'
 
 # Post-freeze revision routing and the confirm-only Approve: a frozen plan is
 # never silently rewritten in place, and re-approving an unchanged frozen plan
@@ -148,6 +174,14 @@ assert_file_contains "${command_file}" 'replaces a literal `(none)`'
 # atomic bundle of writes.
 assert_file_contains "${command_file}" 'Status is `planning` while unapproved and `planned` once frozen; a post-approval material change flips it back to `planning`.'
 assert_file_contains "${command_file}" '**The freeze writes**, together, in one carrier rewrite'
+
+# Plan writes every task line at `Status: pending` and never marks progress —
+# the seam interaction with Run is intentional, not a contradiction: Plan's
+# rule governs the lines Plan writes (a draft, revision, or bump always lands
+# with pending lines), while Run's marks-survival rule (pinned in
+# tests/run-contract.test.sh) governs the recorded marks on lines a version
+# bump carries forward from a paused run.
+assert_file_contains "${command_file}" '`Status:` is always `pending` when Plan writes a line; Plan never marks progress.'
 
 # The approval offer is exactly three choices, and only an unambiguous yes
 # freezes.
@@ -213,7 +247,7 @@ assert_file_contains "${skill_file}" 'bumps to v<N+1>, clears the approval, and 
 assert_file_contains "${skill_file}" 'offer exactly three choices: approve, revise, or stop and save unapproved'
 assert_file_contains "${skill_file}" 'then stop completely — never implement, simulate, or "preview" the planned work'
 assert_file_contains "${skill_file}" 'Empty input: ask the user what to plan and stop.'
-assert_file_contains "${skill_file}" 'this build of Velo ships Ask and Plan — nothing here executes work'
+assert_file_contains "${skill_file}" 'explain that Plan itself executes nothing — execution belongs to `/velo:run`, from a plan frozen and approved here — and offer to plan it'
 assert_file_contains "${skill_file}" 'never auto-execute, and never start, invoke, or simulate Run or Auto'
 
 # Slug rules mirrored inline.
@@ -245,8 +279,10 @@ for file in "${command_file}" "${skill_file}"; do
 done
 
 # Git implementation markers would mean the surface carries branch/commit/PR
-# *behavior* rather than the negations asserted in sections 1 and 7.
-git_impl_pattern='git commit|git push|git checkout|git branch|gh pr'
+# *behavior* rather than the negations asserted in sections 1 and 7. The full
+# widened bigram set, matching tests/run-contract.test.sh — the carrier
+# requires `git merge` banned, and rebase/switch/remote close the same channel.
+git_impl_pattern='git commit|git push|git checkout|git branch|git merge|gh pr|git rebase|git switch|git remote'
 for file in "${command_file}" "${skill_file}"; do
   if grep -qiE "${git_impl_pattern}" "${file}"; then
     fail "${file#${repo_root}/} must not carry git implementation steps — Plan creates no branch, commit, or PR"

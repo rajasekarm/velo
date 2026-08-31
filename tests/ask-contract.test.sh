@@ -5,8 +5,8 @@
 # entrypoints (commands/ask.md for Claude Code, .agents/skills/velo-ask/SKILL.md
 # for Codex), and that the surface's text never implements or hands off to
 # another mode. Route names ARE allowed — and asserted — as suggestions:
-# /velo:plan as the real route in this two-mode build, Run and Auto as named
-# future routes. What must be present is the binding language that makes
+# /velo:plan and /velo:run as the real routes in this three-mode build, Auto
+# as a named future route. What must be present is the binding language that makes
 # suggestion the entire action, and what must be absent is excluded-machinery
 # text with no legitimate use in this surface. (Plan's own contract lives in
 # tests/plan-contract.test.sh.)
@@ -92,20 +92,21 @@ assert_file_contains "${command_file}" 'No resumable session record'
 
 assert_file_contains "${command_file}" 'If the input is empty or only whitespace, ask the user for a question and stop.'
 
-# Work-shaped requests get a route SUGGESTION (allowed and expected). Plan is
-# the real route in this build; Run and Auto stay pinned as named future
-# routes, explicitly marked not-in-this-build.
+# Work-shaped requests get a route SUGGESTION (allowed and expected). Plan and
+# Run are the real routes in this build; Auto stays pinned as a named future
+# route, explicitly marked not-in-this-build.
 assert_file_contains "${command_file}" 'gets a route suggestion instead'
 assert_file_contains "${command_file}" 'suggest **`/velo:plan`**'
 assert_file_contains "${command_file}" 'a real route in this build'
 assert_file_contains "${command_file}" 'suggest **Auto**'
-assert_file_contains "${command_file}" 'suggest **Run**'
+assert_file_contains "${command_file}" 'suggest **`/velo:run`**'
+assert_file_contains "${command_file}" '(a real route in this build: it runs the frozen plan milestone by milestone and commits the work locally)'
 assert_file_contains "${command_file}" '(a future route, not in this build)'
 
-# The two-mode surface sentence, exactly as written: Plan is real, Run and
-# Auto are names only.
-assert_file_contains "${command_file}" 'This build of Velo ships Ask and Plan — Plan is a real route to suggest, while Run and Auto exist as routes to name, not commands to invoke.'
-assert_file_contains "${command_file}" 'this build ships Ask and Plan, so the user can start `/velo:plan` themselves now'
+# The three-mode surface sentence, exactly as written: Plan and Run are real,
+# Auto is a name only.
+assert_file_contains "${command_file}" 'This build of Velo ships Ask, Plan, and Run — Plan and Run are real routes to suggest, while Auto exists as a route to name, not a command to invoke.'
+assert_file_contains "${command_file}" 'this build ships Ask, Plan, and Run, so the user can start `/velo:plan` or `/velo:run` themselves now; Auto they would start when available.'
 
 # ...and the binding language that distinguishes suggestion from invocation:
 # naming the route is the entire action, never a handoff.
@@ -123,15 +124,17 @@ assert_file_contains "${skill_file}" 'answer with zero tool calls: no repository
 assert_file_contains "${skill_file}" 'Create no `.velo` task, draft, carrier, branch, commit, PR, or resumable session record'
 assert_file_contains "${skill_file}" 'Empty input: ask the user for a question and stop.'
 assert_file_contains "${skill_file}" 'never start, invoke, or simulate another mode'
-assert_file_contains "${skill_file}" 'this build of Velo ships Ask and Plan, and Ask itself only answers'
+assert_file_contains "${skill_file}" '`/velo:plan` for planning the work or `/velo:run` for executing an approved plan — real routes in this build'
+assert_file_contains "${skill_file}" 'this build of Velo ships Ask, Plan, and Run, and Ask itself only answers'
 assert_file_contains "${skill_file}" 'Do not treat this wrapper as an automatic Codex slash command.'
 
-# --- 5. README — the two-mode surface ----------------------------------------------
+# --- 5. README — the three-mode surface ---------------------------------------------
 
-# The README must declare the same surface the suites enforce: exactly two
-# modes, with Run and Auto as names only and nothing executing a plan.
-assert_file_contains "${readme}" 'The current surface is **two modes: Ask and Plan**.'
-assert_file_contains "${readme}" 'Ask and Plan may name Run and Auto as routes; neither implements or starts them, and nothing here executes a plan.'
+# The README must declare the same surface the suites enforce: exactly three
+# modes, with Auto as a name only, and Run — the only mode that executes a
+# plan — never pushing, merging, or opening PRs.
+assert_file_contains "${readme}" 'The current surface is **three modes: Ask, Plan, and Run**.'
+assert_file_contains "${readme}" 'Ask, Plan, and Run may name Auto as a route; none of them implements or starts it, and Run never pushes, merges, or opens PRs.'
 
 # --- 6. No excluded-machinery text ------------------------------------------------
 
@@ -157,8 +160,10 @@ for file in "${claude_plugin}" "${marketplace}" "${codex_plugin}"; do
 done
 
 # Git implementation markers would mean the surface carries commit/push/PR
-# *behavior* rather than the negations asserted in sections 2 and 4.
-git_impl_pattern='git commit|git push|git checkout|git branch|gh pr'
+# *behavior* rather than the negations asserted in sections 2 and 4. The full
+# widened bigram set, matching tests/run-contract.test.sh — the carrier
+# requires `git merge` banned, and rebase/switch/remote close the same channel.
+git_impl_pattern='git commit|git push|git checkout|git branch|git merge|gh pr|git rebase|git switch|git remote'
 for file in "${command_file}" "${skill_file}"; do
   if grep -qiE "${git_impl_pattern}" "${file}"; then
     fail "${file#${repo_root}/} must not carry git implementation steps — Ask creates no branch, commit, or PR"

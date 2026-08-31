@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
-# Packaging / discoverability tests for Velo V2 Plan.
+# Packaging / discoverability tests for Velo V2 Run.
 #
-# Proves Plan is discoverable on both hosts:
+# Proves Run is discoverable on both hosts:
 #   1. Claude Code — the plugin manifest names the plugin 'velo' (so the
-#      command surfaces as /velo:plan) and commands/plan.md exists with
+#      command surfaces as /velo:run) and commands/run.md exists with
 #      well-formed frontmatter (description, argument-hint) and consumes
 #      $ARGUMENTS.
-#   2. Codex — the Codex manifest's `skills` path resolves to the velo-plan
-#      skill, whose frontmatter name is exactly 'plan' (so it surfaces as
-#      velo:plan) with a description that triggers on exactly /velo:plan.
-#   3. The Codex manifest claims Write capability — Plan writes `.velo`
-#      artifacts (the carrier and the index row), so the claim is required.
+#   2. Codex — the Codex manifest's `skills` path resolves to the velo-run
+#      skill, whose frontmatter name is exactly 'run' (so it surfaces as
+#      velo:run) with a description that triggers on exactly /velo:run.
+#   3. The Codex manifest claims Write capability — Run writes progress marks
+#      into the carrier and the index row, and commits milestone work locally,
+#      so the claim is required.
 #
 # Manifest shape (key whitelists), the three-way version drift check, and the
 # surface enumeration (exactly {ask, plan, run}) live in
 # tests/ask-packaging.test.sh and are not duplicated here. The textual
-# behavior contract lives in tests/plan-contract.test.sh.
+# behavior contract lives in tests/run-contract.test.sh.
 #
 # Conventions follow V1 (velo/tests/*.test.sh): bash, set -euo pipefail, small
 # fail/assert helpers, frontmatter parsed with awk scoped to the leading ---
@@ -31,8 +32,8 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 claude_plugin="${repo_root}/.claude-plugin/plugin.json"
 codex_plugin="${repo_root}/.codex-plugin/plugin.json"
-command_file="${repo_root}/commands/plan.md"
-skill_file="${repo_root}/.agents/skills/velo-plan/SKILL.md"
+command_file="${repo_root}/commands/run.md"
+skill_file="${repo_root}/.agents/skills/velo-run/SKILL.md"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -88,69 +89,70 @@ assert_frontmatter_block() {
     || fail "${file#${repo_root}/} must close its frontmatter block with a second ---"
 }
 
-# --- 1. Claude Code discoverability: /velo:plan -----------------------------------
+# --- 1. Claude Code discoverability: /velo:run -------------------------------------
 
 [[ -f "${claude_plugin}" ]] || fail ".claude-plugin/plugin.json must exist so Claude Code can discover the plugin"
 python3 -m json.tool "${claude_plugin}" >/dev/null || fail ".claude-plugin/plugin.json must be valid JSON"
 
 plugin_name="$(json_field "${claude_plugin}" "name")"
 [[ "${plugin_name}" == "velo" ]] \
-  || fail ".claude-plugin/plugin.json name must be exactly 'velo' so the command surfaces as /velo:plan, but it is '${plugin_name}'"
+  || fail ".claude-plugin/plugin.json name must be exactly 'velo' so the command surfaces as /velo:run, but it is '${plugin_name}'"
 
 assert_frontmatter_block "${command_file}"
 
 [[ -n "$(frontmatter_value "${command_file}" "description")" ]] \
-  || fail "commands/plan.md frontmatter must carry a non-empty description"
+  || fail "commands/run.md frontmatter must carry a non-empty description"
 [[ -n "$(frontmatter_value "${command_file}" "argument-hint")" ]] \
-  || fail "commands/plan.md frontmatter must carry a non-empty argument-hint"
+  || fail "commands/run.md frontmatter must carry a non-empty argument-hint"
 grep -qF '$ARGUMENTS' "${command_file}" \
-  || fail "commands/plan.md must consume \$ARGUMENTS so /velo:plan receives the work to plan"
+  || fail "commands/run.md must consume \$ARGUMENTS so /velo:run receives the plan to execute"
 
-# --- 2. Codex discoverability: velo:plan ------------------------------------------
+# --- 2. Codex discoverability: velo:run --------------------------------------------
 
 [[ -f "${codex_plugin}" ]] || fail ".codex-plugin/plugin.json must exist so Codex can discover the plugin"
 python3 -m json.tool "${codex_plugin}" >/dev/null || fail ".codex-plugin/plugin.json must be valid JSON"
 
 codex_name="$(json_field "${codex_plugin}" "name")"
 [[ "${codex_name}" == "velo" ]] \
-  || fail ".codex-plugin/plugin.json name must be exactly 'velo' so the skill surfaces as velo:plan, but it is '${codex_name}'"
+  || fail ".codex-plugin/plugin.json name must be exactly 'velo' so the skill surfaces as velo:run, but it is '${codex_name}'"
 
 skills_path="$(json_field "${codex_plugin}" "skills")"
 [[ "${skills_path}" == "./.agents/skills/" ]] \
   || fail ".codex-plugin/plugin.json skills must be './.agents/skills/', but it is '${skills_path}'"
-[[ -f "${repo_root}/${skills_path}/velo-plan/SKILL.md" ]] \
-  || fail ".codex-plugin/plugin.json skills directory must contain the velo-plan skill"
+[[ -f "${repo_root}/${skills_path}/velo-run/SKILL.md" ]] \
+  || fail ".codex-plugin/plugin.json skills directory must contain the velo-run skill"
 
 assert_frontmatter_block "${skill_file}"
 
 skill_name="$(frontmatter_value "${skill_file}" "name")"
-# Whole-value match, per V1's lesson: `name: planning` would satisfy a
-# substring check for `name: plan` while exposing the wrong Codex command.
-[[ "${skill_name}" == "plan" ]] \
-  || fail ".agents/skills/velo-plan/SKILL.md frontmatter name must be exactly 'plan' so Codex exposes velo:plan, but it is '${skill_name}'"
+# Whole-value match, per V1's lesson: `name: runner` would satisfy a substring
+# check for `name: run` while exposing the wrong Codex command.
+[[ "${skill_name}" == "run" ]] \
+  || fail ".agents/skills/velo-run/SKILL.md frontmatter name must be exactly 'run' so Codex exposes velo:run, but it is '${skill_name}'"
 
 skill_description="$(frontmatter_value "${skill_file}" "description")"
 [[ -n "${skill_description}" ]] \
-  || fail ".agents/skills/velo-plan/SKILL.md frontmatter must carry a non-empty description"
+  || fail ".agents/skills/velo-run/SKILL.md frontmatter must carry a non-empty description"
 
 # V1's prefix + boundary check: the description must trigger on exactly
-# /velo:plan — anchored to the start, and the mode name must end at a word
-# boundary rather than run on into a longer name (e.g. /velo:planner).
-trigger="Use when the user asks for /velo:plan"
+# /velo:run — anchored to the start, and the mode name must end at a word
+# boundary rather than run on into a longer name (e.g. /velo:runner).
+trigger="Use when the user asks for /velo:run"
 description_tail="${skill_description#"${trigger}"}"
 if [[ "${description_tail}" == "${skill_description}" ]]; then
-  fail ".agents/skills/velo-plan/SKILL.md frontmatter description must start with '${trigger}', but it is '${skill_description}'"
+  fail ".agents/skills/velo-run/SKILL.md frontmatter description must start with '${trigger}', but it is '${skill_description}'"
 fi
 if [[ "${description_tail}" == [a-z0-9_-]* ]]; then
-  fail ".agents/skills/velo-plan/SKILL.md frontmatter description must trigger on exactly '${trigger}', but it runs on into a longer mode name"
+  fail ".agents/skills/velo-run/SKILL.md frontmatter description must trigger on exactly '${trigger}', but it runs on into a longer mode name"
 fi
 
-# --- 3. Codex capability claim: Plan needs Write -----------------------------------
+# --- 3. Codex capability claim: Run needs Write -------------------------------------
 
-# Plan writes the carrier and the index row under .velo/, so the manifest must
-# claim Write (alongside Interactive). The exact-set assertion (nothing beyond
-# these two) lives in tests/ask-packaging.test.sh; this suite pins the half
-# Plan depends on. Asserted on the parsed capabilities list, not a grep.
+# Run writes progress marks into the carrier and the index row under .velo/,
+# and commits milestone work locally, so the manifest must claim Write
+# (alongside Interactive). The exact-set assertion (nothing beyond these two)
+# lives in tests/ask-packaging.test.sh; this suite pins the half Run depends
+# on. Asserted on the parsed capabilities list, not a grep.
 python3 - "${codex_plugin}" <<'PY'
 import json, sys
 
@@ -162,9 +164,9 @@ caps = json.load(open(sys.argv[1])).get("interface", {}).get("capabilities")
 if not isinstance(caps, list) or not caps:
     fail(".codex-plugin/plugin.json interface.capabilities must be a non-empty list")
 if "Interactive" not in caps:
-    fail('.codex-plugin/plugin.json capabilities must include "Interactive" — Plan is a conversational mode')
+    fail('.codex-plugin/plugin.json capabilities must include "Interactive" — Run is a conversational mode')
 if "Write" not in caps:
-    fail('.codex-plugin/plugin.json capabilities must include "Write" — Plan writes the .velo carrier and index')
+    fail('.codex-plugin/plugin.json capabilities must include "Write" — Run writes progress marks and local commits')
 PY
 
-echo "PASS: tests/plan-packaging.test.sh"
+echo "PASS: tests/run-packaging.test.sh"
