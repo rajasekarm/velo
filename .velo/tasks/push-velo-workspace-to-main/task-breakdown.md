@@ -7,11 +7,11 @@
 - Depth: —
 - Pairing: pure-tech
 - Branch-convention: —
-- Phase: BUILD (Build — M1 of 1)
-- Last gate passed: PLAN_AND_ANNOUNCE (Plan & kickoff)
+- Phase: DONE (Done — delivered-and-committed-and-pushed)
+- Last gate passed: SHIP_GATE (Ship gate — M1 of 1)
 - Rework cycles: spec 0 · edd 0 · review 0
 - Re-entry: —
-- Updated: 2026-08-31 15:34
+- Updated: 2026-08-31 15:41
 - Summary: Commit the .velo workspace and push it to origin/main (initial commit).
 
 ## Brief (verbatim)
@@ -27,6 +27,6 @@ Push the changes to github main
 (none)
 
 ## M1 — Push .velo workspace to origin main
-Branch: main (direct — see Constraints/notes) · Shipped: —
-- T1 · commit — stage and commit the `.velo/` workspace on `main` (initial commit) · skills: commit-protocol · needs: — · Status: in-flight
+Branch: main (direct — see Constraints/notes) · Shipped: Commit + push (gate folded into kickoff approval) — 74fdead pushed to origin/main, upstream set
+- T1 · commit — stage and commit the `.velo/` workspace on `main` (initial commit) · skills: commit-protocol · needs: — · Status: done
 Execution: single node — no parallelism; the push runs as the gate-approved action after T1 returns.
