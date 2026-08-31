@@ -1,0 +1,8 @@
+{
+  "name": "velo",
+  "version": "2.0.0",
+  "description": "Velo V2 — currently Ask mode only: off-axis, read-only conceptual Q&A. Answers from model knowledge and the current conversation; never reads the repo, never writes, never starts another mode.",
+  "author": {
+    "name": "Raja"
+  }
+}

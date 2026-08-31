@@ -1,0 +1,18 @@
+{
+  "name": "local",
+  "description": "Velo V2 — clean-room rebuild. Current surface: Ask mode only.",
+  "owner": {
+    "name": "Raja"
+  },
+  "plugins": [
+    {
+      "name": "velo",
+      "description": "Velo V2 — currently Ask mode only: off-axis, read-only conceptual Q&A. Answers from model knowledge and the current conversation; never reads the repo, never writes, never starts another mode.",
+      "version": "2.0.0",
+      "source": "./",
+      "author": {
+        "name": "Raja"
+      }
+    }
+  ]
+}

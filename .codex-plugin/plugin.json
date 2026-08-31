@@ -1,0 +1,33 @@
+{
+  "name": "velo",
+  "version": "2.0.0",
+  "description": "Velo V2 Ask mode for Codex — off-axis, read-only conceptual Q&A.",
+  "author": {
+    "name": "Rajasekar"
+  },
+  "keywords": [
+    "ask",
+    "questions",
+    "engineering",
+    "codex"
+  ],
+  "skills": "./.agents/skills/",
+  "interface": {
+    "displayName": "Velo",
+    "shortDescription": "Read-only conceptual Q&A for Codex (Velo V2, Ask mode only)",
+    "longDescription": "Velo V2 currently ships a single mode: Ask. Ask answers conceptual engineering questions from model knowledge and the current conversation only — it never reads the repository, runs commands, browses, uses connectors, spawns agents, or writes artifacts, and it creates no durable state of any kind. Requests to build, debug, review, or investigate get a concise suggested Velo route by name; Ask never starts another mode.",
+    "developerName": "Rajasekar",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "Ask Velo a conceptual engineering question",
+      "Talk a design trade-off through without touching the repo",
+      "Get a plain-language explanation of a pattern or protocol",
+      "Ask which approach fits and why"
+    ],
+    "brandColor": "#111827",
+    "screenshots": []
+  }
+}
