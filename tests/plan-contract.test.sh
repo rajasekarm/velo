@@ -63,14 +63,20 @@ assert_file_contains "${command_file}" '**No building, testing, or running the p
 assert_file_contains "${command_file}" '**No executing the plan**'
 assert_file_contains "${command_file}" 'not even the first small task of an approved plan'
 assert_file_contains "${command_file}" '**No starting another mode**'
-assert_file_contains "${command_file}" 'Plan never invokes, hands off to, or role-plays Run or Auto; a frozen plan waits for the user to start `/velo:run` themselves'
+assert_file_contains "${command_file}" 'Plan never invokes, hands off to, or role-plays Run or Auto; a frozen plan waits for the user to start `/velo:run` or `/velo:auto` themselves'
+
+# The Auto seam clause, pinned in full — the guard against reading Auto as
+# violating Plan's full stop: when /velo:auto drove this playbook, it is Auto,
+# a mode the USER started, that proceeds past the freeze; Plan itself still
+# starts nothing.
+assert_file_contains "${command_file}" 'and when `/velo:auto` drove this playbook, it is Auto, a mode the user started, that proceeds past the freeze; Plan itself still starts nothing'
 
 # Single conversational flow: no delegation machinery.
 assert_file_contains "${command_file}" 'Plan runs as a single conversational flow: no subagents, no delegation, no spawned roles.'
 
-# The three-mode surface sentence and the carrier identity, exactly as written.
+# The four-mode surface sentence and the carrier identity, exactly as written.
 assert_file_contains "${command_file}" 'The carrier IS the plan.'
-assert_file_contains "${command_file}" 'This build of Velo ships Ask, Plan, and Run; Auto exists as a route to name, not a command to invoke.'
+assert_file_contains "${command_file}" 'This build of Velo ships Ask, Plan, Run, and Auto — the complete surface; every mode is a command to invoke.'
 
 # --- 2. commands/plan.md — approved plan is a FULL STOP --------------------------
 
@@ -86,7 +92,7 @@ assert_file_contains "${command_file}" 'Do not invent a topic, pick an existing 
 # A request to execute is deflected — execution belongs to Run, from a plan
 # frozen and approved here — with an offer to plan instead; never executed,
 # and never silently reinterpreted.
-assert_file_contains "${command_file}" 'that Plan itself executes nothing — execution belongs to `/velo:run`, which consumes a plan only after it is frozen and approved here — and offer to plan it instead'
+assert_file_contains "${command_file}" 'that Plan itself executes nothing — execution belongs to `/velo:run`, which consumes a plan only after it is frozen and approved here, or to `/velo:auto`, which spans planning and delivery under one explicit approval — and offer to plan it instead'
 assert_file_contains "${command_file}" 'Never auto-execute, and never silently treat "do it" as "plan it".'
 
 # --- 4. commands/plan.md — slug and re-open rules ---------------------------------
@@ -124,6 +130,15 @@ assert_file_contains "${command_file}" "the format rules below describe Plan-aut
 # carrier Plan created, and a Plan revision never resets Run's recorded
 # values (Rework cycles, Last gate passed, …).
 assert_file_contains "${command_file}" '- Keys Plan does not compute — `Depth`, `Pairing`, `Rework cycles`, `Re-entry` — hold `—` on a carrier Plan created; Run'\''s recorded values are never reset by a Plan revision.'
+
+# The `Planned-via:` header key: set at carrier creation and NEVER rewritten,
+# recording which span authored the carrier — `/velo:plan` when the user
+# started Plan themselves, `/velo:auto (Plan seam)` when Auto drove the
+# planning leg. Pinned in full (both sanctioned values plus the set-at-creation
+# rule) so the key can neither be rewritten later nor grow a third value
+# silently; the template literal carries the Plan value.
+assert_file_contains "${command_file}" '- `Planned-via:` — set at carrier creation and never rewritten: `/velo:plan` when the user started Plan themselves (the value the template shows), `/velo:auto (Plan seam)` when `/velo:auto` drove the planning leg.'
+assert_file_contains "${command_file}" '- Planned-via: /velo:plan'
 
 # --- 5. commands/plan.md — versioning and approval seam ---------------------------
 
@@ -247,7 +262,7 @@ assert_file_contains "${skill_file}" 'bumps to v<N+1>, clears the approval, and 
 assert_file_contains "${skill_file}" 'offer exactly three choices: approve, revise, or stop and save unapproved'
 assert_file_contains "${skill_file}" 'then stop completely — never implement, simulate, or "preview" the planned work'
 assert_file_contains "${skill_file}" 'Empty input: ask the user what to plan and stop.'
-assert_file_contains "${skill_file}" 'explain that Plan itself executes nothing — execution belongs to `/velo:run`, from a plan frozen and approved here — and offer to plan it'
+assert_file_contains "${skill_file}" 'explain that Plan itself executes nothing — execution belongs to `/velo:run`, from a plan frozen and approved here, or to `/velo:auto` end-to-end under one explicit approval — and offer to plan it'
 assert_file_contains "${skill_file}" 'never auto-execute, and never start, invoke, or simulate Run or Auto'
 
 # Slug rules mirrored inline.

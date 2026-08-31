@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
-# Packaging / discoverability tests for Velo V2's three-mode surface, anchored
-# on Ask (Plan's and Run's own frontmatter/discoverability live in
-# tests/plan-packaging.test.sh and tests/run-packaging.test.sh).
+# Packaging / discoverability tests for Velo V2's four-mode surface, anchored
+# on Ask (Plan's, Run's, and Auto's own frontmatter/discoverability live in
+# tests/plan-packaging.test.sh, tests/run-packaging.test.sh, and
+# tests/auto-packaging.test.sh).
 #
 # Proves:
 #   1. Both plugin manifests parse as valid JSON with the required fields, all
 #      three manifest versions agree (drift check, not a version pin), and the
-#      Codex `skills` path resolves to a real directory holding all three
+#      Codex `skills` path resolves to a real directory holding all four
 #      skills.
 #   2. commands/ask.md and .agents/skills/velo-ask/SKILL.md exist with
 #      well-formed frontmatter carrying the keys each host needs to discover
 #      and route the Ask command.
-#   3. The plugin surface is exactly {Ask, Plan, Run} — no extra commands,
-#      skills, registration keys, or V1 orchestration/container files
+#   3. The plugin surface is exactly {Ask, Plan, Run, Auto} — no extra
+#      commands, skills, registration keys, or V1 orchestration/container files
 #      (structural half of the "no excluded modes" contract; the textual half
-#      lives in tests/ask-contract.test.sh, tests/plan-contract.test.sh, and
-#      tests/run-contract.test.sh).
+#      lives in tests/ask-contract.test.sh, tests/plan-contract.test.sh,
+#      tests/run-contract.test.sh, and tests/auto-contract.test.sh).
 #   4. The Codex manifest claims exactly Interactive + Write capability: Write
 #      is required because Plan writes `.velo` artifacts and Run writes
-#      progress marks and local commits. Ask's own read-only guarantee is
-#      textual (its Hard Rule pins), not manifest-level.
+#      progress marks and local commits (Auto writes only through those two
+#      seams). Ask's own read-only guarantee is textual (its Hard Rule pins),
+#      not manifest-level.
 #
 # Conventions follow V1 (velo/tests/*.test.sh): bash, set -euo pipefail, small
 # fail/assert helpers, frontmatter parsed with awk scoped to the leading ---
@@ -100,7 +102,7 @@ python3 -m json.tool "${claude_plugin}" >/dev/null || fail ".claude-plugin/plugi
 
 plugin_name="$(json_field "${claude_plugin}" "name")"
 [[ "${plugin_name}" == "velo" ]] \
-  || fail ".claude-plugin/plugin.json name must be exactly 'velo' so the commands surface as /velo:ask, /velo:plan, and /velo:run, but it is '${plugin_name}'"
+  || fail ".claude-plugin/plugin.json name must be exactly 'velo' so the commands surface as /velo:ask, /velo:plan, /velo:run, and /velo:auto, but it is '${plugin_name}'"
 
 plugin_version="$(json_field "${claude_plugin}" "version")"
 [[ "${plugin_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
@@ -186,6 +188,8 @@ skills_path="$(json_field "${codex_plugin}" "skills")"
   || fail ".codex-plugin/plugin.json skills directory must contain the velo-plan skill"
 [[ -f "${repo_root}/${skills_path}/velo-run/SKILL.md" ]] \
   || fail ".codex-plugin/plugin.json skills directory must contain the velo-run skill"
+[[ -f "${repo_root}/${skills_path}/velo-auto/SKILL.md" ]] \
+  || fail ".codex-plugin/plugin.json skills directory must contain the velo-auto skill"
 
 # Deliverable 4: the capability claim is exactly {Interactive, Write} — Write
 # is REQUIRED because Plan writes `.velo` artifacts (carrier + index) and Run
@@ -265,7 +269,7 @@ if [[ "${description_tail}" == [a-z0-9_-]* ]]; then
   fail ".agents/skills/velo-ask/SKILL.md frontmatter description must trigger on exactly '${trigger}', but it runs on into a longer mode name"
 fi
 
-# --- 6. Surface enumeration: the surface is EXACTLY {Ask, Plan, Run} -------------
+# --- 6. Surface enumeration: the surface is EXACTLY {Ask, Plan, Run, Auto} -------
 
 list_files() {
   # All regular files under a directory, repo-relative, sorted. .DS_Store is
@@ -274,19 +278,21 @@ list_files() {
 }
 
 expected_commands="commands/ask.md
+commands/auto.md
 commands/plan.md
 commands/run.md"
 actual_commands="$(list_files "${repo_root}/commands")"
 if [[ "${actual_commands}" != "${expected_commands}" ]]; then
-  fail "commands/ must contain exactly ask.md, plan.md, and run.md — Ask, Plan, and Run are the only modes in this build; found: $(echo "${actual_commands}" | tr '\n' ' ')"
+  fail "commands/ must contain exactly ask.md, auto.md, plan.md, and run.md — Ask, Plan, Run, and Auto are the only modes in this build; found: $(echo "${actual_commands}" | tr '\n' ' ')"
 fi
 
 expected_skills=".agents/skills/velo-ask/SKILL.md
+.agents/skills/velo-auto/SKILL.md
 .agents/skills/velo-plan/SKILL.md
 .agents/skills/velo-run/SKILL.md"
 actual_skills="$(list_files "${repo_root}/.agents/skills")"
 if [[ "${actual_skills}" != "${expected_skills}" ]]; then
-  fail ".agents/skills/ must contain exactly velo-ask/SKILL.md, velo-plan/SKILL.md, and velo-run/SKILL.md — Ask, Plan, and Run are the only skills in this build; found: $(echo "${actual_skills}" | tr '\n' ' ')"
+  fail ".agents/skills/ must contain exactly velo-ask/SKILL.md, velo-auto/SKILL.md, velo-plan/SKILL.md, and velo-run/SKILL.md — Ask, Plan, Run, and Auto are the only skills in this build; found: $(echo "${actual_skills}" | tr '\n' ' ')"
 fi
 
 # V1's orchestration, adapter, role, hook, and container scaffolding must not
@@ -294,7 +300,7 @@ fi
 # excluded mode.
 for artifact in AGENTS.md ADAPTER.md PERSONA.md TEAM.md agents hooks skills Dockerfile docker-compose.yml compose.yaml; do
   if [[ -e "${repo_root}/${artifact}" ]]; then
-    fail "${artifact} must not exist — V2 ships Ask, Plan, and Run only, with no orchestration roles, hooks, or container machinery"
+    fail "${artifact} must not exist — V2 ships Ask, Plan, Run, and Auto only, with no orchestration roles, hooks, or container machinery"
   fi
 done
 

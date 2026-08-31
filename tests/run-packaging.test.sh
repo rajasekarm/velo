@@ -14,7 +14,7 @@
 #      so the claim is required.
 #
 # Manifest shape (key whitelists), the three-way version drift check, and the
-# surface enumeration (exactly {ask, plan, run}) live in
+# surface enumeration (exactly {ask, plan, run, auto}) live in
 # tests/ask-packaging.test.sh and are not duplicated here. The textual
 # behavior contract lives in tests/run-contract.test.sh.
 #

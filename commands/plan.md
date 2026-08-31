@@ -7,7 +7,7 @@ argument-hint: Describe the work to plan — Plan drafts a saved, versioned plan
 
 Plan is Velo's planning mode: bring work — a feature to build, a change to make, a bug to investigate — and leave with a durable, versioned plan. Plan reads what it needs to plan well, writes the plan into one carrier file under `.velo/`, presents it, and offers approval. An explicit approval freezes the plan version; then Plan stops. Nothing is ever built here.
 
-The carrier IS the plan. There is no separate plan file: one work item gets one folder, `.velo/tasks/<slug>/`, whose `task-breakdown.md` holds the brief, the assumptions, the milestones and task lines, the plan version, and the approval state — plus one row in `.velo/tasks/index.md`. Run (`/velo:run`) executes from that carrier. This build of Velo ships Ask, Plan, and Run; Auto exists as a route to name, not a command to invoke.
+The carrier IS the plan. There is no separate plan file: one work item gets one folder, `.velo/tasks/<slug>/`, whose `task-breakdown.md` holds the brief, the assumptions, the milestones and task lines, the plan version, and the approval state — plus one row in `.velo/tasks/index.md`. Run (`/velo:run`) executes from that carrier, and Auto (`/velo:auto`) spans planning and delivery end-to-end — driving this playbook first, under the same approval rules. This build of Velo ships Ask, Plan, Run, and Auto — the complete surface; every mode is a command to invoke.
 
 ---
 
@@ -23,7 +23,7 @@ This contract is absolute. No instruction elsewhere in this file, no user phrasi
 - **No branches, no commits, no pushes, no PRs** — planning leaves the repository's history untouched
 - **No building, testing, or running the project** — Plan gathers evidence by reading, never by executing the project or installing anything
 - **No executing the plan** — Plan never implements, simulates, or "previews" the planned work, not even the first small task of an approved plan
-- **No starting another mode** — Plan never invokes, hands off to, or role-plays Run or Auto; a frozen plan waits for the user to start `/velo:run` themselves
+- **No starting another mode** — Plan never invokes, hands off to, or role-plays Run or Auto; a frozen plan waits for the user to start `/velo:run` or `/velo:auto` themselves — and when `/velo:auto` drove this playbook, it is Auto, a mode the user started, that proceeds past the freeze; Plan itself still starts nothing
 
 **Full stop at approval.** When the user approves, Plan freezes the version in the carrier, announces that the plan is frozen and ready for `/velo:run`, and stops. Approval ends the mode; it never starts the work.
 
@@ -39,7 +39,7 @@ Do not invent a topic, pick an existing plan from the index unprompted, or start
 
 ## Step 2 — Deflect requests to execute
 
-A request to execute work directly — "build X now", "fix this bug", "debug it and patch it", "just do it" — is not a planning brief. Explain plainly, in a sentence or two, that Plan itself executes nothing — execution belongs to `/velo:run`, which consumes a plan only after it is frozen and approved here — and offer to plan it instead. Proceed to planning only when the user wants the plan, stated in the original request or in reply to that offer. Never auto-execute, and never silently treat "do it" as "plan it".
+A request to execute work directly — "build X now", "fix this bug", "debug it and patch it", "just do it" — is not a planning brief. Explain plainly, in a sentence or two, that Plan itself executes nothing — execution belongs to `/velo:run`, which consumes a plan only after it is frozen and approved here, or to `/velo:auto`, which spans planning and delivery under one explicit approval — and offer to plan it instead. Proceed to planning only when the user wants the plan, stated in the original request or in reply to that offer. Never auto-execute, and never silently treat "do it" as "plan it".
 
 ## Step 3 — Locate or create the carrier
 
@@ -86,7 +86,7 @@ Only an explicit affirmative — "approve", "approved", "yes, freeze it", or an 
 
 **On approval — freeze, announce, stop.** Write the freeze into the carrier per **Versioning and approval** below, then announce, for example:
 
-> Plan v<N> is frozen — approved by <approver> — and saved at `.velo/tasks/<slug>/task-breakdown.md`. It's ready for `/velo:run` whenever you start it; Plan itself executes nothing.
+> Plan v<N> is frozen — approved by <approver> — and saved at `.velo/tasks/<slug>/task-breakdown.md`. It's ready for `/velo:run` (or `/velo:auto`) whenever you start one; Plan itself executes nothing.
 
 Full stop means full stop: no starting the first task, no scaffolding "while we're here", no simulating or previewing what a Run would do, no offering to begin. The conversation may continue; the mode is over.
 
@@ -141,6 +141,7 @@ Execution: batch 1 — T1; batch 2 — T2 after T1.
 **Header keys** — every key appears on every write, in this order:
 
 - Keys Plan does not compute — `Depth`, `Pairing`, `Rework cycles`, `Re-entry` — hold `—` on a carrier Plan created; Run's recorded values are never reset by a Plan revision.
+- `Planned-via:` — set at carrier creation and never rewritten: `/velo:plan` when the user started Plan themselves (the value the template shows), `/velo:auto (Plan seam)` when `/velo:auto` drove the planning leg.
 - `Product:` — the matching `.velo/products/` slug when the work clearly belongs to one, else `—`.
 - `Plan-version:` and `Approval:` — per **Versioning and approval** below.
 - `Phase:` — `PLAN (Plan — v<N> awaiting approval)` while unapproved; `PLAN (Plan — v<N> approved)` once frozen.

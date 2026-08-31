@@ -1,14 +1,14 @@
 {
   "name": "local",
-  "description": "Velo V2 — clean-room rebuild. Current surface: Ask, Plan, and Run.",
+  "description": "Velo V2 — clean-room rebuild. Current surface: Ask, Plan, Run, and Auto.",
   "owner": {
     "name": "Raja"
   },
   "plugins": [
     {
       "name": "velo",
-      "description": "Velo V2 — three modes: Ask (off-axis, read-only conceptual Q&A that never touches the repo), Plan (a persisted, versioned plan saved under .velo/ with an explicit approval freeze — planning only, never execution), and Run (executes a frozen, approved plan milestone by milestone, gated by green checks plus one independent review, committing locally — never pushing, merging, or opening PRs). No mode starts Auto.",
-      "version": "2.2.0",
+      "description": "Velo V2 — four modes: Ask (off-axis, read-only conceptual Q&A that never touches the repo), Plan (a persisted, versioned plan saved under .velo/ with an explicit approval freeze — planning only, never execution), Run (executes a frozen, approved plan milestone by milestone, gated by green checks plus one independent review, committing locally — never pushing, merging, or opening PRs), and Auto (spans Plan and Run end-to-end under one explicit approval — nothing is ever auto-approved — gated per milestone by green checks plus a three-cold-reviewer 2-of-3 quorum, with Run's local-commit-only scope, refusing autonomous execution on hosts without subagents). The four-mode surface is complete; no mode is named but unbuilt.",
+      "version": "2.3.0",
       "source": "./",
       "author": {
         "name": "Raja"

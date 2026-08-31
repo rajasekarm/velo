@@ -204,12 +204,16 @@ done
 # presence pins above cannot see an ADDED sentence granting push/merge/PR/
 # origin rights ("Run may also push to origin after the final ship."). Every
 # line in either run surface file that mentions a push/merge/PR/origin concept
-# must carry negation or ownership context on the same line — never/no/
-# nothing/yours to call/maintainer — which every legitimate mention today does
-# (they are all negations or maintainer-ownership statements). A permissive
-# sentence has neither and fails.
+# must carry negation or ownership context on the same line — never / a
+# git-negation ("no push"/"no pushing"/"no PR(s)") / nothing / yours to call /
+# maintainer — which every legitimate mention today does (they are all
+# negations or maintainer-ownership statements). The context set is
+# deliberately NARROW: a bare "no " once counted as context, which let a
+# permissive sentence ride on an incidental negation elsewhere in the line
+# ("...once there are no unresolved findings"); the git-scoped forms close
+# that. A permissive sentence has none of these and fails.
 git_concept_pattern='push|merg|origin|(^|[^A-Za-z])PRs?([^A-Za-z]|$)'
-git_context_pattern='never|no |nothing|yours to call|maintainer'
+git_context_pattern='never|no push|no pushing|no PRs?|nothing|yours to call|maintainer'
 for file in "${command_file}" "${skill_file}"; do
   offenders="$(grep -niE "${git_concept_pattern}" "${file}" | grep -viE "${git_context_pattern}" || true)"
   [[ -z "${offenders}" ]] \
@@ -274,6 +278,12 @@ assert_file_contains "${command_file}" '`MILESTONE_SHIP (Milestone ship — M<i>
 assert_file_contains "${command_file}" '- Ship: `- M<i> shipped · commit <short-hash> on <slug>-m<i> · checks green · review passed · <YYYY-MM-DD HH:MM>`'
 assert_file_contains "${command_file}" '- Pause: `- M<i> paused · T<n> blocked · <one clause naming the reason> · <YYYY-MM-DD HH:MM>`'
 
+# The ship-bullet line's Auto quorum variant: a span driven by /velo:auto
+# writes its quorum verdict in the same review clause — everything else in the
+# bullet stays Run's format. The clause lives on the same Ship line as the
+# format pin above, so the line must satisfy all its pins together.
+assert_file_contains "${command_file}" 'a span driven by `/velo:auto` writes its quorum verdict in the same clause (`review passed (quorum <n>/3)`), per that playbook'
+
 # The index-row lifecycle: in-progress at the first open, done at the final
 # ship, still in-progress while paused — and the flip is CONDITIONAL on the
 # row still reading `planned`, so a resumed run never re-flips or resets it.
@@ -287,9 +297,10 @@ assert_file_contains "${command_file}" 'the index row flipped to `done`'
 assert_file_contains "${command_file}" 'Pushing, merging, or opening a PR is yours to call; nothing here ships past the local commits.'
 assert_file_contains "${command_file}" 'Full stop means full stop: no pushing "since we'\''re done", no PR drafts, no starting another plan, no suggesting Auto.'
 
-# No other mode: Auto stays out, and Run never plans — gaps route back to
-# /velo:plan.
-assert_file_contains "${command_file}" '**No other mode.** Auto does not exist in this build; Run never starts, simulates, or role-plays it. Run also never plans: a gap in the plan routes back to `/velo:plan`, never gets filled in on the fly.'
+# No other mode: the one sanctioned coupling is inbound — Auto invokes this
+# playbook as its execution leg, one way only, never the reverse — and Run
+# never plans: gaps route back to /velo:plan.
+assert_file_contains "${command_file}" '**No other mode.** Run never starts, simulates, or role-plays another mode. Auto (`/velo:auto`) is the one mode that invokes this playbook — as its execution leg, under its own stricter review gate — and that invocation runs one way: Auto drives Run, never the reverse. Run also never plans: a gap in the plan routes back to `/velo:plan`, never gets filled in on the fly.'
 
 # --- 8. commands/run.md — fence pin and tool-name guard -----------------------------
 
@@ -309,8 +320,10 @@ fence_count="$(grep -c '^```' "${command_file}" || true)"
 # collides with a tool name — the "## Task" $ARGUMENTS slot, exempted as a
 # whole line. There is no negated-line exemption: run.md names no tool even in
 # negation (its delegation language is "subagent"/"builder", its git scope is
-# prose), so ANY other capitalized tool name is an offender.
-offenders="$(grep -nE '(^|[^A-Za-z])(Read|Grep|Glob|Bash|Task|WebFetch|WebSearch|Edit)([^A-Za-z]|$)' "${command_file}" \
+# prose), so ANY other capitalized tool name is an offender. "Write" is in the
+# alternation: run.md has no capitalized Write (verified), so an appended
+# "Write the carrier..." escape hatch fails here.
+offenders="$(grep -nE '(^|[^A-Za-z])(Read|Grep|Glob|Bash|Task|WebFetch|WebSearch|Edit|Write)([^A-Za-z]|$)' "${command_file}" \
   | grep -vE '^[0-9]+:## Task$' || true)"
 [[ -z "${offenders}" ]] || fail "commands/run.md mentions a tool outside the ## Task heading: ${offenders}"
 
@@ -361,9 +374,10 @@ assert_file_contains "${skill_file}" 'and a pre-existing branch carrying a miles
 assert_file_contains "${skill_file}" 'Pausing preserves state; nothing is discarded.'
 
 # Completion inline: DONE phase, index flip, push/PR remain the maintainer's,
-# full stop — and Auto stays out.
+# full stop — and the Auto coupling stays one-way: Auto may drive this
+# playbook, Run never starts Auto (or any mode).
 assert_file_contains "${skill_file}" 'set `Phase: DONE (Done — delivered-and-committed on <slug>-m<final>)`, flip the index row to `done`, announce that pushing, merging, and PRs remain the maintainer'\''s, and stop completely'
-assert_file_contains "${skill_file}" 'Auto does not exist in this build; never start, invoke, simulate, or role-play it.'
+assert_file_contains "${skill_file}" 'Auto (`velo:auto`) is the one mode that invokes this playbook — as its execution leg, under its own stricter review gate — and that invocation runs one way: Auto drives Run, never the reverse; Run never starts, invokes, simulates, or role-plays Auto or any other mode.'
 
 # --- 10. No excluded-machinery text --------------------------------------------------
 
