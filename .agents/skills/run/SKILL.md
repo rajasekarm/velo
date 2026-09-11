@@ -5,9 +5,9 @@ description: Use when the user asks for /velo:run or velo:run, or asks Velo to e
 
 # Velo Run
 
-This is the Codex-discoverable wrapper for Velo V2's Run mode — frozen-plan execution with local commits. In this repo namespace, it should appear as `velo:run`.
+This is the Codex-discoverable wrapper for Velo's Run mode — frozen-plan execution with local commits. In this repo namespace, it should appear as `velo:run`.
 
-This wrapper is self-contained. Velo V2 has no AGENTS.md, ADAPTER.md, or PERSONA.md; do not go looking for them. The plugin root is the directory reached by walking up from this `SKILL.md` to the directory containing `commands/run.md`.
+This wrapper is self-contained. Velo has no AGENTS.md, ADAPTER.md, or PERSONA.md; do not go looking for them. The plugin root is the directory reached by walking up from this `SKILL.md` to the directory containing `commands/run.md`.
 
 ## Load Order
 

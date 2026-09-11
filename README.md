@@ -1,4 +1,4 @@
-# Velo V2
+# Velo
 
 Clean-room rebuild of Velo. The current surface is **three modes: Plan, Run, and Verify**.
 

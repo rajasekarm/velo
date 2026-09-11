@@ -1,7 +1,7 @@
 {
   "name": "velo",
-  "version": "2.3.0",
-  "description": "Velo V2 — Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
+  "version": "2.3.0+codex.20260911162042",
+  "description": "Velo \u2014 Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
   "author": {
     "name": "Rajasekar"
   },
@@ -19,8 +19,8 @@
   "skills": "./.agents/skills/",
   "interface": {
     "displayName": "Velo",
-    "shortDescription": "Plan, implement, and verify changes with acceptance criteria (Velo V2)",
-    "longDescription": "Velo V2 — Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
+    "shortDescription": "Plan, implement, and verify changes with acceptance criteria (Velo)",
+    "longDescription": "Velo \u2014 Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
     "developerName": "Rajasekar",
     "category": "Coding",
     "capabilities": [
