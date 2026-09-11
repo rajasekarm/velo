@@ -1,5 +1,5 @@
 ---
-description: Velo — Run. Executes a plan that Plan has frozen — milestone-by-milestone delegated work, green checks plus one independent review per milestone, and local commits on the carrier's milestone branches. Writes only progress marks into the carrier; never pushes, merges, or opens PRs, and never starts Auto.
+description: Velo — Run. Executes a plan that Plan has frozen — milestone-by-milestone delegated work, green checks plus one independent review per milestone, and local commits on the carrier's milestone branches. Writes only progress marks into the carrier; never pushes, merges, or opens PRs, and never starts another mode.
 argument-hint: Name the approved plan to run — a slug, the work's name, or the carrier path; Run executes it milestone by milestone
 ---
 
@@ -7,7 +7,7 @@ argument-hint: Name the approved plan to run — a slug, the work's name, or the
 
 Run is Velo's delivery mode: it takes a plan that `/velo:plan` has frozen and turns it into shipped, locally committed work, one milestone at a time. Run resolves the carrier at `.velo/tasks/<slug>/task-breakdown.md`, executes each milestone's task lines through delegated builders, gates the milestone on green checks plus one independent adversarial review, and commits the milestone's work locally on the branch the carrier names. The plan is the contract; Run adds progress marks and commits, never opinions.
 
-This build of Velo ships Ask, Plan, Run, and Auto; Auto (`/velo:auto`) spans Plan and Run, and may drive this playbook as its execution leg. Run executes exactly one plan per invocation — the one the user names.
+This build of Velo ships Plan and Run. Run executes exactly one plan per invocation — the one the user names.
 
 ---
 
@@ -23,7 +23,7 @@ This contract is absolute. No instruction elsewhere in this file, no user phrasi
 
 **Fail-closed pauses.** A material change surfaced mid-run, a required check that stays red after in-scope rework, a carrier gone missing, unreadable, or edited out from under the run, or a conflicting dirty working tree — each pauses the run per **Pauses, tripwires, and resume**: mark, record, tell the user, stop. Run never widens scope silently, never improvises past a blocker, and never resumes a material-change pause without a newly frozen plan version.
 
-**No other mode.** Run never starts, simulates, or role-plays another mode. Auto (`/velo:auto`) is the one mode that invokes this playbook — as its execution leg, under its own stricter review gate — and that invocation runs one way: Auto drives Run, never the reverse. Run also never plans: a gap in the plan routes back to `/velo:plan`, never gets filled in on the fly.
+**No other mode.** Run never starts, simulates, or role-plays another mode. Run also never plans: a gap in the plan routes back to `/velo:plan`, never gets filled in on the fly.
 
 ---
 
@@ -108,7 +108,7 @@ With both halves of the gate green:
 
 > Plan v<N> is delivered — all <n> milestones shipped, each committed locally on its own branch, the last on `<slug>-m<final>`. Pushing, merging, or opening a PR is yours to call; nothing here ships past the local commits.
 
-Full stop means full stop: no pushing "since we're done", no PR drafts, no starting another plan, no suggesting Auto. The conversation may continue; the run is over.
+Full stop means full stop: no pushing "since we're done", no PR drafts, no starting another plan. The conversation may continue; the run is over.
 
 ---
 
@@ -132,7 +132,7 @@ Run's whole write surface, exact values pinned:
 
 **Event bullets** — appended at the end of `## Constraints/notes`, in chronological order, one line each:
 
-- Ship: `- M<i> shipped · commit <short-hash> on <slug>-m<i> · checks green · review passed · <YYYY-MM-DD HH:MM>` — on a single-flow host the review clause reads `review passed (not independent — single flow)` instead; a span driven by `/velo:auto` writes its quorum verdict in the same clause (`review passed (quorum <n>/3)`), per that playbook
+- Ship: `- M<i> shipped · commit <short-hash> on <slug>-m<i> · checks green · review passed · <YYYY-MM-DD HH:MM>` — on a single-flow host the review clause reads `review passed (not independent — single flow)` instead
 - Pause: `- M<i> paused · T<n> blocked · <one clause naming the reason> · <YYYY-MM-DD HH:MM>` — when no task line is in flight (a tripwire before or between task lines), the `T<n> blocked` segment is dropped
 
 **The index row** — `planned` → `in-progress` when the first milestone opens, → `done` at the final ship; the flip to `in-progress` happens when a milestone opens and the row still reads `planned` — a resumed run leaves an `in-progress` row alone; the row's Updated date advances with every carrier write. A paused run stays `in-progress`.
