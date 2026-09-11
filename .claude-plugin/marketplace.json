@@ -1,13 +1,13 @@
 {
   "name": "local",
-  "description": "Velo V2 — clean-room rebuild. Current surface: Plan and Run.",
+  "description": "Velo V2 — Plan, Run, and Verify.",
   "owner": {
     "name": "Raja"
   },
   "plugins": [
     {
       "name": "velo",
-      "description": "Velo V2 — two modes: Plan creates a persisted, versioned plan under .velo/ with explicit approval; Run executes a frozen, approved plan milestone by milestone with checks, review, and local commits. Neither mode pushes, merges, or opens PRs.",
+      "description": "Velo V2 — Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
       "version": "2.3.0",
       "source": "./",
       "author": {

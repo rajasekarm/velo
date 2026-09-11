@@ -1,7 +1,7 @@
 {
   "name": "velo",
   "version": "2.3.0",
-  "description": "Velo V2 — two modes: Plan creates a persisted, versioned plan under .velo/ with explicit approval; Run executes a frozen, approved plan milestone by milestone with checks, review, and local commits. Neither mode pushes, merges, or opens PRs.",
+  "description": "Velo V2 — Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
   "author": {
     "name": "Rajasekar"
   },
@@ -12,13 +12,15 @@
     "execution",
     "delivery",
     "engineering",
-    "codex"
+    "codex",
+    "verify",
+    "verification"
   ],
   "skills": "./.agents/skills/",
   "interface": {
     "displayName": "Velo",
-    "shortDescription": "Approval-gated planning and frozen-plan execution for Codex (Velo V2 — Plan and Run)",
-    "longDescription": "Velo V2 — two modes: Plan creates a persisted, versioned plan under .velo/ with explicit approval; Run executes a frozen, approved plan milestone by milestone with checks, review, and local commits. Neither mode pushes, merges, or opens PRs.",
+    "shortDescription": "Plan, implement, and verify changes with acceptance criteria (Velo V2)",
+    "longDescription": "Velo V2 — Plan saves a versioned plan with acceptance criteria and hands it to Run after explicit approval. Run implements approved milestones with verification, review, and local commits. Verify checks existing changes and reports pass, fail, or blocked with evidence. No mode pushes, merges, or opens PRs.",
     "developerName": "Rajasekar",
     "category": "Coding",
     "capabilities": [
@@ -28,7 +30,8 @@
     "defaultPrompt": [
       "Plan a feature into a saved, versioned plan under .velo/",
       "Revise a saved plan and approve it to freeze the version",
-      "Run an approved plan milestone by milestone with local commits"
+      "Run an approved plan milestone by milestone with local commits",
+      "Verify existing changes against acceptance criteria using browser or API checks"
     ],
     "brandColor": "#111827",
     "screenshots": []
